@@ -547,4 +547,4 @@ client.connect_signal("unfocus", function(c) c.border_color = beautiful.border_n
 -- }}}
 
 -- Autostart
-awful.spawn.with_shell("feh --randomize --bg-fill /home/lukas/Media/wallpapers/*")
+awful.spawn.with_shell("feh --randomize --bg-fill /Media/wallpapers/*")
