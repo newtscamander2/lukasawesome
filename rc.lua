@@ -241,7 +241,7 @@ globalkeys = gears.table.join(
 
     -- Standard program
     awful.key({ modkey,           }, "x", function () awful.spawn(terminal) end,
-              {description = "open a terminal", group = "launcher"}),
+              {description = "open Alacritty", group = "launcher"}),
     awful.key({ modkey,           }, "b", function () awful.spawn(browser) end,
               {description = "open Brave", group = "launcher"}),
     awful.key({ modkey,           }, "v", function () awful.spawn(password_manager) end,
@@ -285,7 +285,7 @@ globalkeys = gears.table.join(
 
     -- Prompt
     awful.key({ modkey },            "r",     function () awful.spawn("rofi -show drun") end,
-              {description = "open rofi", group = "launcher"})
+              {description = "open Rofi", group = "launcher"})
 )
 
 clientkeys = gears.table.join(
