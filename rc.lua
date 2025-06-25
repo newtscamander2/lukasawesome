@@ -46,6 +46,7 @@ end
 -- {{{ Variable definitions
 -- Themes define colours, icons, font and wallpapers.
 beautiful.init(gears.filesystem.get_themes_dir() .. "default/theme.lua")
+beautiful.useless_gap = 10
 
 -- This is used later as the default terminal and editor to run.
 terminal = "alacritty"
@@ -67,6 +68,7 @@ awful.layout.layouts = {
     awful.layout.suit.tile,
 }
 -- }}}
+
 
 -- {{{ Menu
 -- Create a launcher widget and a main menu
@@ -141,7 +143,7 @@ awful.screen.connect_for_each_screen(function(s)
 
     -- Create a promptbox for each screen
     s.mypromptbox = awful.widget.prompt()
-     
+
     -- Create a taglist widget
     s.mytaglist = awful.widget.taglist {
         screen  = s,
