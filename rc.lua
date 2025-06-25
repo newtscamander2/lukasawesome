@@ -51,6 +51,7 @@ beautiful.init(gears.filesystem.get_themes_dir() .. "default/theme.lua")
 terminal = "alacritty"
 filemanager = "dolphin"
 browser = "brave"
+password_manager = "keepassxc"
 editor = "vim"
 editor_cmd = terminal .. " -e " .. editor
 
@@ -243,6 +244,8 @@ globalkeys = gears.table.join(
               {description = "open a terminal", group = "launcher"}),
     awful.key({ modkey,           }, "b", function () awful.spawn(browser) end,
               {description = "open Brave", group = "launcher"}),
+    awful.key({ modkey,           }, "v", function () awful.spawn(password_manager) end,
+              {description = "open KeepassXC", group = "launcher"}),
     awful.key({ modkey,           }, "c", function () awful.spawn(filemanager) end,
               {description = "open Dolphin", group = "launcher"}),
               
