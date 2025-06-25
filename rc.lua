@@ -415,6 +415,14 @@ awful.rules.rules = {
                      placement = awful.placement.no_overlap+awful.placement.no_offscreen
      }
     },
+    { rule = { class = "Brave-browser" },
+      properties = {
+                    floating = false,
+                    maximized = false,
+                    fullscreen = false,
+                    placement = awful.placement.no_overlap+awful.placement.no_offscreen
+    }
+},
 }
 -- }}}
 
