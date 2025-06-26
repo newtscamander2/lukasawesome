@@ -45,8 +45,9 @@ end
 
 -- {{{ Variable definitions
 -- Themes define colours, icons, font and wallpapers.
-beautiful.init(gears.filesystem.get_themes_dir() .. "default/theme.lua")
-beautiful.useless_gap = 10
+local gears = require("gears")
+local beautiful = require("beautiful")
+beautiful.init(os.getenv("HOME") .. "/.config/awesome/themes/default/theme.lua")
 
 -- This is used later as the default terminal and editor to run.
 terminal = "alacritty"
@@ -117,19 +118,63 @@ local tasklist_buttons = gears.table.join(
 
 awful.screen.connect_for_each_screen(function(s)
 
-    -- Each screen has its own tag table.
-    awful.tag({ "1", "2", "3", "4", "5", "6", "7", "8", "9" }, s, awful.layout.layouts[1])
+local gears = require("gears")
+
+-- Create tags and use icons    
+local icon_dir = os.getenv("HOME") .. "/dotfiles/tagicons/"
+local tag_names = { "1", "2", "3", "4", "5" }
+local icon_files = {
+    "terminal-solid.png",
+    "earth-europe-solid.png",
+    "gamepad-solid.png",
+    "code-solid.png",
+    "headset-solid.png"
+}
+
+for i, name in ipairs(tag_names) do
+    local icon_path = icon_dir .. icon_files[i]
+    local white_icon = gears.color.recolor_image(icon_path, "#FFFFFF") -- Recolor to white
+
+    awful.tag.add(name, {
+        icon = white_icon,
+        layout = awful.layout.suit.tile,
+        master_fill_policy = "master_width_factor",
+        gap_single_client = true,
+        gap = 10,
+        screen = s,
+        selected = (i == 1), -- Select the first tag by default
+    })
+end
 
     -- Create a promptbox for each screen
     s.mypromptbox = awful.widget.prompt()
 
     -- Create a taglist widget
     s.mytaglist = awful.widget.taglist {
-        screen  = s,
-        filter  = awful.widget.taglist.filter.all,
-        buttons = taglist_buttons
-    }
-
+    screen  = s,
+    filter  = awful.widget.taglist.filter.all,
+    layout  = {
+        spacing = 5,
+        layout  = wibox.layout.fixed.horizontal
+    },
+    widget_template = {
+        {
+            {
+                {
+                    id     = 'icon_role',
+                    widget = wibox.widget.imagebox,
+                    resize = true,
+                },
+                margins = 0, -- Adjust this for more/less padding
+                widget  = wibox.container.margin
+            },
+            id     = 'background_role',
+            widget = wibox.container.background,
+        },
+        margins = 2,
+        widget  = wibox.container.margin,
+    },
+}
     -- Create a tasklist widget
     s.mytasklist = awful.widget.tasklist {
         screen  = s,
