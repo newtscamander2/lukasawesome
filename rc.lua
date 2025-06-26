@@ -406,12 +406,12 @@ awful.rules.rules = {
                      placement = awful.placement.no_overlap+awful.placement.no_offscreen
      }
     },
-    { rule = { class = "Brave-browser" },
+    { rule_any = { class = { "Brave-browser", "code-oss" } },
       properties = {
-                    floating = false,
-                    maximized = false,
-                    fullscreen = false,
-                    placement = awful.placement.no_overlap+awful.placement.no_offscreen
+                     floating = false,
+                     maximized = false,
+                     fullscreen = false,
+                     placement = awful.placement.no_overlap + awful.placement.no_offscreen
     }
 },
 }
