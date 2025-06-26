@@ -1,0 +1,1542 @@
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom _NET_WM_WINDOW_OPACITY is 419
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom _NET_FRAME_EXTENTS is 343
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom WM_STATE is 387
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom _NET_WM_NAME is 349
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom _NET_WM_PID is 350
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom WM_NAME is 39
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom WM_CLASS is 67
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom WM_ICON_NAME is 37
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom WM_TRANSIENT_FOR is 68
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom WM_WINDOW_ROLE is 340
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom WM_CLIENT_LEADER is 335
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom WM_CLIENT_MACHINE is 36
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom _NET_ACTIVE_WINDOW is 341
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom _COMPTON_SHADOW is 539
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom COMPTON_VERSION is 540
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom _NET_WM_WINDOW_TYPE is 365
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom _XROOTPMAP_ID is 396
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom ESETROOT_PMAP_ID is 397
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom _XSETROOT_ID is 541
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom _NET_WM_WINDOW_TYPE_DESKTOP is 386
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom _NET_WM_WINDOW_TYPE_DOCK is 408
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom _NET_WM_WINDOW_TYPE_TOOLBAR is 409
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom _NET_WM_WINDOW_TYPE_MENU is 370
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom _NET_WM_WINDOW_TYPE_UTILITY is 374
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom _NET_WM_WINDOW_TYPE_SPLASH is 410
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom _NET_WM_WINDOW_TYPE_DIALOG is 367
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom _NET_WM_WINDOW_TYPE_NORMAL is 371
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom _NET_WM_WINDOW_TYPE_DROPDOWN_MENU is 369
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom _NET_WM_WINDOW_TYPE_POPUP_MENU is 372
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom _NET_WM_WINDOW_TYPE_TOOLTIP is 373
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom _NET_WM_WINDOW_TYPE_NOTIFICATION is 411
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom _NET_WM_WINDOW_TYPE_COMBO is 366
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom _NET_WM_WINDOW_TYPE_DND is 368
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom _NET_WM_STATE is 352
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom _NET_WM_STATE_FULLSCREEN is 355
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom _NET_WM_BYPASS_COMPOSITOR is 500
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom UTF8_STRING is 334
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom C_STRING is 542
+[ 06/26/2025 09:32:22.496 atom_getter DEBUG ] Atom _GTK_FRAME_EXTENTS is 495
+[ 06/26/2025 09:32:22.497 atom_getter DEBUG ] Atom _NET_WM_CM_S0 is 345
+[ 06/26/2025 09:32:22.497 file_watch_init DEBUG ] Starting watching for file changes
+[ 06/26/2025 09:32:22.497 file_watch_add DEBUG ] Adding "/home/lukas/.config/picom/picom.conf" to watched files
+[ 06/26/2025 09:32:22.497 wm_import_start_inner DEBUG ] Starting import process for window 0x0000042f
+[ 06/26/2025 09:32:22.498 init_overlay DEBUG ] overlay = 0x000000cf
+[ 06/26/2025 09:32:22.498 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x0000042f, sending query tree.
+[ 06/26/2025 09:32:22.498 ev_handle DEBUG ] event CREATE_NOT serial 0x0000005f window 0x000000cf "(Overlay)"
+[ 06/26/2025 09:32:22.498 ev_handle DEBUG ] event MAP_NOTIFY serial 0x0000005f window 0x000000cf "(Overlay)"
+[ 06/26/2025 09:32:22.498 ev_map_notify DEBUG ] Overlay is mapped while we are not redirected
+[ 06/26/2025 09:32:22.498 ev_handle DEBUG ] event UNMAP_NOTI serial 0x00000065 window 0x000000cf "(Overlay)"
+[ 06/26/2025 09:32:22.498 ev_handle DEBUG ] event     EXPOSE serial 0x00000065 window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:22.498 ev_handle DEBUG ] event     EXPOSE serial 0x00000065 window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:22.498 ev_handle DEBUG ] event     EXPOSE serial 0x00000065 window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:22.498 ev_handle DEBUG ] event     EXPOSE serial 0x00000065 window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:22.498 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 103
+[ 06/26/2025 09:32:22.498 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:22.498 redirect_start DEBUG ] Redirecting the screen.
+[ 06/26/2025 09:32:22.547 glxext_init INFO ] Extension GLX_SGI_video_sync - present
+[ 06/26/2025 09:32:22.547 glxext_init INFO ] Extension GLX_SGI_swap_control - present
+[ 06/26/2025 09:32:22.547 glxext_init INFO ] Extension GLX_OML_sync_control - present
+[ 06/26/2025 09:32:22.547 glxext_init INFO ] Extension GLX_MESA_swap_control - present
+[ 06/26/2025 09:32:22.547 glxext_init INFO ] Extension GLX_EXT_swap_control - present
+[ 06/26/2025 09:32:22.547 glxext_init INFO ] Extension GLX_EXT_texture_from_pixmap - present
+[ 06/26/2025 09:32:22.547 glxext_init INFO ] Extension GLX_ARB_create_context - present
+[ 06/26/2025 09:32:22.547 glxext_init INFO ] Extension GLX_EXT_buffer_age - present
+[ 06/26/2025 09:32:22.547 glxext_init INFO ] Extension GLX_ARB_create_context_robustness - present
+[ 06/26/2025 09:32:22.547 glxext_init INFO ] Extension GLX_MESA_query_renderer - present
+[ 06/26/2025 09:32:22.566 gl_init DEBUG ] GL_VENDOR = AMD
+[ 06/26/2025 09:32:22.576 redirect_start INFO ] Using vblank scheduler: present.
+[ 06/26/2025 09:32:22.576 glx_find_fbconfig DEBUG ] Looking for FBConfig for RGBA8880, depth: 24, visual id: 0x21
+[ 06/26/2025 09:32:22.577 glx_bind_pixmap DEBUG ] depth 24, rgba 0
+[ 06/26/2025 09:32:22.578 redirect_start DEBUG ] Screen redirected.
+[ 06/26/2025 09:32:22.578 draw_callback_impl DEBUG ] Re-run _draw_callback
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x0000042f
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Window 0x0000042f has 22 children
+[ 06/26/2025 09:32:22.586 wm_import_start_inner DEBUG ] Starting import process for window 0x00600000
+[ 06/26/2025 09:32:22.586 wm_import_start_inner DEBUG ] Starting import process for window 0x00800001
+[ 06/26/2025 09:32:22.586 wm_import_start_inner DEBUG ] Starting import process for window 0x00600005
+[ 06/26/2025 09:32:22.586 wm_import_start_inner DEBUG ] Starting import process for window 0x00800003
+[ 06/26/2025 09:32:22.586 wm_import_start_inner DEBUG ] Starting import process for window 0x01400000
+[ 06/26/2025 09:32:22.586 wm_import_start_inner DEBUG ] Starting import process for window 0x01600000
+[ 06/26/2025 09:32:22.586 wm_import_start_inner DEBUG ] Starting import process for window 0x01800000
+[ 06/26/2025 09:32:22.586 wm_import_start_inner DEBUG ] Starting import process for window 0x01a00000
+[ 06/26/2025 09:32:22.586 wm_import_start_inner DEBUG ] Starting import process for window 0x01c00000
+[ 06/26/2025 09:32:22.586 wm_import_start_inner DEBUG ] Starting import process for window 0x01e00001
+[ 06/26/2025 09:32:22.586 wm_import_start_inner DEBUG ] Starting import process for window 0x01e00003
+[ 06/26/2025 09:32:22.586 wm_import_start_inner DEBUG ] Starting import process for window 0x01c00006
+[ 06/26/2025 09:32:22.586 wm_import_start_inner DEBUG ] Starting import process for window 0x00400004
+[ 06/26/2025 09:32:22.586 wm_import_start_inner DEBUG ] Starting import process for window 0x00400005
+[ 06/26/2025 09:32:22.586 wm_import_start_inner DEBUG ] Starting import process for window 0x00400006
+[ 06/26/2025 09:32:22.586 wm_import_start_inner DEBUG ] Starting import process for window 0x00400007
+[ 06/26/2025 09:32:22.586 wm_import_start_inner DEBUG ] Starting import process for window 0x0040000d
+[ 06/26/2025 09:32:22.586 wm_import_start_inner DEBUG ] Starting import process for window 0x00400010
+[ 06/26/2025 09:32:22.586 wm_import_start_inner DEBUG ] Starting import process for window 0x00400014
+[ 06/26/2025 09:32:22.586 wm_import_start_inner DEBUG ] Starting import process for window 0x00400013
+[ 06/26/2025 09:32:22.586 wm_import_start_inner DEBUG ] Starting import process for window 0x00400015
+[ 06/26/2025 09:32:22.586 wm_import_start_inner DEBUG ] Starting import process for window 0x00a00004
+[ 06/26/2025 09:32:22.586 wm_tree_set_wm_state DEBUG ] WM_STATE unchanged call (window 0x0000042f, WM_STATE 0).
+[ 06/26/2025 09:32:22.586 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 108
+[ 06/26/2025 09:32:22.586 ev_handle DEBUG ] event MAP_NOTIFY serial 0x0000006d window 0x000000cf "(Overlay)"
+[ 06/26/2025 09:32:22.586 ev_handle DEBUG ] event     EXPOSE serial 0x0000006d window 0x000000cf "(Overlay)"
+[ 06/26/2025 09:32:22.586 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:22.586 check_render_finish DEBUG ] Last render did not complete during vblank, msc: 0
+[ 06/26/2025 09:32:22.586 check_render_finish DEBUG ] Last render did not complete during vblank, msc: 0
+[ 06/26/2025 09:32:22.586 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:22.586 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x00600000, sending query tree.
+[ 06/26/2025 09:32:22.586 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x00800001, sending query tree.
+[ 06/26/2025 09:32:22.586 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x00600005, sending query tree.
+[ 06/26/2025 09:32:22.586 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x00800003, sending query tree.
+[ 06/26/2025 09:32:22.586 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x01400000, sending query tree.
+[ 06/26/2025 09:32:22.586 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x01600000, sending query tree.
+[ 06/26/2025 09:32:22.586 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x01800000, sending query tree.
+[ 06/26/2025 09:32:22.586 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x01a00000, sending query tree.
+[ 06/26/2025 09:32:22.586 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x01c00000, sending query tree.
+[ 06/26/2025 09:32:22.586 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x01e00001, sending query tree.
+[ 06/26/2025 09:32:22.586 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x01e00003, sending query tree.
+[ 06/26/2025 09:32:22.586 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x01c00006, sending query tree.
+[ 06/26/2025 09:32:22.586 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x00400004, sending query tree.
+[ 06/26/2025 09:32:22.586 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x00400005, sending query tree.
+[ 06/26/2025 09:32:22.586 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x00400006, sending query tree.
+[ 06/26/2025 09:32:22.586 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x00400007, sending query tree.
+[ 06/26/2025 09:32:22.586 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x0040000d, sending query tree.
+[ 06/26/2025 09:32:22.586 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x00400010, sending query tree.
+[ 06/26/2025 09:32:22.586 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x00400014, sending query tree.
+[ 06/26/2025 09:32:22.586 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x00400013, sending query tree.
+[ 06/26/2025 09:32:22.586 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x00400015, sending query tree.
+[ 06/26/2025 09:32:22.586 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x00a00004, sending query tree.
+[ 06/26/2025 09:32:22.586 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 192
+[ 06/26/2025 09:32:22.586 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:22.586 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:22.586 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:22.586 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x00600000
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Window 0x00600000 has 0 children
+[ 06/26/2025 09:32:22.586 wm_tree_set_wm_state DEBUG ] WM_STATE unchanged call (window 0x00600000, WM_STATE 0).
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x00800001
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Window 0x00800001 has 0 children
+[ 06/26/2025 09:32:22.586 wm_tree_set_wm_state DEBUG ] WM_STATE unchanged call (window 0x00800001, WM_STATE 0).
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x00600005
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Window 0x00600005 has 0 children
+[ 06/26/2025 09:32:22.586 wm_tree_set_wm_state DEBUG ] WM_STATE unchanged call (window 0x00600005, WM_STATE 0).
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x00800003
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Window 0x00800003 has 1 children
+[ 06/26/2025 09:32:22.586 wm_import_start_inner DEBUG ] Starting import process for window 0x00800004
+[ 06/26/2025 09:32:22.586 wm_tree_set_wm_state DEBUG ] WM_STATE unchanged call (window 0x00800003, WM_STATE 0).
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x01400000
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Window 0x01400000 has 0 children
+[ 06/26/2025 09:32:22.586 wm_tree_set_wm_state DEBUG ] WM_STATE unchanged call (window 0x01400000, WM_STATE 0).
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x01600000
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Window 0x01600000 has 0 children
+[ 06/26/2025 09:32:22.586 wm_tree_set_wm_state DEBUG ] WM_STATE unchanged call (window 0x01600000, WM_STATE 0).
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x01800000
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Window 0x01800000 has 0 children
+[ 06/26/2025 09:32:22.586 wm_tree_set_wm_state DEBUG ] WM_STATE unchanged call (window 0x01800000, WM_STATE 0).
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x01a00000
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Window 0x01a00000 has 0 children
+[ 06/26/2025 09:32:22.586 wm_tree_set_wm_state DEBUG ] WM_STATE unchanged call (window 0x01a00000, WM_STATE 0).
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x01c00000
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Window 0x01c00000 has 0 children
+[ 06/26/2025 09:32:22.586 wm_tree_set_wm_state DEBUG ] WM_STATE unchanged call (window 0x01c00000, WM_STATE 0).
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x01e00001
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Window 0x01e00001 has 0 children
+[ 06/26/2025 09:32:22.586 wm_tree_set_wm_state DEBUG ] WM_STATE unchanged call (window 0x01e00001, WM_STATE 0).
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x01e00003
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Window 0x01e00003 has 1 children
+[ 06/26/2025 09:32:22.586 wm_import_start_inner DEBUG ] Starting import process for window 0x01e00004
+[ 06/26/2025 09:32:22.586 wm_tree_set_wm_state DEBUG ] WM_STATE unchanged call (window 0x01e00003, WM_STATE 0).
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x01c00006
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Window 0x01c00006 has 0 children
+[ 06/26/2025 09:32:22.586 wm_tree_set_wm_state DEBUG ] WM_STATE unchanged call (window 0x01c00006, WM_STATE 0).
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x00400004
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Window 0x00400004 has 0 children
+[ 06/26/2025 09:32:22.586 wm_tree_set_wm_state DEBUG ] WM_STATE unchanged call (window 0x00400004, WM_STATE 0).
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x00400005
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Window 0x00400005 has 0 children
+[ 06/26/2025 09:32:22.586 wm_tree_set_wm_state DEBUG ] WM_STATE unchanged call (window 0x00400005, WM_STATE 0).
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x00400006
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Window 0x00400006 has 0 children
+[ 06/26/2025 09:32:22.586 wm_tree_set_wm_state DEBUG ] WM_STATE unchanged call (window 0x00400006, WM_STATE 0).
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x00400007
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Window 0x00400007 has 0 children
+[ 06/26/2025 09:32:22.586 wm_tree_set_wm_state DEBUG ] WM_STATE unchanged call (window 0x00400007, WM_STATE 0).
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x0040000d
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Window 0x0040000d has 0 children
+[ 06/26/2025 09:32:22.586 wm_tree_set_wm_state DEBUG ] WM_STATE unchanged call (window 0x0040000d, WM_STATE 0).
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x00400010
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Window 0x00400010 has 0 children
+[ 06/26/2025 09:32:22.586 wm_tree_set_wm_state DEBUG ] WM_STATE unchanged call (window 0x00400010, WM_STATE 0).
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x00400014
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Window 0x00400014 has 1 children
+[ 06/26/2025 09:32:22.586 wm_import_start_inner DEBUG ] Starting import process for window 0x01c00003
+[ 06/26/2025 09:32:22.586 wm_tree_set_wm_state DEBUG ] WM_STATE unchanged call (window 0x00400014, WM_STATE 0).
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x00400013
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Window 0x00400013 has 1 children
+[ 06/26/2025 09:32:22.586 wm_import_start_inner DEBUG ] Starting import process for window 0x00600003
+[ 06/26/2025 09:32:22.586 wm_tree_set_wm_state DEBUG ] WM_STATE unchanged call (window 0x00400013, WM_STATE 0).
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x00400015
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Window 0x00400015 has 1 children
+[ 06/26/2025 09:32:22.586 wm_import_start_inner DEBUG ] Starting import process for window 0x01200003
+[ 06/26/2025 09:32:22.586 wm_tree_set_wm_state DEBUG ] WM_STATE unchanged call (window 0x00400015, WM_STATE 0).
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x00a00004
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Window 0x00a00004 has 0 children
+[ 06/26/2025 09:32:22.586 wm_tree_set_wm_state DEBUG ] WM_STATE unchanged call (window 0x00a00004, WM_STATE 0).
+[ 06/26/2025 09:32:22.586 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 238
+[ 06/26/2025 09:32:22.586 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:22.586 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x00800004, sending query tree.
+[ 06/26/2025 09:32:22.586 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x01e00004, sending query tree.
+[ 06/26/2025 09:32:22.586 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x01c00003, sending query tree.
+[ 06/26/2025 09:32:22.586 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x00600003, sending query tree.
+[ 06/26/2025 09:32:22.586 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x01200003, sending query tree.
+[ 06/26/2025 09:32:22.586 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 244
+[ 06/26/2025 09:32:22.586 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x00800004
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Window 0x00800004 has 0 children
+[ 06/26/2025 09:32:22.586 wm_tree_set_wm_state DEBUG ] WM_STATE unchanged call (window 0x00800004, WM_STATE 0).
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x01e00004
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Window 0x01e00004 has 0 children
+[ 06/26/2025 09:32:22.586 wm_tree_set_wm_state DEBUG ] WM_STATE unchanged call (window 0x01e00004, WM_STATE 0).
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x01c00003
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Window 0x01c00003 has 0 children
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x00600003
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Window 0x00600003 has 0 children
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x01200003
+[ 06/26/2025 09:32:22.586 wm_handle_query_tree_reply DEBUG ] Window 0x01200003 has 0 children
+[ 06/26/2025 09:32:22.586 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 255
+[ 06/26/2025 09:32:22.586 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:22.600 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:22.601 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:22.601 handle_new_windows DEBUG ] Client window for window 0x00400014 changed from 0000000000 to 0x01c00003
+[ 06/26/2025 09:32:22.601 handle_new_windows DEBUG ] An unmanaged window 0x00400014 has a new client 0x01c00003
+[ 06/26/2025 09:32:22.601 ev_update_focused DEBUG ] Started async request to recheck focus
+[ 06/26/2025 09:32:22.601 handle_new_windows DEBUG ] Client window for window 0x00400013 changed from 0000000000 to 0x00600003
+[ 06/26/2025 09:32:22.601 handle_new_windows DEBUG ] An unmanaged window 0x00400013 has a new client 0x00600003
+[ 06/26/2025 09:32:22.601 handle_new_windows DEBUG ] Client window for window 0x00400015 changed from 0000000000 to 0x01200003
+[ 06/26/2025 09:32:22.601 handle_new_windows DEBUG ] An unmanaged window 0x00400015 has a new client 0x01200003
+[ 06/26/2025 09:32:22.601 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:22.601 wm_refresh_leaders DEBUG ] Refreshing window leaders, tree consistency: 1
+[ 06/26/2025 09:32:22.602 win_maybe_allocate DEBUG ] Managing window 0x00600000
+[ 06/26/2025 09:32:22.602 win_maybe_allocate DEBUG ] Managing window 0x00800001
+[ 06/26/2025 09:32:22.602 win_maybe_allocate DEBUG ] Managing window 0x00600005
+[ 06/26/2025 09:32:22.602 win_maybe_allocate DEBUG ] Managing window 0x00800003
+[ 06/26/2025 09:32:22.602 win_maybe_allocate DEBUG ] Managing window 0x01400000
+[ 06/26/2025 09:32:22.602 win_maybe_allocate DEBUG ] Managing window 0x01600000
+[ 06/26/2025 09:32:22.602 win_maybe_allocate DEBUG ] Managing window 0x01800000
+[ 06/26/2025 09:32:22.602 win_maybe_allocate DEBUG ] Managing window 0x01a00000
+[ 06/26/2025 09:32:22.602 win_maybe_allocate DEBUG ] Managing window 0x01c00000
+[ 06/26/2025 09:32:22.602 win_maybe_allocate DEBUG ] Managing window 0x01e00001
+[ 06/26/2025 09:32:22.602 win_maybe_allocate DEBUG ] Managing window 0x01e00003
+[ 06/26/2025 09:32:22.602 win_maybe_allocate DEBUG ] Managing window 0x01c00006
+[ 06/26/2025 09:32:22.602 win_maybe_allocate DEBUG ] Managing window 0x00400004
+[ 06/26/2025 09:32:22.602 win_maybe_allocate DEBUG ] Managing window 0x00400005
+[ 06/26/2025 09:32:22.602 win_maybe_allocate DEBUG ] Managing window 0x00400006
+[ 06/26/2025 09:32:22.602 win_maybe_allocate DEBUG ] Managing window 0x00400007
+[ 06/26/2025 09:32:22.602 win_maybe_allocate DEBUG ] Managing window 0x0040000d
+[ 06/26/2025 09:32:22.602 win_maybe_allocate DEBUG ] Managing window 0x00400010
+[ 06/26/2025 09:32:22.602 win_maybe_allocate DEBUG ] Managing window 0x00400014
+[ 06/26/2025 09:32:22.603 win_maybe_allocate DEBUG ] Managing window 0x00400013
+[ 06/26/2025 09:32:22.603 win_maybe_allocate DEBUG ] Managing window 0x00400015
+[ 06/26/2025 09:32:22.603 win_maybe_allocate DEBUG ] Managing window 0x00a00004
+[ 06/26/2025 09:32:22.603 recheck_focus DEBUG ] Current focused window is 0x01200003
+[ 06/26/2025 09:32:22.603 wm_ref_set_focused DEBUG ] Focused window changed from 0000000000 to 0x00400015
+[ 06/26/2025 09:32:22.603 recheck_focus DEBUG ] 0x01200003 ((null)) focused.
+[ 06/26/2025 09:32:22.603 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 289
+[ 06/26/2025 09:32:22.603 repair_win DEBUG ] Window 0x00400007 ((null)) has been damaged the first time
+[ 06/26/2025 09:32:22.603 repair_win DEBUG ] Window 0x00400010 ((null)) has been damaged the first time
+[ 06/26/2025 09:32:22.603 repair_win DEBUG ] Window 0x00400015 ((null)) has been damaged the first time
+[ 06/26/2025 09:32:22.618 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:22.618 win_map_start DEBUG ] Mapping (0x00400015 "(null)"), old state 0
+[ 06/26/2025 09:32:22.618 win_update_wintype DEBUG ] Window (0x00400015) has type 0x100
+[ 06/26/2025 09:32:22.618 win_update_name DEBUG ] (0x00400015): client = 0x01200003, name = "lukas@archlinux:~/dotfiles", ret = 1
+[ 06/26/2025 09:32:22.619 win_release_shadow DEBUG ] Releasing shadow of window 0x00400015 (lukas@archlinux:~/dotfiles)
+[ 06/26/2025 09:32:22.619 win_update_wintype DEBUG ] Window (0x00400015) has type 0x100
+[ 06/26/2025 09:32:22.619 win_update_name DEBUG ] (0x00400015): client = 0x01200003, name = "lukas@archlinux:~/dotfiles", ret = 0
+[ 06/26/2025 09:32:22.619 win_map_start DEBUG ] Mapping (0x00400010 "(null)"), old state 0
+[ 06/26/2025 09:32:22.619 win_update_wintype DEBUG ] Window (0x00400010) has type 0x4
+[ 06/26/2025 09:32:22.619 win_update_name DEBUG ] (0x00400010): _NET_WM_NAME unset, falling back to WM_NAME.
+[ 06/26/2025 09:32:22.619 win_update_name DEBUG ] (0x00400010): client = 0x00400010, name = "Awesome drawin", ret = 1
+[ 06/26/2025 09:32:22.619 win_release_shadow DEBUG ] Releasing shadow of window 0x00400010 (Awesome drawin)
+[ 06/26/2025 09:32:22.619 win_update_wintype DEBUG ] Window (0x00400010) has type 0x4
+[ 06/26/2025 09:32:22.619 win_update_name DEBUG ] (0x00400010): _NET_WM_NAME unset, falling back to WM_NAME.
+[ 06/26/2025 09:32:22.619 win_update_name DEBUG ] (0x00400010): client = 0x00400010, name = "Awesome drawin", ret = 0
+[ 06/26/2025 09:32:22.619 win_map_start DEBUG ] Mapping (0x00400007 "(null)"), old state 0
+[ 06/26/2025 09:32:22.619 win_update_wintype DEBUG ] Window (0x00400007) has type 0x100
+[ 06/26/2025 09:32:22.620 win_update_name DEBUG ] (0x00400007): _NET_WM_NAME unset, falling back to WM_NAME.
+[ 06/26/2025 09:32:22.620 win_update_name DEBUG ] (0x00400007): client = 0x00400007, name = "Awesome no input window", ret = 1
+[ 06/26/2025 09:32:22.620 win_release_shadow DEBUG ] Releasing shadow of window 0x00400007 (Awesome no input window)
+[ 06/26/2025 09:32:22.620 win_update_wintype DEBUG ] Window (0x00400007) has type 0x100
+[ 06/26/2025 09:32:22.620 win_update_name DEBUG ] (0x00400007): _NET_WM_NAME unset, falling back to WM_NAME.
+[ 06/26/2025 09:32:22.620 win_update_name DEBUG ] (0x00400007): client = 0x00400007, name = "Awesome no input window", ret = 0
+[ 06/26/2025 09:32:22.620 win_process_secondary_flags DEBUG ] Window 0x00400015 (lukas@archlinux:~/dotfiles) focus state changed from 0 to 1
+[ 06/26/2025 09:32:22.620 win_process_secondary_flags DEBUG ] Window 0x00400015 (lukas@archlinux:~/dotfiles) group focus state changed from 0 to 1
+[ 06/26/2025 09:32:22.620 win_on_factor_change DEBUG ] Window 0x00400015, client 0x01200003 (lukas@archlinux:~/dotfiles) factor change
+[ 06/26/2025 09:32:22.620 win_determine_shadow DEBUG ] Determining shadow of window 0x00400015 (lukas@archlinux:~/dotfiles)
+[ 06/26/2025 09:32:22.620 c2_match_once DEBUG ] (0x00400015): leaf: result = 0, client = 0x01200003,  pattern = class_g = "Conky"
+[ 06/26/2025 09:32:22.620 c2_match_once DEBUG ] (0x00400015): leaf: result = 0, client = 0x01200003,  pattern = class_g = "Polybar"
+[ 06/26/2025 09:32:22.620 c2_match_once DEBUG ] (0x00400015): leaf: result = 0, client = 0x01200003,  pattern = class_g = "slop"
+[ 06/26/2025 09:32:22.620 c2_match_once DEBUG ] (0x00400015): leaf: result = 0, client = 0x01200003,  pattern = name = "Notification"
+[ 06/26/2025 09:32:22.620 c2_match_once DEBUG ] (0x00400015): leaf: result = 0, client = 0x01200003,  pattern = class_g = "awesome"
+[ 06/26/2025 09:32:22.620 c2_match_once DEBUG ] (0x00400015): leaf: result = 0, client = 0x01200003,  pattern = _GTK_FRAME_EXTENTS@[0]
+[ 06/26/2025 09:32:22.620 win_determine_blur_background DEBUG ] Determining blur-background of window 0x00400015 (lukas@archlinux:~/dotfiles)
+[ 06/26/2025 09:32:22.620 win_determine_rounded_corners DEBUG ] Rounding corners for window 0x00400015
+[ 06/26/2025 09:32:22.620 c2_match_once DEBUG ] (0x00400015): leaf: result = 1, client = 0x01200003,  pattern = class_g = "Alacritty"
+[ 06/26/2025 09:32:22.620 win_on_factor_change DEBUG ] Window mode changed to 0
+[ 06/26/2025 09:32:22.620 c2_match_once DEBUG ] (0x00400015): leaf: result = 1, client = 0x01200003,  pattern = class_g = "Alacritty"
+[ 06/26/2025 09:32:22.620 win_on_factor_change DEBUG ] Window mode changed to 0
+[ 06/26/2025 09:32:22.620 win_on_factor_change DEBUG ] Window 0x00400010, client 0x00400010 (Awesome drawin) factor change
+[ 06/26/2025 09:32:22.620 win_determine_shadow DEBUG ] Determining shadow of window 0x00400010 (Awesome drawin)
+[ 06/26/2025 09:32:22.620 c2_match_once DEBUG ] (0x00400010): leaf: result = 0, client = 0000000000,  pattern = class_g = "Conky"
+[ 06/26/2025 09:32:22.620 c2_match_once DEBUG ] (0x00400010): leaf: result = 0, client = 0000000000,  pattern = class_g = "Polybar"
+[ 06/26/2025 09:32:22.620 c2_match_once DEBUG ] (0x00400010): leaf: result = 0, client = 0000000000,  pattern = class_g = "slop"
+[ 06/26/2025 09:32:22.620 c2_match_once DEBUG ] (0x00400010): leaf: result = 0, client = 0000000000,  pattern = name = "Notification"
+[ 06/26/2025 09:32:22.620 c2_match_once DEBUG ] (0x00400010): leaf: result = 1, client = 0000000000,  pattern = class_g = "awesome"
+[ 06/26/2025 09:32:22.620 win_determine_shadow DEBUG ] Shadow disabled by shadow-exclude
+[ 06/26/2025 09:32:22.620 win_determine_blur_background DEBUG ] Determining blur-background of window 0x00400010 (Awesome drawin)
+[ 06/26/2025 09:32:22.620 win_determine_rounded_corners DEBUG ] Rounding corners for window 0x00400010
+[ 06/26/2025 09:32:22.620 c2_match_once DEBUG ] (0x00400010): leaf: result = 0, client = 0000000000,  pattern = class_g = "Alacritty"
+[ 06/26/2025 09:32:22.620 c2_match_once DEBUG ] (0x00400010): leaf: result = 0, client = 0000000000,  pattern = class_g = "Brave-browser"
+[ 06/26/2025 09:32:22.620 c2_match_once DEBUG ] (0x00400010): leaf: result = 0, client = 0000000000,  pattern = window_type = "normal"
+[ 06/26/2025 09:32:22.620 win_on_factor_change DEBUG ] Window mode changed to 0
+[ 06/26/2025 09:32:22.620 c2_match_once DEBUG ] (0x00400010): leaf: result = 0, client = 0000000000,  pattern = class_g = "Alacritty"
+[ 06/26/2025 09:32:22.620 c2_match_once DEBUG ] (0x00400010): leaf: result = 0, client = 0000000000,  pattern = class_g = "Brave-browser"
+[ 06/26/2025 09:32:22.620 c2_match_once DEBUG ] (0x00400010): leaf: result = 0, client = 0000000000,  pattern = window_type = "normal"
+[ 06/26/2025 09:32:22.620 win_on_factor_change DEBUG ] Window mode changed to 0
+[ 06/26/2025 09:32:22.620 win_release_shadow DEBUG ] Releasing shadow of window 0x00400010 (Awesome drawin)
+[ 06/26/2025 09:32:22.620 win_on_factor_change DEBUG ] Window 0x00400007, client 0x00400007 (Awesome no input window) factor change
+[ 06/26/2025 09:32:22.620 win_determine_shadow DEBUG ] Determining shadow of window 0x00400007 (Awesome no input window)
+[ 06/26/2025 09:32:22.620 c2_match_once DEBUG ] (0x00400007): leaf: result = 0, client = 0000000000,  pattern = class_g = "Conky"
+[ 06/26/2025 09:32:22.620 c2_match_once DEBUG ] (0x00400007): leaf: result = 0, client = 0000000000,  pattern = class_g = "Polybar"
+[ 06/26/2025 09:32:22.620 c2_match_once DEBUG ] (0x00400007): leaf: result = 0, client = 0000000000,  pattern = class_g = "slop"
+[ 06/26/2025 09:32:22.620 c2_match_once DEBUG ] (0x00400007): leaf: result = 0, client = 0000000000,  pattern = name = "Notification"
+[ 06/26/2025 09:32:22.620 c2_match_once DEBUG ] (0x00400007): leaf: result = 1, client = 0000000000,  pattern = class_g = "awesome"
+[ 06/26/2025 09:32:22.620 win_determine_shadow DEBUG ] Shadow disabled by shadow-exclude
+[ 06/26/2025 09:32:22.620 win_determine_blur_background DEBUG ] Determining blur-background of window 0x00400007 (Awesome no input window)
+[ 06/26/2025 09:32:22.620 win_determine_rounded_corners DEBUG ] Rounding corners for window 0x00400007
+[ 06/26/2025 09:32:22.620 c2_match_once DEBUG ] (0x00400007): leaf: result = 0, client = 0000000000,  pattern = class_g = "Alacritty"
+[ 06/26/2025 09:32:22.620 c2_match_once DEBUG ] (0x00400007): leaf: result = 0, client = 0000000000,  pattern = class_g = "Brave-browser"
+[ 06/26/2025 09:32:22.620 c2_match_once DEBUG ] (0x00400007): leaf: result = 1, client = 0000000000,  pattern = window_type = "normal"
+[ 06/26/2025 09:32:22.620 win_on_factor_change DEBUG ] Window mode changed to 0
+[ 06/26/2025 09:32:22.620 c2_match_once DEBUG ] (0x00400007): leaf: result = 0, client = 0000000000,  pattern = class_g = "Alacritty"
+[ 06/26/2025 09:32:22.620 c2_match_once DEBUG ] (0x00400007): leaf: result = 0, client = 0000000000,  pattern = class_g = "Brave-browser"
+[ 06/26/2025 09:32:22.620 c2_match_once DEBUG ] (0x00400007): leaf: result = 1, client = 0000000000,  pattern = window_type = "normal"
+[ 06/26/2025 09:32:22.621 win_on_factor_change DEBUG ] Window mode changed to 0
+[ 06/26/2025 09:32:22.621 win_release_shadow DEBUG ] Releasing shadow of window 0x00400007 (Awesome no input window)
+[ 06/26/2025 09:32:22.621 win_process_animation_and_state_change DEBUG ] Starting animation open for window 0x00400015 (lukas@archlinux:~/dotfiles)
+[ 06/26/2025 09:32:22.621 win_process_animation_and_state_change DEBUG ] Starting animation open for window 0x00400010 (Awesome drawin)
+[ 06/26/2025 09:32:22.621 win_process_animation_and_state_change DEBUG ] Starting animation open for window 0x00400007 (Awesome no input window)
+[ 06/26/2025 09:32:22.621 win_process_image_flags DEBUG ] New named pixmap for 0x00400015 (lukas@archlinux:~/dotfiles) : 0x00a00024
+[ 06/26/2025 09:32:22.621 win_release_pixmap DEBUG ] Releasing pixmap of window 0x00400015 (lukas@archlinux:~/dotfiles)
+[ 06/26/2025 09:32:22.621 glx_find_fbconfig DEBUG ] Looking for FBConfig for RGBA8888, depth: 32, visual id: 0xd0
+[ 06/26/2025 09:32:22.624 glx_bind_pixmap DEBUG ] depth 32, rgba 1
+[ 06/26/2025 09:32:22.625 win_process_image_flags DEBUG ] New named pixmap for 0x00400010 (Awesome drawin) : 0x00a00027
+[ 06/26/2025 09:32:22.625 win_release_pixmap DEBUG ] Releasing pixmap of window 0x00400010 (Awesome drawin)
+[ 06/26/2025 09:32:22.625 glx_bind_pixmap DEBUG ] Found cached FBConfig for RGBA8888, depth: 32, visual id: 0xd0
+[ 06/26/2025 09:32:22.625 glx_bind_pixmap DEBUG ] depth 32, rgba 1
+[ 06/26/2025 09:32:22.627 win_process_image_flags DEBUG ] New named pixmap for 0x00400007 (Awesome no input window) : 0x00a0002a
+[ 06/26/2025 09:32:22.627 win_release_pixmap DEBUG ] Releasing pixmap of window 0x00400007 (Awesome no input window)
+[ 06/26/2025 09:32:22.627 glx_bind_pixmap DEBUG ] Found cached FBConfig for RGBA8888, depth: 32, visual id: 0xd0
+[ 06/26/2025 09:32:22.627 glx_bind_pixmap DEBUG ] depth 32, rgba 1
+[ 06/26/2025 09:32:22.627 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 484
+[ 06/26/2025 09:32:25.366 ev_handle DEBUG ] event  FOCUS_OUT serial 0x00000200 window 0x00400015 "lukas@archlinux:~/dotfiles"
+[ 06/26/2025 09:32:25.367 ev_focus_out DEBUG ] { mode: GRAB, detail: VIRTUAL }
+[ 06/26/2025 09:32:25.367 ev_update_focused DEBUG ] Started async request to recheck focus
+[ 06/26/2025 09:32:25.367 ev_handle DEBUG ] event CREATE_NOT serial 0x00000200 window 0x0040028c "(Failed to get title)"
+[ 06/26/2025 09:32:25.367 wm_import_start_inner DEBUG ] Starting import process for window 0x0040028c
+[ 06/26/2025 09:32:25.367 ev_handle DEBUG ] event CLIENT_MES serial 0x00000200 window 0000000000 ""
+[ 06/26/2025 09:32:25.367 ev_handle DEBUG ] event CLIENT_MES serial 0x00000200 window 0000000000 ""
+[ 06/26/2025 09:32:25.367 ev_handle DEBUG ] event CLIENT_MES serial 0x00000200 window 0000000000 ""
+[ 06/26/2025 09:32:25.367 ev_handle DEBUG ] event CLIENT_MES serial 0x00000200 window 0000000000 ""
+[ 06/26/2025 09:32:25.367 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:25.367 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:25.367 wm_refresh_leaders DEBUG ] Refreshing window leaders, tree consistency: 0
+[ 06/26/2025 09:32:25.367 ev_handle DEBUG ] event CLIENT_MES serial 0x00000200 window 0000000000 ""
+[ 06/26/2025 09:32:25.367 ev_handle DEBUG ] event CLIENT_MES serial 0x00000200 window 0000000000 ""
+[ 06/26/2025 09:32:25.368 ev_handle DEBUG ] event DESTROY_NO serial 0x00000200 window 0x0040028c "(Failed to get title)"
+[ 06/26/2025 09:32:25.368 ev_destroy_notify DEBUG ] { event: 0x0000042f, id: 0x0040028c }
+[ 06/26/2025 09:32:25.368 wm_tree_detach DEBUG ] Detaching toplevel window 0x0040028c.
+[ 06/26/2025 09:32:25.368 wm_disconnect DEBUG ] Destroy window 0x0040028c because we can't keep track of it
+[ 06/26/2025 09:32:25.368 recheck_focus DEBUG ] Current focused window is 0x01200003
+[ 06/26/2025 09:32:25.368 recheck_focus DEBUG ] 0x01200003 (lukas@archlinux:~/dotfiles) focused.
+[ 06/26/2025 09:32:25.368 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 514
+[ 06/26/2025 09:32:25.368 wm_handle_set_event_mask_reply DEBUG ] Failed to set event mask for window 0x0040028c: X error 3 WINDOW request 2 minor 0 serial 515, ignoring this window.
+[ 06/26/2025 09:32:25.368 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 516
+[ 06/26/2025 09:32:25.368 handle_new_window_attributes_reply DEBUG ] Failed to get window attributes for newly created window 0x0040028c
+[ 06/26/2025 09:32:25.368 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 524
+[ 06/26/2025 09:32:25.368 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:25.370 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:25.384 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:25.385 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:25.385 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:25.385 wm_refresh_leaders DEBUG ] Refreshing window leaders, tree consistency: 1
+[ 06/26/2025 09:32:25.396 ev_handle DEBUG ] event CREATE_NOT serial 0x00000214 window 0x02c00000 "(Failed to get title)"
+[ 06/26/2025 09:32:25.396 wm_import_start_inner DEBUG ] Starting import process for window 0x02c00000
+[ 06/26/2025 09:32:25.396 ev_handle DEBUG ] event CREATE_NOT serial 0x00000214 window 0x02e00000 "(Failed to get title)"
+[ 06/26/2025 09:32:25.396 wm_import_start_inner DEBUG ] Starting import process for window 0x02e00000
+[ 06/26/2025 09:32:25.396 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x02c00000, sending query tree.
+[ 06/26/2025 09:32:25.396 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 534
+[ 06/26/2025 09:32:25.396 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x02e00000, sending query tree.
+[ 06/26/2025 09:32:25.396 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 536
+[ 06/26/2025 09:32:25.396 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:25.396 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x02c00000
+[ 06/26/2025 09:32:25.396 wm_handle_query_tree_reply DEBUG ] Window 0x02c00000 has 0 children
+[ 06/26/2025 09:32:25.396 wm_tree_set_wm_state DEBUG ] WM_STATE unchanged call (window 0x02c00000, WM_STATE 0).
+[ 06/26/2025 09:32:25.396 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 539
+[ 06/26/2025 09:32:25.396 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x02e00000
+[ 06/26/2025 09:32:25.396 wm_handle_query_tree_reply DEBUG ] Window 0x02e00000 has 0 children
+[ 06/26/2025 09:32:25.396 wm_tree_set_wm_state DEBUG ] WM_STATE unchanged call (window 0x02e00000, WM_STATE 0).
+[ 06/26/2025 09:32:25.396 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 542
+[ 06/26/2025 09:32:25.396 ev_handle DEBUG ] event CREATE_NOT serial 0x0000021e window 0x03000000 "(Failed to get title)"
+[ 06/26/2025 09:32:25.396 wm_import_start_inner DEBUG ] Starting import process for window 0x03000000
+[ 06/26/2025 09:32:25.396 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:25.396 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x03000000, sending query tree.
+[ 06/26/2025 09:32:25.396 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 544
+[ 06/26/2025 09:32:25.396 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:25.396 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x03000000
+[ 06/26/2025 09:32:25.396 wm_handle_query_tree_reply DEBUG ] Window 0x03000000 has 0 children
+[ 06/26/2025 09:32:25.396 wm_tree_set_wm_state DEBUG ] WM_STATE unchanged call (window 0x03000000, WM_STATE 0).
+[ 06/26/2025 09:32:25.396 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 547
+[ 06/26/2025 09:32:25.396 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:25.396 ev_handle DEBUG ] event CREATE_NOT serial 0x00000223 window 0x03200000 "(Failed to get title)"
+[ 06/26/2025 09:32:25.396 wm_import_start_inner DEBUG ] Starting import process for window 0x03200000
+[ 06/26/2025 09:32:25.396 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:25.396 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x03200000, sending query tree.
+[ 06/26/2025 09:32:25.396 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 549
+[ 06/26/2025 09:32:25.396 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:25.396 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x03200000
+[ 06/26/2025 09:32:25.396 wm_handle_query_tree_reply DEBUG ] Window 0x03200000 has 0 children
+[ 06/26/2025 09:32:25.396 wm_tree_set_wm_state DEBUG ] WM_STATE unchanged call (window 0x03200000, WM_STATE 0).
+[ 06/26/2025 09:32:25.396 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 552
+[ 06/26/2025 09:32:25.396 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:25.400 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:25.401 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:25.401 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:25.401 wm_refresh_leaders DEBUG ] Refreshing window leaders, tree consistency: 1
+[ 06/26/2025 09:32:25.402 win_maybe_allocate DEBUG ] Managing window 0x02c00000
+[ 06/26/2025 09:32:25.402 win_maybe_allocate DEBUG ] Managing window 0x02e00000
+[ 06/26/2025 09:32:25.402 win_maybe_allocate DEBUG ] Managing window 0x03000000
+[ 06/26/2025 09:32:25.402 win_maybe_allocate DEBUG ] Managing window 0x03200000
+[ 06/26/2025 09:32:25.402 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 563
+[ 06/26/2025 09:32:25.436 ev_handle DEBUG ] event CREATE_NOT serial 0x00000249 window 0x02a00003 "(Failed to get title)"
+[ 06/26/2025 09:32:25.436 wm_import_start_inner DEBUG ] Starting import process for window 0x02a00003
+[ 06/26/2025 09:32:25.436 ev_handle DEBUG ] event CLIENT_MES serial 0x00000249 window 0000000000 ""
+[ 06/26/2025 09:32:25.436 ev_handle DEBUG ] event CLIENT_MES serial 0x00000249 window 0000000000 ""
+[ 06/26/2025 09:32:25.436 ev_handle DEBUG ] event CREATE_NOT serial 0x00000249 window 0x02a00004 "(Failed to get title)"
+[ 06/26/2025 09:32:25.436 wm_import_start_inner DEBUG ] Starting import process for window 0x02a00004
+[ 06/26/2025 09:32:25.436 ev_handle DEBUG ] event CLIENT_MES serial 0x00000249 window 0000000000 ""
+[ 06/26/2025 09:32:25.436 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:25.436 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:25.436 wm_refresh_leaders DEBUG ] Refreshing window leaders, tree consistency: 0
+[ 06/26/2025 09:32:25.436 ev_handle DEBUG ] event CLIENT_MES serial 0x00000249 window 0000000000 ""
+[ 06/26/2025 09:32:25.436 ev_handle DEBUG ] event CLIENT_MES serial 0x00000249 window 0000000000 ""
+[ 06/26/2025 09:32:25.436 ev_handle DEBUG ] event DESTROY_NO serial 0x00000249 window 0x02a00004 "(Failed to get title)"
+[ 06/26/2025 09:32:25.436 ev_destroy_notify DEBUG ] { event: 0x0000042f, id: 0x02a00004 }
+[ 06/26/2025 09:32:25.436 wm_tree_detach DEBUG ] Detaching toplevel window 0x02a00004.
+[ 06/26/2025 09:32:25.436 wm_disconnect DEBUG ] Destroy window 0x02a00004 because we can't keep track of it
+[ 06/26/2025 09:32:25.436 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x02a00003, sending query tree.
+[ 06/26/2025 09:32:25.436 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 587
+[ 06/26/2025 09:32:25.436 wm_handle_set_event_mask_reply DEBUG ] Failed to set event mask for window 0x02a00004: X error 3 WINDOW request 2 minor 0 serial 588, ignoring this window.
+[ 06/26/2025 09:32:25.436 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 589
+[ 06/26/2025 09:32:25.436 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:25.436 win_maybe_allocate DEBUG ] Managing window 0x02a00003
+[ 06/26/2025 09:32:25.436 handle_new_window_attributes_reply DEBUG ] Failed to get window attributes for newly created window 0x02a00004
+[ 06/26/2025 09:32:25.436 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 597
+[ 06/26/2025 09:32:25.436 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x02a00003
+[ 06/26/2025 09:32:25.436 wm_handle_query_tree_reply DEBUG ] Window 0x02a00003 has 0 children
+[ 06/26/2025 09:32:25.436 wm_tree_set_wm_state DEBUG ] WM_STATE unchanged call (window 0x02a00003, WM_STATE 0).
+[ 06/26/2025 09:32:25.436 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 600
+[ 06/26/2025 09:32:25.436 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:25.450 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:25.451 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:25.451 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:25.451 wm_refresh_leaders DEBUG ] Refreshing window leaders, tree consistency: 1
+[ 06/26/2025 09:32:25.461 ev_handle DEBUG ] event PROPERTY_N serial 0x00000263 window 0x02a00003 "(Failed to get title)"
+[ 06/26/2025 09:32:25.461 ev_property_notify DEBUG ] { atom = 0x00000214, window = 0x02a00003, state = 0 }
+[ 06/26/2025 09:32:25.467 ev_handle DEBUG ] event CREATE_NOT serial 0x00000263 window 0x0040028d "(Failed to get title)"
+[ 06/26/2025 09:32:25.467 wm_import_start_inner DEBUG ] Starting import process for window 0x0040028d
+[ 06/26/2025 09:32:25.467 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:25.467 ev_handle DEBUG ] event REPARENT_N serial 0x00000263 window 0x02a00003 "(Failed to get title)"
+[ 06/26/2025 09:32:25.467 ev_reparent_notify DEBUG ] Window 0x02a00003 has new parent: 0x0040028d, override_redirect: 0, send_event: 0x02a00003
+[ 06/26/2025 09:32:25.467 ev_handle DEBUG ] event REPARENT_N serial 0x00000263 window 0x02a00003 "(Failed to get title)"
+[ 06/26/2025 09:32:25.467 ev_reparent_notify DEBUG ] Window 0x02a00003 has new parent: 0x0040028d, override_redirect: 0, send_event: 0x0000042f
+[ 06/26/2025 09:32:25.467 wm_tree_detach DEBUG ] Detaching toplevel window 0x02a00003.
+[ 06/26/2025 09:32:25.467 wm_disconnect DEBUG ] Disconnecting window 0x02a00003 from window 0x0000042f
+[ 06/26/2025 09:32:25.467 ev_handle DEBUG ] event MAP_NOTIFY serial 0x00000263 window 0x02a00003 "(Failed to get title)"
+[ 06/26/2025 09:32:25.467 ev_handle DEBUG ] event CONFIGURE_ serial 0x00000263 window 0x0040028d "(Failed to get title)"
+[ 06/26/2025 09:32:25.467 ev_configure_notify DEBUG ] { event: 0x0000042f, id: 0x0040028d, above: 0000000000, override_redirect: 1 }
+[ 06/26/2025 09:32:25.467 configure_win DEBUG ] Window 0x0040028d is unmanaged.
+[ 06/26/2025 09:32:25.467 wm_handle_set_event_mask_reply DEBUG ] Event mask set for window 0x0040028d, sending query tree.
+[ 06/26/2025 09:32:25.467 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 613
+[ 06/26/2025 09:32:25.467 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:25.467 wm_handle_query_tree_reply DEBUG ] Finished querying tree for window 0x0040028d
+[ 06/26/2025 09:32:25.467 wm_handle_query_tree_reply DEBUG ] Window 0x0040028d has 1 children
+[ 06/26/2025 09:32:25.467 wm_reparent_inner DEBUG ] Reparented window 0x02a00003 to window 0x0040028d
+[ 06/26/2025 09:32:25.467 wm_tree_set_wm_state DEBUG ] WM_STATE unchanged call (window 0x0040028d, WM_STATE 0).
+[ 06/26/2025 09:32:25.467 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 616
+[ 06/26/2025 09:32:25.467 ev_handle DEBUG ] event PROPERTY_N serial 0x00000268 window 0x02a00003 "(Failed to get title)"
+[ 06/26/2025 09:32:25.467 ev_property_notify DEBUG ] { atom = 0x000001ad, window = 0x02a00003, state = 0 }
+[ 06/26/2025 09:32:25.467 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:25.467 ev_handle DEBUG ] event PROPERTY_N serial 0x00000268 window 0x02a00003 "(Failed to get title)"
+[ 06/26/2025 09:32:25.467 ev_property_notify DEBUG ] { atom = 0x00000183, window = 0x02a00003, state = 0 }
+[ 06/26/2025 09:32:25.467 ev_property_notify DEBUG ] WM_STATE changed for window 0x02a00003 ((Failed to get title)): set
+[ 06/26/2025 09:32:25.467 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:25.467 win_destroy_start DEBUG ] Destroying 0x02a00003 ((null))
+[ 06/26/2025 09:32:25.467 handle_new_windows DEBUG ] Client window for window 0x0040028d changed from 0000000000 to 0x02a00003
+[ 06/26/2025 09:32:25.467 handle_new_windows DEBUG ] An unmanaged window 0x0040028d has a new client 0x02a00003
+[ 06/26/2025 09:32:25.467 ev_update_focused DEBUG ] Started async request to recheck focus
+[ 06/26/2025 09:32:25.467 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:25.467 wm_refresh_leaders DEBUG ] Refreshing window leaders, tree consistency: 1
+[ 06/26/2025 09:32:25.467 win_destroy_finish DEBUG ] Trying to finish destroying (0x02a00003)
+[ 06/26/2025 09:32:25.467 win_release_pixmap DEBUG ] Releasing pixmap of window 0x02a00003 ((null))
+[ 06/26/2025 09:32:25.467 win_release_shadow DEBUG ] Releasing shadow of window 0x02a00003 ((null))
+[ 06/26/2025 09:32:25.468 ev_handle DEBUG ] event PROPERTY_N serial 0x00000269 window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:25.468 ev_property_notify DEBUG ] { atom = 0x00000191, window = 0x0000042f, state = 0 }
+[ 06/26/2025 09:32:25.468 ev_handle DEBUG ] event PROPERTY_N serial 0x00000269 window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:25.468 ev_property_notify DEBUG ] { atom = 0x00000191, window = 0x0000042f, state = 0 }
+[ 06/26/2025 09:32:25.468 ev_handle DEBUG ] event PROPERTY_N serial 0x00000269 window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:25.468 ev_property_notify DEBUG ] { atom = 0x00000190, window = 0x0000042f, state = 0 }
+[ 06/26/2025 09:32:25.468 ev_handle DEBUG ] event PROPERTY_N serial 0x00000269 window 0x02a00003 "(Failed to get title)"
+[ 06/26/2025 09:32:25.468 ev_property_notify DEBUG ] { atom = 0x00000157, window = 0x02a00003, state = 0 }
+[ 06/26/2025 09:32:25.468 ev_handle DEBUG ] event PROPERTY_N serial 0x00000269 window 0x02a00003 "(Failed to get title)"
+[ 06/26/2025 09:32:25.468 ev_property_notify DEBUG ] { atom = 0x00000157, window = 0x02a00003, state = 0 }
+[ 06/26/2025 09:32:25.468 win_maybe_allocate DEBUG ] Managing window 0x0040028d
+[ 06/26/2025 09:32:25.468 recheck_focus DEBUG ] Current focused window is 0x01200003
+[ 06/26/2025 09:32:25.468 recheck_focus DEBUG ] 0x01200003 (lukas@archlinux:~/dotfiles) focused.
+[ 06/26/2025 09:32:25.468 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 626
+[ 06/26/2025 09:32:25.468 ev_handle DEBUG ] event PROPERTY_N serial 0x00000275 window 0x02a00003 "(Failed to get title)"
+[ 06/26/2025 09:32:25.468 ev_property_notify DEBUG ] { atom = 0x0000015a, window = 0x02a00003, state = 0 }
+[ 06/26/2025 09:32:25.468 ev_handle DEBUG ] event PROPERTY_N serial 0x00000275 window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:25.468 ev_property_notify DEBUG ] { atom = 0x00000156, window = 0x0000042f, state = 0 }
+[ 06/26/2025 09:32:25.469 ev_handle DEBUG ] event PROPERTY_N serial 0x00000277 window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:25.469 ev_property_notify DEBUG ] { atom = 0x00000191, window = 0x0000042f, state = 0 }
+[ 06/26/2025 09:32:25.469 ev_handle DEBUG ] event PROPERTY_N serial 0x00000277 window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:25.469 ev_property_notify DEBUG ] { atom = 0x00000191, window = 0x0000042f, state = 0 }
+[ 06/26/2025 09:32:25.469 ev_handle DEBUG ] event PROPERTY_N serial 0x00000277 window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:25.469 ev_property_notify DEBUG ] { atom = 0x00000155, window = 0x0000042f, state = 0 }
+[ 06/26/2025 09:32:25.469 ev_handle DEBUG ] event PROPERTY_N serial 0x00000277 window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:25.469 ev_property_notify DEBUG ] { atom = 0x00000156, window = 0x0000042f, state = 0 }
+[ 06/26/2025 09:32:25.469 ev_handle DEBUG ] event PROPERTY_N serial 0x00000277 window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:25.469 ev_property_notify DEBUG ] { atom = 0x00000155, window = 0x0000042f, state = 0 }
+[ 06/26/2025 09:32:25.469 ev_handle DEBUG ] event PROPERTY_N serial 0x00000277 window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:25.469 ev_property_notify DEBUG ] { atom = 0x00000156, window = 0x0000042f, state = 0 }
+[ 06/26/2025 09:32:25.476 ev_handle DEBUG ] event CONFIGURE_ serial 0x00000277 window 0x0040028d "(Failed to get title)"
+[ 06/26/2025 09:32:25.476 ev_configure_notify DEBUG ] { event: 0x0040028d, id: 0x0040028d, above: 0000000000, override_redirect: 1 }
+[ 06/26/2025 09:32:25.476 ev_handle DEBUG ] event CONFIGURE_ serial 0x00000277 window 0x0040028d "(Failed to get title)"
+[ 06/26/2025 09:32:25.476 ev_configure_notify DEBUG ] { event: 0x0000042f, id: 0x0040028d, above: 0000000000, override_redirect: 1 }
+[ 06/26/2025 09:32:25.476 ev_handle DEBUG ] event CONFIGURE_ serial 0x00000277 window 0x02a00003 "(Failed to get title)"
+[ 06/26/2025 09:32:25.476 ev_configure_notify DEBUG ] { event: 0x02a00003, id: 0x02a00003, above: 0000000000, override_redirect: 0 }
+[ 06/26/2025 09:32:25.476 ev_handle DEBUG ] event CONFIGURE_ serial 0x00000277 window 0x02a00003 "(Failed to get title)"
+[ 06/26/2025 09:32:25.476 ev_configure_notify DEBUG ] { event: 0x0040028d, id: 0x02a00003, above: 0000000000, override_redirect: 0 }
+[ 06/26/2025 09:32:25.476 configure_win DEBUG ] Window 0x02a00003 is unmanaged.
+[ 06/26/2025 09:32:25.476 ev_handle DEBUG ] event CONFIGURE_ serial 0x00000277 window 0000000000 ""
+[ 06/26/2025 09:32:25.476 ev_handle DEBUG ] event CONFIGURE_ serial 0x00000277 window 0x00400015 "lukas@archlinux:~/dotfiles"
+[ 06/26/2025 09:32:25.476 ev_configure_notify DEBUG ] { event: 0x00400015, id: 0x00400015, above: 0x00400013, override_redirect: 1 }
+[ 06/26/2025 09:32:25.476 ev_handle DEBUG ] event CONFIGURE_ serial 0x00000277 window 0x00400015 "lukas@archlinux:~/dotfiles"
+[ 06/26/2025 09:32:25.476 ev_configure_notify DEBUG ] { event: 0x0000042f, id: 0x00400015, above: 0x00400013, override_redirect: 1 }
+[ 06/26/2025 09:32:25.476 ev_handle DEBUG ] event CONFIGURE_ serial 0x00000277 window 0x01200003 "lukas@archlinux:~/dotfiles"
+[ 06/26/2025 09:32:25.476 ev_configure_notify DEBUG ] { event: 0x01200003, id: 0x01200003, above: 0000000000, override_redirect: 0 }
+[ 06/26/2025 09:32:25.476 ev_handle DEBUG ] event CONFIGURE_ serial 0x00000277 window 0x01200003 "lukas@archlinux:~/dotfiles"
+[ 06/26/2025 09:32:25.476 ev_configure_notify DEBUG ] { event: 0x00400015, id: 0x01200003, above: 0000000000, override_redirect: 0 }
+[ 06/26/2025 09:32:25.476 configure_win DEBUG ] Window 0x01200003 is unmanaged.
+[ 06/26/2025 09:32:25.476 ev_handle DEBUG ] event CONFIGURE_ serial 0x00000277 window 0000000000 ""
+[ 06/26/2025 09:32:25.476 ev_handle DEBUG ] event CONFIGURE_ serial 0x00000277 window 0x0040028d "(Failed to get title)"
+[ 06/26/2025 09:32:25.476 ev_configure_notify DEBUG ] { event: 0x0040028d, id: 0x0040028d, above: 0000000000, override_redirect: 1 }
+[ 06/26/2025 09:32:25.476 ev_handle DEBUG ] event CONFIGURE_ serial 0x00000277 window 0x0040028d "(Failed to get title)"
+[ 06/26/2025 09:32:25.476 ev_configure_notify DEBUG ] { event: 0x0000042f, id: 0x0040028d, above: 0000000000, override_redirect: 1 }
+[ 06/26/2025 09:32:25.476 ev_handle DEBUG ] event MAP_NOTIFY serial 0x00000277 window 0x0040028d "(Failed to get title)"
+[ 06/26/2025 09:32:25.476 ev_handle DEBUG ] event MAP_NOTIFY serial 0x00000277 window 0x0040028d "(Failed to get title)"
+[ 06/26/2025 09:32:25.476 repair_win DEBUG ] Window 0x0040028d ((null)) has been damaged the first time
+[ 06/26/2025 09:32:25.476 ev_handle DEBUG ] event  FOCUS_OUT serial 0x00000277 window 0x00400015 "lukas@archlinux:~/dotfiles"
+[ 06/26/2025 09:32:25.476 ev_focus_out DEBUG ] { mode: WHILE_GRABBED, detail: NONLINEAR_VIRTUAL }
+[ 06/26/2025 09:32:25.476 ev_update_focused DEBUG ] Started async request to recheck focus
+[ 06/26/2025 09:32:25.476 ev_handle DEBUG ] event   FOCUS_IN serial 0x00000277 window 0x0040028d "(Failed to get title)"
+[ 06/26/2025 09:32:25.476 ev_focus_in DEBUG ] { mode: WHILE_GRABBED, detail: NONLINEAR_VIRTUAL }
+[ 06/26/2025 09:32:25.476 ev_handle DEBUG ] event   FOCUS_IN serial 0x00000277 window 0x02a00003 "(Failed to get title)"
+[ 06/26/2025 09:32:25.476 ev_focus_in DEBUG ] { mode: WHILE_GRABBED, detail: NONLINEAR }
+[ 06/26/2025 09:32:25.476 ev_handle DEBUG ] event CONFIGURE_ serial 0x00000277 window 0x0040028d "(Failed to get title)"
+[ 06/26/2025 09:32:25.476 ev_configure_notify DEBUG ] { event: 0x0040028d, id: 0x0040028d, above: 0x00400015, override_redirect: 1 }
+[ 06/26/2025 09:32:25.476 ev_handle DEBUG ] event CONFIGURE_ serial 0x00000277 window 0x0040028d "(Failed to get title)"
+[ 06/26/2025 09:32:25.476 ev_configure_notify DEBUG ] { event: 0x0000042f, id: 0x0040028d, above: 0x00400015, override_redirect: 1 }
+[ 06/26/2025 09:32:25.476 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:25.476 recheck_focus DEBUG ] Current focused window is 0x02a00003
+[ 06/26/2025 09:32:25.476 wm_ref_set_focused DEBUG ] Focused window changed from 0x00400015 to 0x0040028d
+[ 06/26/2025 09:32:25.476 recheck_focus DEBUG ] 0x02a00003 ((null)) focused.
+[ 06/26/2025 09:32:25.476 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 639
+[ 06/26/2025 09:32:25.476 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:25.477 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:25.483 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:25.484 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:25.484 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:25.484 win_map_start DEBUG ] Mapping (0x0040028d "(null)"), old state 0
+[ 06/26/2025 09:32:25.484 win_update_wintype DEBUG ] Window (0x0040028d) has type 0x100
+[ 06/26/2025 09:32:25.484 win_update_name DEBUG ] (0x0040028d): client = 0x02a00003, name = "Alacritty", ret = 1
+[ 06/26/2025 09:32:25.484 win_release_shadow DEBUG ] Releasing shadow of window 0x0040028d (Alacritty)
+[ 06/26/2025 09:32:25.484 win_update_wintype DEBUG ] Window (0x0040028d) has type 0x100
+[ 06/26/2025 09:32:25.484 win_update_name DEBUG ] (0x0040028d): client = 0x02a00003, name = "Alacritty", ret = 0
+[ 06/26/2025 09:32:25.484 win_release_shadow DEBUG ] Releasing shadow of window 0x00400015 (lukas@archlinux:~/dotfiles)
+[ 06/26/2025 09:32:25.484 win_process_secondary_flags DEBUG ] Window 0x0040028d (Alacritty) focus state changed from 0 to 1
+[ 06/26/2025 09:32:25.485 win_process_secondary_flags DEBUG ] Window 0x0040028d (Alacritty) group focus state changed from 0 to 1
+[ 06/26/2025 09:32:25.485 win_on_factor_change DEBUG ] Window 0x0040028d, client 0x02a00003 (Alacritty) factor change
+[ 06/26/2025 09:32:25.485 win_determine_shadow DEBUG ] Determining shadow of window 0x0040028d (Alacritty)
+[ 06/26/2025 09:32:25.485 c2_match_once DEBUG ] (0x0040028d): leaf: result = 0, client = 0x02a00003,  pattern = class_g = "Conky"
+[ 06/26/2025 09:32:25.485 c2_match_once DEBUG ] (0x0040028d): leaf: result = 0, client = 0x02a00003,  pattern = class_g = "Polybar"
+[ 06/26/2025 09:32:25.485 c2_match_once DEBUG ] (0x0040028d): leaf: result = 0, client = 0x02a00003,  pattern = class_g = "slop"
+[ 06/26/2025 09:32:25.485 c2_match_once DEBUG ] (0x0040028d): leaf: result = 0, client = 0x02a00003,  pattern = name = "Notification"
+[ 06/26/2025 09:32:25.485 c2_match_once DEBUG ] (0x0040028d): leaf: result = 0, client = 0x02a00003,  pattern = class_g = "awesome"
+[ 06/26/2025 09:32:25.485 c2_match_once DEBUG ] (0x0040028d): leaf: result = 0, client = 0x02a00003,  pattern = _GTK_FRAME_EXTENTS@[0]
+[ 06/26/2025 09:32:25.485 win_determine_blur_background DEBUG ] Determining blur-background of window 0x0040028d (Alacritty)
+[ 06/26/2025 09:32:25.485 win_determine_rounded_corners DEBUG ] Rounding corners for window 0x0040028d
+[ 06/26/2025 09:32:25.485 c2_match_once DEBUG ] (0x0040028d): leaf: result = 1, client = 0x02a00003,  pattern = class_g = "Alacritty"
+[ 06/26/2025 09:32:25.485 win_on_factor_change DEBUG ] Window mode changed to 0
+[ 06/26/2025 09:32:25.485 c2_match_once DEBUG ] (0x0040028d): leaf: result = 1, client = 0x02a00003,  pattern = class_g = "Alacritty"
+[ 06/26/2025 09:32:25.485 win_on_factor_change DEBUG ] Window mode changed to 0
+[ 06/26/2025 09:32:25.485 win_process_secondary_flags DEBUG ] Window 0x00400015 (lukas@archlinux:~/dotfiles) focus state changed from 1 to 0
+[ 06/26/2025 09:32:25.485 win_process_secondary_flags DEBUG ] Window 0x00400015 (lukas@archlinux:~/dotfiles) group focus state changed from 1 to 0
+[ 06/26/2025 09:32:25.485 win_on_factor_change DEBUG ] Window 0x00400015, client 0x01200003 (lukas@archlinux:~/dotfiles) factor change
+[ 06/26/2025 09:32:25.485 win_determine_shadow DEBUG ] Determining shadow of window 0x00400015 (lukas@archlinux:~/dotfiles)
+[ 06/26/2025 09:32:25.485 c2_match_once DEBUG ] (0x00400015): leaf: result = 0, client = 0x01200003,  pattern = class_g = "Conky"
+[ 06/26/2025 09:32:25.485 c2_match_once DEBUG ] (0x00400015): leaf: result = 0, client = 0x01200003,  pattern = class_g = "Polybar"
+[ 06/26/2025 09:32:25.485 c2_match_once DEBUG ] (0x00400015): leaf: result = 0, client = 0x01200003,  pattern = class_g = "slop"
+[ 06/26/2025 09:32:25.485 c2_match_once DEBUG ] (0x00400015): leaf: result = 0, client = 0x01200003,  pattern = name = "Notification"
+[ 06/26/2025 09:32:25.485 c2_match_once DEBUG ] (0x00400015): leaf: result = 0, client = 0x01200003,  pattern = class_g = "awesome"
+[ 06/26/2025 09:32:25.485 c2_match_once DEBUG ] (0x00400015): leaf: result = 0, client = 0x01200003,  pattern = _GTK_FRAME_EXTENTS@[0]
+[ 06/26/2025 09:32:25.485 win_determine_blur_background DEBUG ] Determining blur-background of window 0x00400015 (lukas@archlinux:~/dotfiles)
+[ 06/26/2025 09:32:25.485 win_determine_rounded_corners DEBUG ] Rounding corners for window 0x00400015
+[ 06/26/2025 09:32:25.485 c2_match_once DEBUG ] (0x00400015): leaf: result = 1, client = 0x01200003,  pattern = class_g = "Alacritty"
+[ 06/26/2025 09:32:25.485 win_on_factor_change DEBUG ] Window mode changed to 0
+[ 06/26/2025 09:32:25.485 c2_match_once DEBUG ] (0x00400015): leaf: result = 1, client = 0x01200003,  pattern = class_g = "Alacritty"
+[ 06/26/2025 09:32:25.485 win_on_factor_change DEBUG ] Window mode changed to 0
+[ 06/26/2025 09:32:25.485 win_process_animation_and_state_change DEBUG ] Starting animation open for window 0x0040028d (Alacritty)
+[ 06/26/2025 09:32:25.485 win_process_image_flags DEBUG ] New named pixmap for 0x0040028d (Alacritty) : 0x00a00033
+[ 06/26/2025 09:32:25.485 win_release_pixmap DEBUG ] Releasing pixmap of window 0x0040028d (Alacritty)
+[ 06/26/2025 09:32:25.485 glx_bind_pixmap DEBUG ] Found cached FBConfig for RGBA8888, depth: 32, visual id: 0xd0
+[ 06/26/2025 09:32:25.485 glx_bind_pixmap DEBUG ] depth 32, rgba 1
+[ 06/26/2025 09:32:25.485 win_process_image_flags DEBUG ] New named pixmap for 0x00400015 (lukas@archlinux:~/dotfiles) : 0x00a00036
+[ 06/26/2025 09:32:25.485 win_release_pixmap DEBUG ] Releasing pixmap of window 0x00400015 (lukas@archlinux:~/dotfiles)
+[ 06/26/2025 09:32:25.485 glx_bind_pixmap DEBUG ] Found cached FBConfig for RGBA8888, depth: 32, visual id: 0xd0
+[ 06/26/2025 09:32:25.485 glx_bind_pixmap DEBUG ] depth 32, rgba 1
+[ 06/26/2025 09:32:25.487 ev_handle DEBUG ] event PROPERTY_N serial 0x00000295 window 0x02a00003 "Alacritty"
+[ 06/26/2025 09:32:25.487 ev_property_notify DEBUG ] { atom = 0x00000023, window = 0x02a00003, state = 0 }
+[ 06/26/2025 09:32:25.487 ev_handle DEBUG ] event PROPERTY_N serial 0x00000295 window 0x02a00003 "Alacritty"
+[ 06/26/2025 09:32:25.487 ev_property_notify DEBUG ] { atom = 0x00000027, window = 0x02a00003, state = 0 }
+[ 06/26/2025 09:32:25.487 ev_handle DEBUG ] event PROPERTY_N serial 0x00000295 window 0x02a00003 "Alacritty"
+[ 06/26/2025 09:32:25.487 ev_property_notify DEBUG ] { atom = 0x0000015d, window = 0x02a00003, state = 0 }
+[ 06/26/2025 09:32:25.487 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 697
+[ 06/26/2025 09:32:25.501 ev_handle DEBUG ] event  FOCUS_OUT serial 0x000002bd window 0x02a00003 "Alacritty"
+[ 06/26/2025 09:32:25.501 ev_focus_out DEBUG ] { mode: UNGRAB, detail: POINTER }
+[ 06/26/2025 09:32:25.501 ev_update_focused DEBUG ] Started async request to recheck focus
+[ 06/26/2025 09:32:25.501 ev_handle DEBUG ] event  FOCUS_OUT serial 0x000002bd window 0x0040028d "Alacritty"
+[ 06/26/2025 09:32:25.501 ev_focus_out DEBUG ] { mode: UNGRAB, detail: POINTER }
+[ 06/26/2025 09:32:25.501 ev_handle DEBUG ] event   FOCUS_IN serial 0x000002bd window 0x0040028d "Alacritty"
+[ 06/26/2025 09:32:25.501 ev_focus_in DEBUG ] { mode: UNGRAB, detail: VIRTUAL }
+[ 06/26/2025 09:32:25.501 ev_handle DEBUG ] event   FOCUS_IN serial 0x000002bd window 0x02a00003 "Alacritty"
+[ 06/26/2025 09:32:25.501 ev_focus_in DEBUG ] { mode: UNGRAB, detail: ANCESTOR }
+[ 06/26/2025 09:32:25.501 recheck_focus DEBUG ] Current focused window is 0x02a00003
+[ 06/26/2025 09:32:25.501 recheck_focus DEBUG ] 0x02a00003 (Alacritty) focused.
+[ 06/26/2025 09:32:25.501 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 704
+[ 06/26/2025 09:32:25.501 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:25.501 win_update_name DEBUG ] (0x0040028d): client = 0x02a00003, name = "lukas@archlinux:~", ret = 1
+[ 06/26/2025 09:32:25.501 win_on_factor_change DEBUG ] Window 0x0040028d, client 0x02a00003 (lukas@archlinux:~) factor change
+[ 06/26/2025 09:32:25.501 win_determine_shadow DEBUG ] Determining shadow of window 0x0040028d (lukas@archlinux:~)
+[ 06/26/2025 09:32:25.501 c2_match_once DEBUG ] (0x0040028d): leaf: result = 0, client = 0x02a00003,  pattern = class_g = "Conky"
+[ 06/26/2025 09:32:25.501 c2_match_once DEBUG ] (0x0040028d): leaf: result = 0, client = 0x02a00003,  pattern = class_g = "Polybar"
+[ 06/26/2025 09:32:25.501 c2_match_once DEBUG ] (0x0040028d): leaf: result = 0, client = 0x02a00003,  pattern = class_g = "slop"
+[ 06/26/2025 09:32:25.501 c2_match_once DEBUG ] (0x0040028d): leaf: result = 0, client = 0x02a00003,  pattern = name = "Notification"
+[ 06/26/2025 09:32:25.501 c2_match_once DEBUG ] (0x0040028d): leaf: result = 0, client = 0x02a00003,  pattern = class_g = "awesome"
+[ 06/26/2025 09:32:25.501 c2_match_once DEBUG ] (0x0040028d): leaf: result = 0, client = 0x02a00003,  pattern = _GTK_FRAME_EXTENTS@[0]
+[ 06/26/2025 09:32:25.501 win_determine_blur_background DEBUG ] Determining blur-background of window 0x0040028d (lukas@archlinux:~)
+[ 06/26/2025 09:32:25.501 win_determine_rounded_corners DEBUG ] Rounding corners for window 0x0040028d
+[ 06/26/2025 09:32:25.501 c2_match_once DEBUG ] (0x0040028d): leaf: result = 1, client = 0x02a00003,  pattern = class_g = "Alacritty"
+[ 06/26/2025 09:32:25.501 win_on_factor_change DEBUG ] Window mode changed to 0
+[ 06/26/2025 09:32:25.501 c2_match_once DEBUG ] (0x0040028d): leaf: result = 1, client = 0x02a00003,  pattern = class_g = "Alacritty"
+[ 06/26/2025 09:32:25.501 win_on_factor_change DEBUG ] Window mode changed to 0
+[ 06/26/2025 09:32:25.502 ev_handle DEBUG ] event PROPERTY_N serial 0x000002c9 window 0x02a00003 "lukas@archlinux:~"
+[ 06/26/2025 09:32:25.502 ev_property_notify DEBUG ] { atom = 0x00000023, window = 0x02a00003, state = 0 }
+[ 06/26/2025 09:32:25.518 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:26.627 ev_handle DEBUG ] event  FOCUS_OUT serial 0x000002e1 window 0x02a00003 "lukas@archlinux:~"
+[ 06/26/2025 09:32:26.628 ev_focus_out DEBUG ] { mode: GRAB, detail: NONLINEAR }
+[ 06/26/2025 09:32:26.628 ev_update_focused DEBUG ] Started async request to recheck focus
+[ 06/26/2025 09:32:26.628 ev_handle DEBUG ] event   FOCUS_IN serial 0x000002e1 window 0x02a00003 "lukas@archlinux:~"
+[ 06/26/2025 09:32:26.628 ev_focus_in DEBUG ] { mode: GRAB, detail: NONLINEAR }
+[ 06/26/2025 09:32:26.628 recheck_focus DEBUG ] Current focused window is 0x02a00003
+[ 06/26/2025 09:32:26.628 recheck_focus DEBUG ] 0x02a00003 (lukas@archlinux:~) focused.
+[ 06/26/2025 09:32:26.628 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 739
+[ 06/26/2025 09:32:26.630 ev_handle DEBUG ] event DESTROY_NO serial 0x000002e9 window 0x02c00000 "(Failed to get title)"
+[ 06/26/2025 09:32:26.630 ev_destroy_notify DEBUG ] { event: 0x02c00000, id: 0x02c00000 }
+[ 06/26/2025 09:32:26.630 wm_destroy DEBUG ] Destroying window 0x02c00000
+[ 06/26/2025 09:32:26.630 wm_tree_detach DEBUG ] Detaching toplevel window 0x02c00000.
+[ 06/26/2025 09:32:26.630 ev_handle DEBUG ] event DESTROY_NO serial 0x000002e9 window 0x02c00000 "(Failed to get title)"
+[ 06/26/2025 09:32:26.630 ev_destroy_notify DEBUG ] { event: 0x0000042f, id: 0x02c00000 }
+[ 06/26/2025 09:32:26.630 wm_disconnect DEBUG ] Child window 0x02c00000 of 0x0000042f is not in our tree, ignoring
+[ 06/26/2025 09:32:26.630 ev_handle DEBUG ] event DESTROY_NO serial 0x000002e9 window 0x03000000 "(Failed to get title)"
+[ 06/26/2025 09:32:26.630 ev_destroy_notify DEBUG ] { event: 0x03000000, id: 0x03000000 }
+[ 06/26/2025 09:32:26.630 wm_destroy DEBUG ] Destroying window 0x03000000
+[ 06/26/2025 09:32:26.630 wm_tree_detach DEBUG ] Detaching toplevel window 0x03000000.
+[ 06/26/2025 09:32:26.630 ev_handle DEBUG ] event DESTROY_NO serial 0x000002e9 window 0x03000000 "(Failed to get title)"
+[ 06/26/2025 09:32:26.630 ev_destroy_notify DEBUG ] { event: 0x0000042f, id: 0x03000000 }
+[ 06/26/2025 09:32:26.630 wm_disconnect DEBUG ] Child window 0x03000000 of 0x0000042f is not in our tree, ignoring
+[ 06/26/2025 09:32:26.630 ev_handle DEBUG ] event DESTROY_NO serial 0x000002e9 window 0x02e00000 "(Failed to get title)"
+[ 06/26/2025 09:32:26.630 ev_destroy_notify DEBUG ] { event: 0x02e00000, id: 0x02e00000 }
+[ 06/26/2025 09:32:26.630 wm_destroy DEBUG ] Destroying window 0x02e00000
+[ 06/26/2025 09:32:26.630 wm_tree_detach DEBUG ] Detaching toplevel window 0x02e00000.
+[ 06/26/2025 09:32:26.630 ev_handle DEBUG ] event DESTROY_NO serial 0x000002e9 window 0x02e00000 "(Failed to get title)"
+[ 06/26/2025 09:32:26.630 ev_destroy_notify DEBUG ] { event: 0x0000042f, id: 0x02e00000 }
+[ 06/26/2025 09:32:26.630 wm_disconnect DEBUG ] Child window 0x02e00000 of 0x0000042f is not in our tree, ignoring
+[ 06/26/2025 09:32:26.630 ev_handle DEBUG ] event DESTROY_NO serial 0x000002e9 window 0x03200000 "(Failed to get title)"
+[ 06/26/2025 09:32:26.630 ev_destroy_notify DEBUG ] { event: 0x03200000, id: 0x03200000 }
+[ 06/26/2025 09:32:26.630 wm_destroy DEBUG ] Destroying window 0x03200000
+[ 06/26/2025 09:32:26.630 wm_tree_detach DEBUG ] Detaching toplevel window 0x03200000.
+[ 06/26/2025 09:32:26.630 ev_handle DEBUG ] event DESTROY_NO serial 0x000002e9 window 0x03200000 "(Failed to get title)"
+[ 06/26/2025 09:32:26.630 ev_destroy_notify DEBUG ] { event: 0x0000042f, id: 0x03200000 }
+[ 06/26/2025 09:32:26.630 wm_disconnect DEBUG ] Child window 0x03200000 of 0x0000042f is not in our tree, ignoring
+[ 06/26/2025 09:32:26.630 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:26.630 ev_handle DEBUG ] event UNMAP_NOTI serial 0x000002e9 window 0x02a00003 "lukas@archlinux:~"
+[ 06/26/2025 09:32:26.630 ev_handle DEBUG ] event UNMAP_NOTI serial 0x000002e9 window 0x02a00003 "lukas@archlinux:~"
+[ 06/26/2025 09:32:26.631 ev_handle DEBUG ] event  FOCUS_OUT serial 0x000002e9 window 0x02a00003 "lukas@archlinux:~"
+[ 06/26/2025 09:32:26.631 ev_focus_out DEBUG ] { mode: UNGRAB, detail: NONLINEAR }
+[ 06/26/2025 09:32:26.631 ev_update_focused DEBUG ] Started async request to recheck focus
+[ 06/26/2025 09:32:26.631 ev_handle DEBUG ] event   FOCUS_IN serial 0x000002e9 window 0x02a00003 "lukas@archlinux:~"
+[ 06/26/2025 09:32:26.631 ev_focus_in DEBUG ] { mode: UNGRAB, detail: NONLINEAR }
+[ 06/26/2025 09:32:26.631 ev_handle DEBUG ] event  FOCUS_OUT serial 0x000002e9 window 0x02a00003 "lukas@archlinux:~"
+[ 06/26/2025 09:32:26.631 ev_focus_out DEBUG ] { mode: NORMAL, detail: ANCESTOR }
+[ 06/26/2025 09:32:26.631 ev_handle DEBUG ] event   FOCUS_IN serial 0x000002e9 window 0x0040028d "lukas@archlinux:~"
+[ 06/26/2025 09:32:26.631 ev_focus_in DEBUG ] { mode: NORMAL, detail: INFERIOR }
+[ 06/26/2025 09:32:26.631 ev_handle DEBUG ] event DESTROY_NO serial 0x000002e9 window 0x02a00003 "lukas@archlinux:~"
+[ 06/26/2025 09:32:26.631 ev_destroy_notify DEBUG ] { event: 0x02a00003, id: 0x02a00003 }
+[ 06/26/2025 09:32:26.631 wm_destroy DEBUG ] Destroying window 0x02a00003
+[ 06/26/2025 09:32:26.631 wm_tree_refresh_client_and_queue_change DEBUG ] Toplevel window 0x0040028d had client window 0x02a00003, now has 0000000000.
+[ 06/26/2025 09:32:26.631 ev_handle DEBUG ] event DESTROY_NO serial 0x000002e9 window 0x02a00003 "(Failed to get title)"
+[ 06/26/2025 09:32:26.631 ev_destroy_notify DEBUG ] { event: 0x0040028d, id: 0x02a00003 }
+[ 06/26/2025 09:32:26.631 wm_disconnect DEBUG ] Child window 0x02a00003 of 0x0040028d is not in our tree, ignoring
+[ 06/26/2025 09:32:26.631 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:26.631 recheck_focus DEBUG ] Current focused window is 0x0040028d
+[ 06/26/2025 09:32:26.631 recheck_focus DEBUG ] 0x0040028d (lukas@archlinux:~) focused.
+[ 06/26/2025 09:32:26.631 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 749
+[ 06/26/2025 09:32:26.631 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:26.633 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:26.635 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:26.635 win_destroy_start DEBUG ] Destroying 0x02c00000 ((null))
+[ 06/26/2025 09:32:26.635 win_destroy_start DEBUG ] Destroying 0x03000000 ((null))
+[ 06/26/2025 09:32:26.635 win_destroy_start DEBUG ] Destroying 0x02e00000 ((null))
+[ 06/26/2025 09:32:26.635 win_destroy_start DEBUG ] Destroying 0x03200000 ((null))
+[ 06/26/2025 09:32:26.635 handle_new_windows DEBUG ] Client window for window 0x0040028d changed from 0x02a00003 to 0000000000
+[ 06/26/2025 09:32:26.635 ev_update_focused DEBUG ] Started async request to recheck focus
+[ 06/26/2025 09:32:26.635 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:26.635 win_update_wintype DEBUG ] Window (0x0040028d) has type 0x100
+[ 06/26/2025 09:32:26.635 win_update_name DEBUG ] (0x0040028d): _NET_WM_NAME unset, falling back to WM_NAME.
+[ 06/26/2025 09:32:26.635 win_update_name DEBUG ] Unsetting window name for 0x0040028d
+[ 06/26/2025 09:32:26.635 wm_refresh_leaders DEBUG ] Refreshing window leaders, tree consistency: 1
+[ 06/26/2025 09:32:26.635 win_on_factor_change DEBUG ] Window 0x0040028d, client 0x0040028d ((null)) factor change
+[ 06/26/2025 09:32:26.635 win_determine_shadow DEBUG ] Determining shadow of window 0x0040028d ((null))
+[ 06/26/2025 09:32:26.635 c2_match_once DEBUG ] (0x0040028d): leaf: result = 0, client = 0000000000,  pattern = class_g = "Conky"
+[ 06/26/2025 09:32:26.635 c2_match_once DEBUG ] (0x0040028d): leaf: result = 0, client = 0000000000,  pattern = class_g = "Polybar"
+[ 06/26/2025 09:32:26.635 c2_match_once DEBUG ] (0x0040028d): leaf: result = 0, client = 0000000000,  pattern = class_g = "slop"
+[ 06/26/2025 09:32:26.635 c2_match_once DEBUG ] (0x0040028d): leaf: result = 0, client = 0000000000,  pattern = name = "Notification"
+[ 06/26/2025 09:32:26.635 c2_match_once DEBUG ] (0x0040028d): leaf: result = 0, client = 0000000000,  pattern = class_g = "awesome"
+[ 06/26/2025 09:32:26.635 c2_match_once DEBUG ] (0x0040028d): leaf: result = 0, client = 0000000000,  pattern = _GTK_FRAME_EXTENTS@[0]
+[ 06/26/2025 09:32:26.635 win_determine_blur_background DEBUG ] Determining blur-background of window 0x0040028d ((null))
+[ 06/26/2025 09:32:26.635 win_determine_rounded_corners DEBUG ] Rounding corners for window 0x0040028d
+[ 06/26/2025 09:32:26.635 c2_match_once DEBUG ] (0x0040028d): leaf: result = 0, client = 0000000000,  pattern = class_g = "Alacritty"
+[ 06/26/2025 09:32:26.635 c2_match_once DEBUG ] (0x0040028d): leaf: result = 0, client = 0000000000,  pattern = class_g = "Brave-browser"
+[ 06/26/2025 09:32:26.635 c2_match_once DEBUG ] (0x0040028d): leaf: result = 1, client = 0000000000,  pattern = window_type = "normal"
+[ 06/26/2025 09:32:26.635 win_on_factor_change DEBUG ] Window mode changed to 0
+[ 06/26/2025 09:32:26.635 c2_match_once DEBUG ] (0x0040028d): leaf: result = 0, client = 0000000000,  pattern = class_g = "Alacritty"
+[ 06/26/2025 09:32:26.635 c2_match_once DEBUG ] (0x0040028d): leaf: result = 0, client = 0000000000,  pattern = class_g = "Brave-browser"
+[ 06/26/2025 09:32:26.635 c2_match_once DEBUG ] (0x0040028d): leaf: result = 1, client = 0000000000,  pattern = window_type = "normal"
+[ 06/26/2025 09:32:26.635 win_on_factor_change DEBUG ] Window mode changed to 0
+[ 06/26/2025 09:32:26.635 win_destroy_finish DEBUG ] Trying to finish destroying (0x03200000)
+[ 06/26/2025 09:32:26.635 win_release_pixmap DEBUG ] Releasing pixmap of window 0x03200000 ((null))
+[ 06/26/2025 09:32:26.635 win_release_shadow DEBUG ] Releasing shadow of window 0x03200000 ((null))
+[ 06/26/2025 09:32:26.635 win_destroy_finish DEBUG ] Trying to finish destroying (0x03000000)
+[ 06/26/2025 09:32:26.635 win_release_pixmap DEBUG ] Releasing pixmap of window 0x03000000 ((null))
+[ 06/26/2025 09:32:26.635 win_release_shadow DEBUG ] Releasing shadow of window 0x03000000 ((null))
+[ 06/26/2025 09:32:26.635 win_destroy_finish DEBUG ] Trying to finish destroying (0x02e00000)
+[ 06/26/2025 09:32:26.635 win_release_pixmap DEBUG ] Releasing pixmap of window 0x02e00000 ((null))
+[ 06/26/2025 09:32:26.635 win_release_shadow DEBUG ] Releasing shadow of window 0x02e00000 ((null))
+[ 06/26/2025 09:32:26.635 win_destroy_finish DEBUG ] Trying to finish destroying (0x02c00000)
+[ 06/26/2025 09:32:26.635 win_release_pixmap DEBUG ] Releasing pixmap of window 0x02c00000 ((null))
+[ 06/26/2025 09:32:26.635 win_release_shadow DEBUG ] Releasing shadow of window 0x02c00000 ((null))
+[ 06/26/2025 09:32:26.635 recheck_focus DEBUG ] Current focused window is 0x0040028d
+[ 06/26/2025 09:32:26.635 recheck_focus DEBUG ] 0x0040028d ((null)) focused.
+[ 06/26/2025 09:32:26.635 ev_handle DEBUG ] event PROPERTY_N serial 0x000002f7 window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:26.635 ev_property_notify DEBUG ] { atom = 0x00000155, window = 0x0000042f, state = 0 }
+[ 06/26/2025 09:32:26.635 ev_handle DEBUG ] event PROPERTY_N serial 0x000002f7 window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:26.635 ev_property_notify DEBUG ] { atom = 0x00000156, window = 0x0000042f, state = 0 }
+[ 06/26/2025 09:32:26.635 ev_handle DEBUG ] event PROPERTY_N serial 0x000002f7 window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:26.635 ev_property_notify DEBUG ] { atom = 0x00000191, window = 0x0000042f, state = 0 }
+[ 06/26/2025 09:32:26.635 x_handle_error DEBUG ] Expected X error for request in free_win_res at ../src/wm/win.c:1270: X error 152 DAMAGE_BAD_DAMAGE request 143 minor 2 serial 760
+[ 06/26/2025 09:32:26.635 ev_handle DEBUG ] event PROPERTY_N serial 0x000002f8 window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:26.635 ev_property_notify DEBUG ] { atom = 0x00000156, window = 0x0000042f, state = 0 }
+[ 06/26/2025 09:32:26.635 ev_handle DEBUG ] event PROPERTY_N serial 0x000002f8 window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:26.635 ev_property_notify DEBUG ] { atom = 0x00000190, window = 0x0000042f, state = 0 }
+[ 06/26/2025 09:32:26.635 x_handle_error DEBUG ] Expected X error for request in free_win_res at ../src/wm/win.c:1270: X error 152 DAMAGE_BAD_DAMAGE request 143 minor 2 serial 761
+[ 06/26/2025 09:32:26.635 x_handle_error DEBUG ] Expected X error for request in free_win_res at ../src/wm/win.c:1270: X error 152 DAMAGE_BAD_DAMAGE request 143 minor 2 serial 762
+[ 06/26/2025 09:32:26.635 x_handle_error DEBUG ] Expected X error for request in free_win_res at ../src/wm/win.c:1270: X error 152 DAMAGE_BAD_DAMAGE request 143 minor 2 serial 763
+[ 06/26/2025 09:32:26.635 ev_handle DEBUG ] event PROPERTY_N serial 0x000002fe window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:26.635 ev_property_notify DEBUG ] { atom = 0x00000155, window = 0x0000042f, state = 0 }
+[ 06/26/2025 09:32:26.635 ev_handle DEBUG ] event PROPERTY_N serial 0x000002fe window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:26.635 ev_property_notify DEBUG ] { atom = 0x00000156, window = 0x0000042f, state = 0 }
+[ 06/26/2025 09:32:26.636 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 769
+[ 06/26/2025 09:32:26.644 ev_handle DEBUG ] event CONFIGURE_ serial 0x00000303 window 0x00400015 "lukas@archlinux:~/dotfiles"
+[ 06/26/2025 09:32:26.644 ev_configure_notify DEBUG ] { event: 0x00400015, id: 0x00400015, above: 0x00400013, override_redirect: 1 }
+[ 06/26/2025 09:32:26.644 ev_handle DEBUG ] event CONFIGURE_ serial 0x00000303 window 0x00400015 "lukas@archlinux:~/dotfiles"
+[ 06/26/2025 09:32:26.644 ev_configure_notify DEBUG ] { event: 0x0000042f, id: 0x00400015, above: 0x00400013, override_redirect: 1 }
+[ 06/26/2025 09:32:26.644 ev_handle DEBUG ] event CONFIGURE_ serial 0x00000303 window 0x01200003 "lukas@archlinux:~/dotfiles"
+[ 06/26/2025 09:32:26.644 ev_configure_notify DEBUG ] { event: 0x01200003, id: 0x01200003, above: 0000000000, override_redirect: 0 }
+[ 06/26/2025 09:32:26.644 ev_handle DEBUG ] event CONFIGURE_ serial 0x00000303 window 0x01200003 "lukas@archlinux:~/dotfiles"
+[ 06/26/2025 09:32:26.644 ev_configure_notify DEBUG ] { event: 0x00400015, id: 0x01200003, above: 0000000000, override_redirect: 0 }
+[ 06/26/2025 09:32:26.644 configure_win DEBUG ] Window 0x01200003 is unmanaged.
+[ 06/26/2025 09:32:26.644 ev_handle DEBUG ] event CONFIGURE_ serial 0x00000303 window 0000000000 ""
+[ 06/26/2025 09:32:26.644 ev_handle DEBUG ] event  FOCUS_OUT serial 0x00000303 window 0x0040028d "(Failed to get title)"
+[ 06/26/2025 09:32:26.644 ev_focus_out DEBUG ] { mode: NORMAL, detail: NONLINEAR }
+[ 06/26/2025 09:32:26.644 ev_update_focused DEBUG ] Started async request to recheck focus
+[ 06/26/2025 09:32:26.644 ev_handle DEBUG ] event   FOCUS_IN serial 0x00000303 window 0x00400015 "lukas@archlinux:~/dotfiles"
+[ 06/26/2025 09:32:26.644 ev_focus_in DEBUG ] { mode: NORMAL, detail: NONLINEAR_VIRTUAL }
+[ 06/26/2025 09:32:26.644 ev_handle DEBUG ] event UNMAP_NOTI serial 0x00000303 window 0x0040028d "(Failed to get title)"
+[ 06/26/2025 09:32:26.644 ev_handle DEBUG ] event UNMAP_NOTI serial 0x00000303 window 0x0040028d "(Failed to get title)"
+[ 06/26/2025 09:32:26.644 unmap_win_start DEBUG ] Unmapping 0x0040028d ((null))
+[ 06/26/2025 09:32:26.644 ev_handle DEBUG ] event DESTROY_NO serial 0x00000303 window 0x0040028d "(Failed to get title)"
+[ 06/26/2025 09:32:26.644 ev_destroy_notify DEBUG ] { event: 0x0040028d, id: 0x0040028d }
+[ 06/26/2025 09:32:26.644 wm_destroy DEBUG ] Destroying window 0x0040028d
+[ 06/26/2025 09:32:26.644 wm_tree_detach DEBUG ] Detaching toplevel window 0x0040028d.
+[ 06/26/2025 09:32:26.644 ev_handle DEBUG ] event DESTROY_NO serial 0x00000303 window 0x0040028d "(Failed to get title)"
+[ 06/26/2025 09:32:26.644 ev_destroy_notify DEBUG ] { event: 0x0000042f, id: 0x0040028d }
+[ 06/26/2025 09:32:26.644 wm_disconnect DEBUG ] Child window 0x0040028d of 0x0000042f is not in our tree, ignoring
+[ 06/26/2025 09:32:26.644 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:26.644 recheck_focus DEBUG ] Current focused window is 0x01200003
+[ 06/26/2025 09:32:26.644 wm_ref_set_focused DEBUG ] Focused window changed from 0000000000 to 0x00400015
+[ 06/26/2025 09:32:26.644 recheck_focus DEBUG ] 0x01200003 (lukas@archlinux:~/dotfiles) focused.
+[ 06/26/2025 09:32:26.644 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 777
+[ 06/26/2025 09:32:26.644 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:26.644 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:26.645 ev_handle DEBUG ] event PROPERTY_N serial 0x0000030b window 0x01200003 "lukas@archlinux:~/dotfiles"
+[ 06/26/2025 09:32:26.645 ev_property_notify DEBUG ] { atom = 0x00000023, window = 0x01200003, state = 0 }
+[ 06/26/2025 09:32:26.645 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:26.645 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:26.650 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:26.651 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:26.651 win_destroy_start DEBUG ] Destroying 0x0040028d ((null))
+[ 06/26/2025 09:32:26.651 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:26.651 win_release_shadow DEBUG ] Releasing shadow of window 0x00400015 (lukas@archlinux:~/dotfiles)
+[ 06/26/2025 09:32:26.651 wm_refresh_leaders DEBUG ] Refreshing window leaders, tree consistency: 1
+[ 06/26/2025 09:32:26.651 win_process_secondary_flags DEBUG ] Window 0x00400015 (lukas@archlinux:~/dotfiles) focus state changed from 0 to 1
+[ 06/26/2025 09:32:26.651 win_process_secondary_flags DEBUG ] Window 0x00400015 (lukas@archlinux:~/dotfiles) group focus state changed from 0 to 1
+[ 06/26/2025 09:32:26.651 win_on_factor_change DEBUG ] Window 0x00400015, client 0x01200003 (lukas@archlinux:~/dotfiles) factor change
+[ 06/26/2025 09:32:26.651 win_determine_shadow DEBUG ] Determining shadow of window 0x00400015 (lukas@archlinux:~/dotfiles)
+[ 06/26/2025 09:32:26.651 c2_match_once DEBUG ] (0x00400015): leaf: result = 0, client = 0x01200003,  pattern = class_g = "Conky"
+[ 06/26/2025 09:32:26.651 c2_match_once DEBUG ] (0x00400015): leaf: result = 0, client = 0x01200003,  pattern = class_g = "Polybar"
+[ 06/26/2025 09:32:26.651 c2_match_once DEBUG ] (0x00400015): leaf: result = 0, client = 0x01200003,  pattern = class_g = "slop"
+[ 06/26/2025 09:32:26.651 c2_match_once DEBUG ] (0x00400015): leaf: result = 0, client = 0x01200003,  pattern = name = "Notification"
+[ 06/26/2025 09:32:26.651 c2_match_once DEBUG ] (0x00400015): leaf: result = 0, client = 0x01200003,  pattern = class_g = "awesome"
+[ 06/26/2025 09:32:26.651 c2_match_once DEBUG ] (0x00400015): leaf: result = 0, client = 0x01200003,  pattern = _GTK_FRAME_EXTENTS@[0]
+[ 06/26/2025 09:32:26.651 win_determine_blur_background DEBUG ] Determining blur-background of window 0x00400015 (lukas@archlinux:~/dotfiles)
+[ 06/26/2025 09:32:26.651 win_determine_rounded_corners DEBUG ] Rounding corners for window 0x00400015
+[ 06/26/2025 09:32:26.651 c2_match_once DEBUG ] (0x00400015): leaf: result = 1, client = 0x01200003,  pattern = class_g = "Alacritty"
+[ 06/26/2025 09:32:26.651 win_on_factor_change DEBUG ] Window mode changed to 0
+[ 06/26/2025 09:32:26.651 c2_match_once DEBUG ] (0x00400015): leaf: result = 1, client = 0x01200003,  pattern = class_g = "Alacritty"
+[ 06/26/2025 09:32:26.651 win_on_factor_change DEBUG ] Window mode changed to 0
+[ 06/26/2025 09:32:26.651 win_process_animation_and_state_change DEBUG ] Starting animation close for window 0x0040028d ((null))
+[ 06/26/2025 09:32:26.651 win_process_image_flags DEBUG ] New named pixmap for 0x00400015 (lukas@archlinux:~/dotfiles) : 0x00a00039
+[ 06/26/2025 09:32:26.651 win_release_pixmap DEBUG ] Releasing pixmap of window 0x00400015 (lukas@archlinux:~/dotfiles)
+[ 06/26/2025 09:32:26.652 glx_bind_pixmap DEBUG ] Found cached FBConfig for RGBA8888, depth: 32, visual id: 0xd0
+[ 06/26/2025 09:32:26.652 glx_bind_pixmap DEBUG ] depth 32, rgba 1
+[ 06/26/2025 09:32:26.718 win_destroy_finish DEBUG ] Trying to finish destroying (0x0040028d)
+[ 06/26/2025 09:32:26.718 win_release_pixmap DEBUG ] Releasing pixmap of window 0x0040028d ((null))
+[ 06/26/2025 09:32:26.718 win_release_shadow DEBUG ] Releasing shadow of window 0x0040028d ((null))
+[ 06/26/2025 09:32:26.719 x_handle_error DEBUG ] Expected X error for request in free_win_res at ../src/wm/win.c:1270: X error 152 DAMAGE_BAD_DAMAGE request 143 minor 2 serial 827
+[ 06/26/2025 09:32:27.096 ev_handle DEBUG ] event  FOCUS_OUT serial 0x00000344 window 0x00400015 "lukas@archlinux:~/dotfiles"
+[ 06/26/2025 09:32:27.096 ev_focus_out DEBUG ] { mode: GRAB, detail: VIRTUAL }
+[ 06/26/2025 09:32:27.096 ev_update_focused DEBUG ] Started async request to recheck focus
+[ 06/26/2025 09:32:27.096 recheck_focus DEBUG ] Current focused window is 0x01200003
+[ 06/26/2025 09:32:27.096 recheck_focus DEBUG ] 0x01200003 (lukas@archlinux:~/dotfiles) focused.
+[ 06/26/2025 09:32:27.096 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 838
+[ 06/26/2025 09:32:27.101 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:27.102 ev_handle DEBUG ] event PROPERTY_N serial 0x00000354 window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:27.102 ev_property_notify DEBUG ] { atom = 0x00000155, window = 0x0000042f, state = 0 }
+[ 06/26/2025 09:32:27.102 ev_handle DEBUG ] event PROPERTY_N serial 0x00000354 window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:27.102 ev_property_notify DEBUG ] { atom = 0x00000156, window = 0x0000042f, state = 0 }
+[ 06/26/2025 09:32:27.102 ev_handle DEBUG ] event PROPERTY_N serial 0x00000354 window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:27.102 ev_property_notify DEBUG ] { atom = 0x00000156, window = 0x0000042f, state = 0 }
+[ 06/26/2025 09:32:27.102 ev_handle DEBUG ] event PROPERTY_N serial 0x00000354 window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:27.102 ev_property_notify DEBUG ] { atom = 0x00000156, window = 0x0000042f, state = 0 }
+[ 06/26/2025 09:32:27.102 ev_handle DEBUG ] event PROPERTY_N serial 0x00000354 window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:27.102 ev_property_notify DEBUG ] { atom = 0x00000155, window = 0x0000042f, state = 0 }
+[ 06/26/2025 09:32:27.102 ev_handle DEBUG ] event PROPERTY_N serial 0x00000354 window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:27.102 ev_property_notify DEBUG ] { atom = 0x00000156, window = 0x0000042f, state = 0 }
+[ 06/26/2025 09:32:27.107 ev_handle DEBUG ] event MAP_NOTIFY serial 0x00000356 window 0x00400013 "(Failed to get title)"
+[ 06/26/2025 09:32:27.107 ev_handle DEBUG ] event MAP_NOTIFY serial 0x00000356 window 0x00400013 "(Failed to get title)"
+[ 06/26/2025 09:32:27.107 repair_win DEBUG ] Window 0x00400013 ((null)) has been damaged the first time
+[ 06/26/2025 09:32:27.107 ev_handle DEBUG ] event  FOCUS_OUT serial 0x00000356 window 0x00400015 "lukas@archlinux:~/dotfiles"
+[ 06/26/2025 09:32:27.107 ev_focus_out DEBUG ] { mode: WHILE_GRABBED, detail: NONLINEAR_VIRTUAL }
+[ 06/26/2025 09:32:27.107 ev_update_focused DEBUG ] Started async request to recheck focus
+[ 06/26/2025 09:32:27.107 ev_handle DEBUG ] event   FOCUS_IN serial 0x00000356 window 0x00400013 "(Failed to get title)"
+[ 06/26/2025 09:32:27.107 ev_focus_in DEBUG ] { mode: WHILE_GRABBED, detail: NONLINEAR_VIRTUAL }
+[ 06/26/2025 09:32:27.107 ev_handle DEBUG ] event UNMAP_NOTI serial 0x00000356 window 0x00400015 "lukas@archlinux:~/dotfiles"
+[ 06/26/2025 09:32:27.107 ev_handle DEBUG ] event UNMAP_NOTI serial 0x00000356 window 0x00400015 "lukas@archlinux:~/dotfiles"
+[ 06/26/2025 09:32:27.107 unmap_win_start DEBUG ] Unmapping 0x00400015 (lukas@archlinux:~/dotfiles)
+[ 06/26/2025 09:32:27.107 recheck_focus DEBUG ] Current focused window is 0x00600003
+[ 06/26/2025 09:32:27.107 wm_ref_set_focused DEBUG ] Focused window changed from 0x00400015 to 0x00400013
+[ 06/26/2025 09:32:27.107 recheck_focus DEBUG ] 0x00600003 ((null)) focused.
+[ 06/26/2025 09:32:27.107 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 862
+[ 06/26/2025 09:32:27.118 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:27.118 win_map_start DEBUG ] Mapping (0x00400013 "(null)"), old state 0
+[ 06/26/2025 09:32:27.118 win_update_wintype DEBUG ] Window (0x00400013) has type 0x100
+[ 06/26/2025 09:32:27.118 win_update_name DEBUG ] (0x00400013): client = 0x00600003, name = "Picom config symlink check - Brave", ret = 1
+[ 06/26/2025 09:32:27.118 win_release_shadow DEBUG ] Releasing shadow of window 0x00400013 (Picom config symlink check - Brave)
+[ 06/26/2025 09:32:27.118 win_update_wintype DEBUG ] Window (0x00400013) has type 0x100
+[ 06/26/2025 09:32:27.118 win_update_name DEBUG ] (0x00400013): client = 0x00600003, name = "Picom config symlink check - Brave", ret = 0
+[ 06/26/2025 09:32:27.118 win_process_secondary_flags DEBUG ] Window 0x00400013 (Picom config symlink check - Brave) focus state changed from 0 to 1
+[ 06/26/2025 09:32:27.118 win_process_secondary_flags DEBUG ] Window 0x00400013 (Picom config symlink check - Brave) group focus state changed from 0 to 1
+[ 06/26/2025 09:32:27.118 win_on_factor_change DEBUG ] Window 0x00400013, client 0x00600003 (Picom config symlink check - Brave) factor change
+[ 06/26/2025 09:32:27.118 win_determine_shadow DEBUG ] Determining shadow of window 0x00400013 (Picom config symlink check - Brave)
+[ 06/26/2025 09:32:27.118 c2_match_once DEBUG ] (0x00400013): leaf: result = 0, client = 0x00600003,  pattern = class_g = "Conky"
+[ 06/26/2025 09:32:27.118 c2_match_once DEBUG ] (0x00400013): leaf: result = 0, client = 0x00600003,  pattern = class_g = "Polybar"
+[ 06/26/2025 09:32:27.118 c2_match_once DEBUG ] (0x00400013): leaf: result = 0, client = 0x00600003,  pattern = class_g = "slop"
+[ 06/26/2025 09:32:27.118 c2_match_once DEBUG ] (0x00400013): leaf: result = 0, client = 0x00600003,  pattern = name = "Notification"
+[ 06/26/2025 09:32:27.118 c2_match_once DEBUG ] (0x00400013): leaf: result = 0, client = 0x00600003,  pattern = class_g = "awesome"
+[ 06/26/2025 09:32:27.118 c2_match_once DEBUG ] (0x00400013): leaf: result = 0, client = 0x00600003,  pattern = _GTK_FRAME_EXTENTS@[0]
+[ 06/26/2025 09:32:27.118 win_determine_blur_background DEBUG ] Determining blur-background of window 0x00400013 (Picom config symlink check - Brave)
+[ 06/26/2025 09:32:27.118 win_determine_rounded_corners DEBUG ] Rounding corners for window 0x00400013
+[ 06/26/2025 09:32:27.118 c2_match_once DEBUG ] (0x00400013): leaf: result = 0, client = 0x00600003,  pattern = class_g = "Alacritty"
+[ 06/26/2025 09:32:27.118 c2_match_once DEBUG ] (0x00400013): leaf: result = 1, client = 0x00600003,  pattern = class_g = "Brave-browser"
+[ 06/26/2025 09:32:27.118 win_on_factor_change DEBUG ] Window mode changed to 0
+[ 06/26/2025 09:32:27.118 c2_match_once DEBUG ] (0x00400013): leaf: result = 0, client = 0x00600003,  pattern = class_g = "Alacritty"
+[ 06/26/2025 09:32:27.118 c2_match_once DEBUG ] (0x00400013): leaf: result = 1, client = 0x00600003,  pattern = class_g = "Brave-browser"
+[ 06/26/2025 09:32:27.118 win_on_factor_change DEBUG ] Window mode changed to 0
+[ 06/26/2025 09:32:27.118 win_process_animation_and_state_change DEBUG ] Starting animation hide for window 0x00400015 (lukas@archlinux:~/dotfiles)
+[ 06/26/2025 09:32:27.118 win_process_animation_and_state_change DEBUG ] Starting animation open for window 0x00400013 (Picom config symlink check - Brave)
+[ 06/26/2025 09:32:27.118 win_process_image_flags DEBUG ] New named pixmap for 0x00400013 (Picom config symlink check - Brave) : 0x00a0003c
+[ 06/26/2025 09:32:27.118 win_release_pixmap DEBUG ] Releasing pixmap of window 0x00400013 (Picom config symlink check - Brave)
+[ 06/26/2025 09:32:27.119 glx_bind_pixmap DEBUG ] Found cached FBConfig for RGBA8888, depth: 32, visual id: 0xd0
+[ 06/26/2025 09:32:27.119 glx_bind_pixmap DEBUG ] depth 32, rgba 1
+[ 06/26/2025 09:32:27.120 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 899
+[ 06/26/2025 09:32:27.185 win_release_pixmap DEBUG ] Releasing pixmap of window 0x00400015 (lukas@archlinux:~/dotfiles)
+[ 06/26/2025 09:32:27.196 ev_handle DEBUG ] event  FOCUS_OUT serial 0x000003a0 window 0x00400013 "Picom config symlink check - Brave"
+[ 06/26/2025 09:32:27.196 ev_focus_out DEBUG ] { mode: UNGRAB, detail: POINTER }
+[ 06/26/2025 09:32:27.196 ev_update_focused DEBUG ] Started async request to recheck focus
+[ 06/26/2025 09:32:27.196 ev_handle DEBUG ] event   FOCUS_IN serial 0x000003a0 window 0x00400013 "Picom config symlink check - Brave"
+[ 06/26/2025 09:32:27.196 ev_focus_in DEBUG ] { mode: UNGRAB, detail: VIRTUAL }
+[ 06/26/2025 09:32:27.196 recheck_focus DEBUG ] Current focused window is 0x00600003
+[ 06/26/2025 09:32:27.196 recheck_focus DEBUG ] 0x00600003 (Picom config symlink check - Brave) focused.
+[ 06/26/2025 09:32:27.196 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 930
+[ 06/26/2025 09:32:27.201 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:27.746 ev_handle DEBUG ] event PROPERTY_N serial 0x000003ac window 0x00600003 "Picom config symlink check - Brave"
+[ 06/26/2025 09:32:27.746 ev_property_notify DEBUG ] { atom = 0x00000177, window = 0x00600003, state = 0 }
+[ 06/26/2025 09:32:27.746 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:28.734 ev_handle DEBUG ] event PROPERTY_N serial 0x000003b6 window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:28.734 ev_property_notify DEBUG ] { atom = 0x00000191, window = 0x0000042f, state = 0 }
+[ 06/26/2025 09:32:28.734 ev_handle DEBUG ] event PROPERTY_N serial 0x000003b6 window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:28.734 ev_property_notify DEBUG ] { atom = 0x00000191, window = 0x0000042f, state = 0 }
+[ 06/26/2025 09:32:28.734 ev_handle DEBUG ] event CONFIGURE_ serial 0x000003b6 window 0x00400015 "lukas@archlinux:~/dotfiles"
+[ 06/26/2025 09:32:28.734 ev_configure_notify DEBUG ] { event: 0x00400015, id: 0x00400015, above: 0x00400014, override_redirect: 1 }
+[ 06/26/2025 09:32:28.734 ev_handle DEBUG ] event CONFIGURE_ serial 0x000003b6 window 0x00400015 "lukas@archlinux:~/dotfiles"
+[ 06/26/2025 09:32:28.734 ev_configure_notify DEBUG ] { event: 0x0000042f, id: 0x00400015, above: 0x00400014, override_redirect: 1 }
+[ 06/26/2025 09:32:28.734 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:28.734 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:28.735 ev_handle DEBUG ] event PROPERTY_N serial 0x000003b6 window 0x00600003 "Picom config symlink check - Brave"
+[ 06/26/2025 09:32:28.735 ev_property_notify DEBUG ] { atom = 0x00000177, window = 0x00600003, state = 0 }
+[ 06/26/2025 09:32:28.751 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:28.752 ev_handle DEBUG ] event PROPERTY_N serial 0x000003c2 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:28.752 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:28.768 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:28.769 ev_handle DEBUG ] event PROPERTY_N serial 0x000003ca window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:28.769 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:28.785 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:28.786 ev_handle DEBUG ] event PROPERTY_N serial 0x000003d2 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:28.786 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:28.801 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:28.802 ev_handle DEBUG ] event PROPERTY_N serial 0x000003da window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:28.802 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:28.818 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:28.819 ev_handle DEBUG ] event PROPERTY_N serial 0x000003e2 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:28.819 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:28.835 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:28.835 ev_handle DEBUG ] event PROPERTY_N serial 0x000003e9 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:28.835 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:28.852 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:28.852 ev_handle DEBUG ] event PROPERTY_N serial 0x000003f2 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:28.852 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:28.868 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:28.869 ev_handle DEBUG ] event PROPERTY_N serial 0x000003f9 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:28.869 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:28.885 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:28.886 ev_handle DEBUG ] event PROPERTY_N serial 0x00000402 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:28.886 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:28.902 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:28.902 ev_handle DEBUG ] event PROPERTY_N serial 0x00000409 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:28.902 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:28.918 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:28.919 ev_handle DEBUG ] event PROPERTY_N serial 0x00000412 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:28.919 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:28.935 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:28.936 ev_handle DEBUG ] event PROPERTY_N serial 0x0000041a window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:28.936 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:28.952 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:28.969 ev_handle DEBUG ] event PROPERTY_N serial 0x00000423 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:28.969 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:28.969 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:29.017 check_render_finish DEBUG ] Last render did not complete during vblank, msc: 0
+[ 06/26/2025 09:32:29.062 ev_handle DEBUG ] event PROPERTY_N serial 0x0000043b window 0x00600003 "Picom config symlink check - Brave"
+[ 06/26/2025 09:32:29.062 ev_property_notify DEBUG ] { atom = 0x00000177, window = 0x00600003, state = 0 }
+[ 06/26/2025 09:32:29.062 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:29.236 ev_handle DEBUG ] event PROPERTY_N serial 0x00000458 window 0x00600003 "Picom config symlink check - Brave"
+[ 06/26/2025 09:32:29.236 ev_property_notify DEBUG ] { atom = 0x00000177, window = 0x00600003, state = 0 }
+[ 06/26/2025 09:32:29.236 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:29.239 ev_handle DEBUG ] event PROPERTY_N serial 0x0000045d window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:29.239 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:29.252 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:29.353 ev_handle DEBUG ] event PROPERTY_N serial 0x00000469 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:29.353 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:29.353 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:29.369 ev_handle DEBUG ] event PROPERTY_N serial 0x00000477 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:29.369 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:29.385 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:29.402 ev_handle DEBUG ] event PROPERTY_N serial 0x00000480 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:29.403 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:29.403 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:29.419 ev_handle DEBUG ] event PROPERTY_N serial 0x0000048d window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:29.419 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:29.434 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:29.452 ev_handle DEBUG ] event PROPERTY_N serial 0x00000496 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:29.452 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:29.452 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:29.469 ev_handle DEBUG ] event PROPERTY_N serial 0x000004a3 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:29.469 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:29.485 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:29.537 ev_handle DEBUG ] event PROPERTY_N serial 0x000004ae window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:29.537 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:29.537 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:29.642 ev_handle DEBUG ] event PROPERTY_N serial 0x000004c7 window 0x00600003 "Picom config symlink check - Brave"
+[ 06/26/2025 09:32:29.642 ev_property_notify DEBUG ] { atom = 0x00000177, window = 0x00600003, state = 0 }
+[ 06/26/2025 09:32:29.642 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:29.734 check_render_finish DEBUG ] Last render did not complete during vblank, msc: 0
+[ 06/26/2025 09:32:29.810 ev_handle DEBUG ] event PROPERTY_N serial 0x000004e4 window 0x00600003 "Picom config symlink check - Brave"
+[ 06/26/2025 09:32:29.810 ev_property_notify DEBUG ] { atom = 0x00000177, window = 0x00600003, state = 0 }
+[ 06/26/2025 09:32:29.810 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:29.836 ev_handle DEBUG ] event PROPERTY_N serial 0x000004eb window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:29.837 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:29.837 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:29.869 ev_handle DEBUG ] event PROPERTY_N serial 0x000004f9 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:29.869 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:29.869 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:29.886 ev_handle DEBUG ] event PROPERTY_N serial 0x00000506 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:29.886 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:29.902 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:29.903 ev_handle DEBUG ] event PROPERTY_N serial 0x0000050e window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:29.903 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:29.918 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:29.919 ev_handle DEBUG ] event PROPERTY_N serial 0x00000516 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:29.919 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:29.935 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:29.936 ev_handle DEBUG ] event PROPERTY_N serial 0x0000051d window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:29.936 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:29.952 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:29.952 ev_handle DEBUG ] event PROPERTY_N serial 0x00000525 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:29.952 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:29.968 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:29.969 ev_handle DEBUG ] event PROPERTY_N serial 0x0000052d window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:29.969 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:29.985 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:29.986 ev_handle DEBUG ] event PROPERTY_N serial 0x00000535 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:29.986 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:30.002 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:30.003 ev_handle DEBUG ] event PROPERTY_N serial 0x0000053e window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:30.003 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:30.018 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:30.020 ev_handle DEBUG ] event PROPERTY_N serial 0x00000546 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:30.020 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:30.035 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:30.036 ev_handle DEBUG ] event PROPERTY_N serial 0x0000054d window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:30.036 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:30.052 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:30.052 ev_handle DEBUG ] event PROPERTY_N serial 0x00000556 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:30.052 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:30.068 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:30.069 ev_handle DEBUG ] event PROPERTY_N serial 0x0000055e window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:30.069 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:30.085 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:30.086 ev_handle DEBUG ] event PROPERTY_N serial 0x00000566 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:30.086 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:30.102 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:30.102 ev_handle DEBUG ] event PROPERTY_N serial 0x0000056e window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:30.102 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:30.118 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:30.119 ev_handle DEBUG ] event PROPERTY_N serial 0x00000576 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:30.119 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:30.135 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:30.136 ev_handle DEBUG ] event PROPERTY_N serial 0x0000057e window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:30.136 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:30.152 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:30.153 ev_handle DEBUG ] event PROPERTY_N serial 0x00000586 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:30.153 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:30.168 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:30.169 ev_handle DEBUG ] event PROPERTY_N serial 0x0000058e window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:30.169 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:30.185 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:30.188 ev_handle DEBUG ] event PROPERTY_N serial 0x00000596 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:30.188 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:30.202 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:30.401 ev_handle DEBUG ] event PROPERTY_N serial 0x000005ac window 0x00600003 "Picom config symlink check - Brave"
+[ 06/26/2025 09:32:30.402 ev_property_notify DEBUG ] { atom = 0x00000177, window = 0x00600003, state = 0 }
+[ 06/26/2025 09:32:30.402 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:30.700 ev_handle DEBUG ] event PROPERTY_N serial 0x000005ca window 0x00600003 "Picom config symlink check - Brave"
+[ 06/26/2025 09:32:30.700 ev_property_notify DEBUG ] { atom = 0x00000177, window = 0x00600003, state = 0 }
+[ 06/26/2025 09:32:30.700 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:30.704 ev_handle DEBUG ] event PROPERTY_N serial 0x000005d0 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:30.704 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:30.718 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:30.787 ev_handle DEBUG ] event PROPERTY_N serial 0x000005dc window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:30.788 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:30.788 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:30.803 ev_handle DEBUG ] event PROPERTY_N serial 0x000005e9 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:30.803 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:30.818 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:30.836 ev_handle DEBUG ] event PROPERTY_N serial 0x000005f2 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:30.836 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:30.836 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:30.853 ev_handle DEBUG ] event PROPERTY_N serial 0x000005ff window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:30.853 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:30.868 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:30.870 ev_handle DEBUG ] event PROPERTY_N serial 0x00000607 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:30.870 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:30.885 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:30.886 ev_handle DEBUG ] event PROPERTY_N serial 0x0000060f window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:30.886 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:30.902 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:30.903 ev_handle DEBUG ] event PROPERTY_N serial 0x00000617 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:30.903 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:30.918 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:30.920 ev_handle DEBUG ] event PROPERTY_N serial 0x0000061f window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:30.920 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:30.935 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:30.936 ev_handle DEBUG ] event PROPERTY_N serial 0x00000627 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:30.936 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:30.952 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:30.953 ev_handle DEBUG ] event PROPERTY_N serial 0x0000062f window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:30.953 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:30.968 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:30.969 ev_handle DEBUG ] event PROPERTY_N serial 0x00000637 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:30.969 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:30.985 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:30.987 ev_handle DEBUG ] event PROPERTY_N serial 0x0000063f window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:30.987 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:31.002 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:31.020 ev_handle DEBUG ] event PROPERTY_N serial 0x00000648 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:31.020 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:31.020 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:31.036 ev_handle DEBUG ] event PROPERTY_N serial 0x00000655 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:31.036 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:31.052 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:31.053 ev_handle DEBUG ] event PROPERTY_N serial 0x0000065d window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:31.053 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:31.068 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:31.086 ev_handle DEBUG ] event PROPERTY_N serial 0x00000666 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:31.086 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:31.086 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:31.137 ev_handle DEBUG ] event PROPERTY_N serial 0x00000675 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:31.137 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:31.137 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:31.287 ev_handle DEBUG ] event PROPERTY_N serial 0x00000686 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:31.287 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:31.287 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:31.319 ev_handle DEBUG ] event PROPERTY_N serial 0x00000695 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:31.319 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:31.319 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:31.370 ev_handle DEBUG ] event PROPERTY_N serial 0x000006a4 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:31.370 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:31.370 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:31.421 ev_handle DEBUG ] event PROPERTY_N serial 0x000006b3 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:31.421 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:31.421 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:31.793 ev_handle DEBUG ] event PROPERTY_N serial 0x000006ce window 0x00600003 "Picom config symlink check - Brave"
+[ 06/26/2025 09:32:31.793 ev_property_notify DEBUG ] { atom = 0x00000177, window = 0x00600003, state = 0 }
+[ 06/26/2025 09:32:31.793 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:32.101 ev_handle DEBUG ] event PROPERTY_N serial 0x000006ec window 0x00600003 "Picom config symlink check - Brave"
+[ 06/26/2025 09:32:32.102 ev_property_notify DEBUG ] { atom = 0x00000177, window = 0x00600003, state = 0 }
+[ 06/26/2025 09:32:32.102 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:32.105 ev_handle DEBUG ] event PROPERTY_N serial 0x000006f2 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:32.105 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:32.117 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:32.269 ev_handle DEBUG ] event PROPERTY_N serial 0x000006fe window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:32.269 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:32.269 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:32.286 ev_handle DEBUG ] event PROPERTY_N serial 0x0000070c window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:32.286 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:32.301 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:32.318 ev_handle DEBUG ] event PROPERTY_N serial 0x00000715 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:32.319 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:32.319 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:32.336 ev_handle DEBUG ] event PROPERTY_N serial 0x00000722 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:32.336 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:32.352 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:32.352 ev_handle DEBUG ] event PROPERTY_N serial 0x00000728 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:32.352 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:32.367 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:32.369 ev_handle DEBUG ] event PROPERTY_N serial 0x00000732 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:32.369 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:32.385 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:32.386 ev_handle DEBUG ] event PROPERTY_N serial 0x00000735 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:32.386 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:32.401 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:32.402 ev_handle DEBUG ] event PROPERTY_N serial 0x00000742 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:32.402 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:32.418 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:32.419 ev_handle DEBUG ] event PROPERTY_N serial 0x0000074a window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:32.419 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:32.434 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:32.435 ev_handle DEBUG ] event PROPERTY_N serial 0x00000752 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:32.435 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:32.451 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:32.469 ev_handle DEBUG ] event PROPERTY_N serial 0x0000075b window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:32.469 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:32.469 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:32.502 ev_handle DEBUG ] event PROPERTY_N serial 0x00000769 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:32.502 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:32.503 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:32.519 ev_handle DEBUG ] event PROPERTY_N serial 0x00000776 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:32.519 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:32.535 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:32.569 ev_handle DEBUG ] event PROPERTY_N serial 0x00000780 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:32.569 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:32.569 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:32.586 ev_handle DEBUG ] event PROPERTY_N serial 0x00000787 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:32.586 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:32.602 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:32.653 ev_handle DEBUG ] event PROPERTY_N serial 0x00000798 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:32.653 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:32.653 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:32.669 ev_handle DEBUG ] event PROPERTY_N serial 0x000007a5 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:32.669 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:32.685 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:32.753 ev_handle DEBUG ] event PROPERTY_N serial 0x000007b1 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:32.753 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:32.753 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:32.785 ev_handle DEBUG ] event PROPERTY_N serial 0x000007bf window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:32.785 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:32.785 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:33.004 ev_handle DEBUG ] event PROPERTY_N serial 0x000007d0 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:33.004 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:33.004 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:33.206 ev_handle DEBUG ] event PROPERTY_N serial 0x000007eb window 0x00600003 "Picom config symlink check - Brave"
+[ 06/26/2025 09:32:33.206 ev_property_notify DEBUG ] { atom = 0x00000177, window = 0x00600003, state = 0 }
+[ 06/26/2025 09:32:33.206 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:33.520 ev_handle DEBUG ] event PROPERTY_N serial 0x00000808 window 0x00600003 "Picom config symlink check - Brave"
+[ 06/26/2025 09:32:33.520 ev_property_notify DEBUG ] { atom = 0x00000177, window = 0x00600003, state = 0 }
+[ 06/26/2025 09:32:33.520 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:33.524 ev_handle DEBUG ] event PROPERTY_N serial 0x0000080e window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:33.524 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:33.535 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:33.586 ev_handle DEBUG ] event PROPERTY_N serial 0x00000819 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:33.586 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:33.586 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:33.636 ev_handle DEBUG ] event PROPERTY_N serial 0x00000828 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:33.636 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:33.636 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:33.670 ev_handle DEBUG ] event PROPERTY_N serial 0x00000836 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:33.670 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:33.670 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:33.686 ev_handle DEBUG ] event PROPERTY_N serial 0x00000843 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:33.686 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:33.702 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:33.703 ev_handle DEBUG ] event PROPERTY_N serial 0x0000084b window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:33.703 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:33.718 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:33.719 ev_handle DEBUG ] event PROPERTY_N serial 0x00000853 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:33.719 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:33.735 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:33.736 ev_handle DEBUG ] event PROPERTY_N serial 0x0000085b window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:33.736 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:33.752 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:33.753 ev_handle DEBUG ] event PROPERTY_N serial 0x00000863 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:33.753 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:33.768 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:33.770 ev_handle DEBUG ] event PROPERTY_N serial 0x0000086b window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:33.770 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:33.785 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:33.786 ev_handle DEBUG ] event PROPERTY_N serial 0x00000873 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:33.786 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:33.802 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:33.803 ev_handle DEBUG ] event PROPERTY_N serial 0x0000087b window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:33.803 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:33.818 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:33.837 ev_handle DEBUG ] event PROPERTY_N serial 0x00000884 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:33.837 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:33.837 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:33.853 ev_handle DEBUG ] event PROPERTY_N serial 0x00000891 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:33.853 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:33.868 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:33.970 ev_handle DEBUG ] event PROPERTY_N serial 0x0000089d window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:33.970 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:33.970 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:33.986 ev_handle DEBUG ] event PROPERTY_N serial 0x000008ab window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:33.986 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:34.002 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:34.003 ev_handle DEBUG ] event PROPERTY_N serial 0x000008b3 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:34.003 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:34.018 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:34.020 ev_handle DEBUG ] event PROPERTY_N serial 0x000008bb window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:34.020 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:34.035 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:34.053 ev_handle DEBUG ] event PROPERTY_N serial 0x000008c4 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:34.053 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:34.053 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:34.186 ev_handle DEBUG ] event PROPERTY_N serial 0x000008d5 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:34.186 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:34.186 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:34.219 ev_handle DEBUG ] event PROPERTY_N serial 0x000008e4 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:34.219 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:34.219 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:34.270 ev_handle DEBUG ] event PROPERTY_N serial 0x000008f3 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:34.270 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:34.270 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:34.337 ev_handle DEBUG ] event PROPERTY_N serial 0x00000903 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:34.337 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:34.337 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:34.826 ev_handle DEBUG ] event PROPERTY_N serial 0x0000091e window 0x00600003 "Picom config symlink check - Brave"
+[ 06/26/2025 09:32:34.827 ev_property_notify DEBUG ] { atom = 0x00000177, window = 0x00600003, state = 0 }
+[ 06/26/2025 09:32:34.827 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:36.285 check_render_finish DEBUG ] Last render did not complete during vblank, msc: 0
+[ 06/26/2025 09:32:40.251 check_render_finish DEBUG ] Last render did not complete during vblank, msc: 0
+[ 06/26/2025 09:32:40.285 check_render_finish DEBUG ] Last render did not complete during vblank, msc: 0
+[ 06/26/2025 09:32:42.695 ev_handle DEBUG ] event PROPERTY_N serial 0x00000b6a window 0x00600003 "Picom config symlink check - Brave"
+[ 06/26/2025 09:32:42.695 ev_property_notify DEBUG ] { atom = 0x00000177, window = 0x00600003, state = 0 }
+[ 06/26/2025 09:32:42.695 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:42.720 ev_handle DEBUG ] event PROPERTY_N serial 0x00000b72 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:42.720 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:42.720 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:42.736 ev_handle DEBUG ] event PROPERTY_N serial 0x00000b7f window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:42.736 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:42.752 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:42.752 ev_handle DEBUG ] event PROPERTY_N serial 0x00000b86 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:42.752 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:42.768 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:42.770 ev_handle DEBUG ] event PROPERTY_N serial 0x00000b8f window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:42.770 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:42.785 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:42.787 ev_handle DEBUG ] event PROPERTY_N serial 0x00000b97 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:42.787 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:42.802 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:42.803 ev_handle DEBUG ] event PROPERTY_N serial 0x00000b9f window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:42.803 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:42.818 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:42.822 ev_handle DEBUG ] event PROPERTY_N serial 0x00000ba7 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:42.822 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:42.835 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:43.001 ev_handle DEBUG ] event PROPERTY_N serial 0x00000bbb window 0x00600003 "Picom config symlink check - Brave"
+[ 06/26/2025 09:32:43.001 ev_property_notify DEBUG ] { atom = 0x00000177, window = 0x00600003, state = 0 }
+[ 06/26/2025 09:32:43.001 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:44.526 ev_handle DEBUG ] event PROPERTY_N serial 0x00000bd9 window 0x00600003 "Picom config symlink check - Brave"
+[ 06/26/2025 09:32:44.526 ev_property_notify DEBUG ] { atom = 0x00000177, window = 0x00600003, state = 0 }
+[ 06/26/2025 09:32:44.526 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:44.626 ev_handle DEBUG ] event PROPERTY_N serial 0x00000be3 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:44.626 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:44.626 ev_handle DEBUG ] event PROPERTY_N serial 0x00000be3 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:44.626 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:44.626 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:45.368 check_render_finish DEBUG ] Last render did not complete during vblank, msc: 0
+[ 06/26/2025 09:32:45.401 check_render_finish DEBUG ] Last render did not complete during vblank, msc: 0
+[ 06/26/2025 09:32:45.684 check_render_finish DEBUG ] Last render did not complete during vblank, msc: 0
+[ 06/26/2025 09:32:45.902 ev_handle DEBUG ] event CREATE_NOT serial 0x00000cec window 0x004002bc "(Failed to get title)"
+[ 06/26/2025 09:32:45.902 wm_import_start_inner DEBUG ] Starting import process for window 0x004002bc
+[ 06/26/2025 09:32:45.902 ev_handle DEBUG ] event CLIENT_MES serial 0x00000cec window 0000000000 ""
+[ 06/26/2025 09:32:45.902 ev_handle DEBUG ] event CLIENT_MES serial 0x00000cec window 0000000000 ""
+[ 06/26/2025 09:32:45.902 ev_handle DEBUG ] event CLIENT_MES serial 0x00000cec window 0000000000 ""
+[ 06/26/2025 09:32:45.902 ev_handle DEBUG ] event DESTROY_NO serial 0x00000cec window 0x004002bc "(Failed to get title)"
+[ 06/26/2025 09:32:45.902 ev_destroy_notify DEBUG ] { event: 0x0000042f, id: 0x004002bc }
+[ 06/26/2025 09:32:45.902 wm_tree_detach DEBUG ] Detaching toplevel window 0x004002bc.
+[ 06/26/2025 09:32:45.902 wm_disconnect DEBUG ] Destroy window 0x004002bc because we can't keep track of it
+[ 06/26/2025 09:32:45.902 wm_handle_set_event_mask_reply DEBUG ] Failed to set event mask for window 0x004002bc: X error 3 WINDOW request 2 minor 0 serial 3309, ignoring this window.
+[ 06/26/2025 09:32:45.902 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 3310
+[ 06/26/2025 09:32:47.518 check_render_finish DEBUG ] Last render did not complete during vblank, msc: 0
+[ 06/26/2025 09:32:47.568 check_render_finish DEBUG ] Last render did not complete during vblank, msc: 0
+[ 06/26/2025 09:32:47.957 ev_handle DEBUG ] event PROPERTY_N serial 0x00000d4b window 0x00600003 "Picom config symlink check - Brave"
+[ 06/26/2025 09:32:47.957 ev_property_notify DEBUG ] { atom = 0x00000177, window = 0x00600003, state = 0 }
+[ 06/26/2025 09:32:47.957 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:48.885 check_render_finish DEBUG ] Last render did not complete during vblank, msc: 0
+[ 06/26/2025 09:32:51.362 ev_handle DEBUG ] event PROPERTY_N serial 0x00000e1a window 0x00600003 "Picom config symlink check - Brave"
+[ 06/26/2025 09:32:51.362 ev_property_notify DEBUG ] { atom = 0x00000177, window = 0x00600003, state = 0 }
+[ 06/26/2025 09:32:51.362 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:51.601 check_render_finish DEBUG ] Last render did not complete during vblank, msc: 0
+[ 06/26/2025 09:32:52.057 ev_handle DEBUG ] event PROPERTY_N serial 0x00000e3c window 0x00600003 "Picom config symlink check - Brave"
+[ 06/26/2025 09:32:52.057 ev_property_notify DEBUG ] { atom = 0x00000177, window = 0x00600003, state = 0 }
+[ 06/26/2025 09:32:52.057 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:52.085 check_render_finish DEBUG ] Last render did not complete during vblank, msc: 0
+[ 06/26/2025 09:32:52.191 ev_handle DEBUG ] event PROPERTY_N serial 0x00000e4f window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:52.191 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:52.191 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:52.204 ev_handle DEBUG ] event PROPERTY_N serial 0x00000e5d window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:52.204 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:52.219 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:52.220 ev_handle DEBUG ] event PROPERTY_N serial 0x00000e65 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:52.220 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:52.235 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:52.237 ev_handle DEBUG ] event PROPERTY_N serial 0x00000e6d window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:52.237 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:52.251 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:52.253 ev_handle DEBUG ] event PROPERTY_N serial 0x00000e75 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:52.253 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:52.269 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:52.269 ev_handle DEBUG ] event PROPERTY_N serial 0x00000e7d window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:52.269 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:52.285 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:52.287 ev_handle DEBUG ] event PROPERTY_N serial 0x00000e85 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:52.287 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:52.302 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:52.632 ev_handle DEBUG ] event PROPERTY_N serial 0x00000e91 window 0x00600003 "Picom config symlink check - Brave"
+[ 06/26/2025 09:32:52.632 ev_property_notify DEBUG ] { atom = 0x00000177, window = 0x00600003, state = 0 }
+[ 06/26/2025 09:32:52.632 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:52.651 check_render_finish DEBUG ] Last render did not complete during vblank, msc: 0
+[ 06/26/2025 09:32:52.698 ev_handle DEBUG ] event PROPERTY_N serial 0x00000ea2 window 0x00600003 "Picom config symlink check - Brave"
+[ 06/26/2025 09:32:52.698 ev_property_notify DEBUG ] { atom = 0x00000177, window = 0x00600003, state = 0 }
+[ 06/26/2025 09:32:52.698 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:52.708 ev_handle DEBUG ] event PROPERTY_N serial 0x00000ea8 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:52.708 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:52.708 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:52.709 ev_handle DEBUG ] event PROPERTY_N serial 0x00000ea8 window 0x00600005 "(Failed to get title)"
+[ 06/26/2025 09:32:52.709 ev_property_notify DEBUG ] { atom = 0x000001c9, window = 0x00600005, state = 0 }
+[ 06/26/2025 09:32:52.718 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:53.000 ev_handle DEBUG ] event PROPERTY_N serial 0x00000ebb window 0x00600003 "Picom config symlink check - Brave"
+[ 06/26/2025 09:32:53.001 ev_property_notify DEBUG ] { atom = 0x00000177, window = 0x00600003, state = 0 }
+[ 06/26/2025 09:32:53.001 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:53.530 ev_handle DEBUG ] event  FOCUS_OUT serial 0x00000ec5 window 0x00400013 "Picom config symlink check - Brave"
+[ 06/26/2025 09:32:53.530 ev_focus_out DEBUG ] { mode: GRAB, detail: VIRTUAL }
+[ 06/26/2025 09:32:53.530 ev_update_focused DEBUG ] Started async request to recheck focus
+[ 06/26/2025 09:32:53.531 recheck_focus DEBUG ] Current focused window is 0x00600003
+[ 06/26/2025 09:32:53.531 recheck_focus DEBUG ] 0x00600003 (Picom config symlink check - Brave) focused.
+[ 06/26/2025 09:32:53.531 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 3783
+[ 06/26/2025 09:32:53.536 ev_handle DEBUG ] event PROPERTY_N serial 0x00000ece window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:53.536 ev_property_notify DEBUG ] { atom = 0x00000155, window = 0x0000042f, state = 0 }
+[ 06/26/2025 09:32:53.536 ev_handle DEBUG ] event PROPERTY_N serial 0x00000ece window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:53.536 ev_property_notify DEBUG ] { atom = 0x00000156, window = 0x0000042f, state = 0 }
+[ 06/26/2025 09:32:53.536 ev_handle DEBUG ] event PROPERTY_N serial 0x00000ece window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:53.536 ev_property_notify DEBUG ] { atom = 0x00000156, window = 0x0000042f, state = 0 }
+[ 06/26/2025 09:32:53.536 ev_handle DEBUG ] event PROPERTY_N serial 0x00000ece window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:53.536 ev_property_notify DEBUG ] { atom = 0x00000156, window = 0x0000042f, state = 0 }
+[ 06/26/2025 09:32:53.536 ev_handle DEBUG ] event PROPERTY_N serial 0x00000ece window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:53.536 ev_property_notify DEBUG ] { atom = 0x00000155, window = 0x0000042f, state = 0 }
+[ 06/26/2025 09:32:53.536 ev_handle DEBUG ] event PROPERTY_N serial 0x00000ece window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:53.536 ev_property_notify DEBUG ] { atom = 0x00000156, window = 0x0000042f, state = 0 }
+[ 06/26/2025 09:32:53.536 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:53.542 ev_handle DEBUG ] event MAP_NOTIFY serial 0x00000ed5 window 0x00400015 "lukas@archlinux:~/dotfiles"
+[ 06/26/2025 09:32:53.542 ev_handle DEBUG ] event MAP_NOTIFY serial 0x00000ed5 window 0x00400015 "lukas@archlinux:~/dotfiles"
+[ 06/26/2025 09:32:53.542 repair_win DEBUG ] Window 0x00400015 (lukas@archlinux:~/dotfiles) has been damaged the first time
+[ 06/26/2025 09:32:53.542 ev_handle DEBUG ] event  FOCUS_OUT serial 0x00000ed5 window 0x00400013 "Picom config symlink check - Brave"
+[ 06/26/2025 09:32:53.542 ev_focus_out DEBUG ] { mode: WHILE_GRABBED, detail: NONLINEAR_VIRTUAL }
+[ 06/26/2025 09:32:53.542 ev_update_focused DEBUG ] Started async request to recheck focus
+[ 06/26/2025 09:32:53.542 ev_handle DEBUG ] event   FOCUS_IN serial 0x00000ed5 window 0x00400015 "lukas@archlinux:~/dotfiles"
+[ 06/26/2025 09:32:53.542 ev_focus_in DEBUG ] { mode: WHILE_GRABBED, detail: NONLINEAR_VIRTUAL }
+[ 06/26/2025 09:32:53.542 ev_handle DEBUG ] event UNMAP_NOTI serial 0x00000ed5 window 0x00400013 "Picom config symlink check - Brave"
+[ 06/26/2025 09:32:53.542 ev_handle DEBUG ] event UNMAP_NOTI serial 0x00000ed5 window 0x00400013 "Picom config symlink check - Brave"
+[ 06/26/2025 09:32:53.542 unmap_win_start DEBUG ] Unmapping 0x00400013 (Picom config symlink check - Brave)
+[ 06/26/2025 09:32:53.542 recheck_focus DEBUG ] Current focused window is 0x01200003
+[ 06/26/2025 09:32:53.542 wm_ref_set_focused DEBUG ] Focused window changed from 0x00400013 to 0x00400015
+[ 06/26/2025 09:32:53.542 recheck_focus DEBUG ] 0x01200003 (lukas@archlinux:~/dotfiles) focused.
+[ 06/26/2025 09:32:53.542 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 3805
+[ 06/26/2025 09:32:53.542 ev_handle DEBUG ] event PROPERTY_N serial 0x00000edf window 0x01200003 "lukas@archlinux:~/dotfiles"
+[ 06/26/2025 09:32:53.542 ev_property_notify DEBUG ] { atom = 0x00000023, window = 0x01200003, state = 0 }
+[ 06/26/2025 09:32:53.551 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:53.551 win_map_start DEBUG ] Mapping (0x00400015 "lukas@archlinux:~/dotfiles"), old state 0
+[ 06/26/2025 09:32:53.551 win_update_wintype DEBUG ] Window (0x00400015) has type 0x100
+[ 06/26/2025 09:32:53.551 win_update_name DEBUG ] (0x00400015): client = 0x01200003, name = "lukas@archlinux:~/dotfiles", ret = 0
+[ 06/26/2025 09:32:53.552 win_on_factor_change DEBUG ] Window 0x00400015, client 0x01200003 (lukas@archlinux:~/dotfiles) factor change
+[ 06/26/2025 09:32:53.552 win_determine_shadow DEBUG ] Determining shadow of window 0x00400015 (lukas@archlinux:~/dotfiles)
+[ 06/26/2025 09:32:53.552 c2_match_once DEBUG ] (0x00400015): leaf: result = 0, client = 0x01200003,  pattern = class_g = "Conky"
+[ 06/26/2025 09:32:53.552 c2_match_once DEBUG ] (0x00400015): leaf: result = 0, client = 0x01200003,  pattern = class_g = "Polybar"
+[ 06/26/2025 09:32:53.552 c2_match_once DEBUG ] (0x00400015): leaf: result = 0, client = 0x01200003,  pattern = class_g = "slop"
+[ 06/26/2025 09:32:53.552 c2_match_once DEBUG ] (0x00400015): leaf: result = 0, client = 0x01200003,  pattern = name = "Notification"
+[ 06/26/2025 09:32:53.552 c2_match_once DEBUG ] (0x00400015): leaf: result = 0, client = 0x01200003,  pattern = class_g = "awesome"
+[ 06/26/2025 09:32:53.552 c2_match_once DEBUG ] (0x00400015): leaf: result = 0, client = 0x01200003,  pattern = _GTK_FRAME_EXTENTS@[0]
+[ 06/26/2025 09:32:53.552 win_determine_blur_background DEBUG ] Determining blur-background of window 0x00400015 (lukas@archlinux:~/dotfiles)
+[ 06/26/2025 09:32:53.552 win_determine_rounded_corners DEBUG ] Rounding corners for window 0x00400015
+[ 06/26/2025 09:32:53.552 c2_match_once DEBUG ] (0x00400015): leaf: result = 1, client = 0x01200003,  pattern = class_g = "Alacritty"
+[ 06/26/2025 09:32:53.552 win_on_factor_change DEBUG ] Window mode changed to 0
+[ 06/26/2025 09:32:53.552 c2_match_once DEBUG ] (0x00400015): leaf: result = 1, client = 0x01200003,  pattern = class_g = "Alacritty"
+[ 06/26/2025 09:32:53.552 win_on_factor_change DEBUG ] Window mode changed to 0
+[ 06/26/2025 09:32:53.552 win_process_animation_and_state_change DEBUG ] Starting animation hide for window 0x00400013 (Picom config symlink check - Brave)
+[ 06/26/2025 09:32:53.552 win_process_animation_and_state_change DEBUG ] Starting animation show for window 0x00400015 (lukas@archlinux:~/dotfiles)
+[ 06/26/2025 09:32:53.552 win_process_image_flags DEBUG ] New named pixmap for 0x00400015 (lukas@archlinux:~/dotfiles) : 0x00a00041
+[ 06/26/2025 09:32:53.552 win_release_pixmap DEBUG ] Releasing pixmap of window 0x00400015 (lukas@archlinux:~/dotfiles)
+[ 06/26/2025 09:32:53.552 glx_bind_pixmap DEBUG ] Found cached FBConfig for RGBA8888, depth: 32, visual id: 0xd0
+[ 06/26/2025 09:32:53.552 glx_bind_pixmap DEBUG ] depth 32, rgba 1
+[ 06/26/2025 09:32:53.553 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 3836
+[ 06/26/2025 09:32:53.618 win_release_pixmap DEBUG ] Releasing pixmap of window 0x00400013 (Picom config symlink check - Brave)
+[ 06/26/2025 09:32:53.651 ev_handle DEBUG ] event  FOCUS_OUT serial 0x00000f18 window 0x00400015 "lukas@archlinux:~/dotfiles"
+[ 06/26/2025 09:32:53.651 ev_focus_out DEBUG ] { mode: UNGRAB, detail: POINTER }
+[ 06/26/2025 09:32:53.651 ev_update_focused DEBUG ] Started async request to recheck focus
+[ 06/26/2025 09:32:53.651 ev_handle DEBUG ] event   FOCUS_IN serial 0x00000f18 window 0x00400015 "lukas@archlinux:~/dotfiles"
+[ 06/26/2025 09:32:53.651 ev_focus_in DEBUG ] { mode: UNGRAB, detail: VIRTUAL }
+[ 06/26/2025 09:32:53.652 check_render_finish DEBUG ] Last render did not complete during vblank, msc: 0
+[ 06/26/2025 09:32:53.652 recheck_focus DEBUG ] Current focused window is 0x01200003
+[ 06/26/2025 09:32:53.652 recheck_focus DEBUG ] 0x01200003 (lukas@archlinux:~/dotfiles) focused.
+[ 06/26/2025 09:32:53.652 x_generic_async_callback DEBUG ] Expected X error for request in x_prepare_for_sleep at ../src/x.c:1111: X error 4 PIXMAP request 54 minor 0 serial 3866
+[ 06/26/2025 09:32:53.653 ev_handle DEBUG ] event PROPERTY_N serial 0x00000f20 window 0x01200003 "lukas@archlinux:~/dotfiles"
+[ 06/26/2025 09:32:53.653 ev_property_notify DEBUG ] { atom = 0x00000023, window = 0x01200003, state = 0 }
+[ 06/26/2025 09:32:53.668 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:53.987 ev_handle DEBUG ] event PROPERTY_N serial 0x00000f2c window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:53.987 ev_property_notify DEBUG ] { atom = 0x00000191, window = 0x0000042f, state = 0 }
+[ 06/26/2025 09:32:53.987 ev_handle DEBUG ] event PROPERTY_N serial 0x00000f2c window 0x0000042f "(Root window)"
+[ 06/26/2025 09:32:53.987 ev_property_notify DEBUG ] { atom = 0x00000191, window = 0x0000042f, state = 0 }
+[ 06/26/2025 09:32:53.987 ev_handle DEBUG ] event CONFIGURE_ serial 0x00000f2c window 0x00400013 "Picom config symlink check - Brave"
+[ 06/26/2025 09:32:53.987 ev_configure_notify DEBUG ] { event: 0x00400013, id: 0x00400013, above: 0x00400014, override_redirect: 1 }
+[ 06/26/2025 09:32:53.987 ev_handle DEBUG ] event CONFIGURE_ serial 0x00000f2c window 0x00400013 "Picom config symlink check - Brave"
+[ 06/26/2025 09:32:53.987 ev_configure_notify DEBUG ] { event: 0x0000042f, id: 0x00400013, above: 0x00400014, override_redirect: 1 }
+[ 06/26/2025 09:32:53.987 handle_x_events DEBUG ] Window tree changed, queueing redraw.
+[ 06/26/2025 09:32:53.987 handle_pending_updates DEBUG ] Delayed handling of events
+[ 06/26/2025 09:32:54.556 exit_enable INFO ] picom is quitting...
+[ 06/26/2025 09:32:54.556 unredirect DEBUG ] Unredirecting the screen.
+[ 06/26/2025 09:32:54.556 win_release_pixmap DEBUG ] Releasing pixmap of window 0x00a00004 ((null))
+[ 06/26/2025 09:32:54.556 win_release_shadow DEBUG ] Releasing shadow of window 0x00a00004 ((null))
+[ 06/26/2025 09:32:54.556 win_release_pixmap DEBUG ] Releasing pixmap of window 0x00400015 (lukas@archlinux:~/dotfiles)
+[ 06/26/2025 09:32:54.556 win_release_shadow DEBUG ] Releasing shadow of window 0x00400015 (lukas@archlinux:~/dotfiles)
+[ 06/26/2025 09:32:54.556 win_release_pixmap DEBUG ] Releasing pixmap of window 0x00400013 (Picom config symlink check - Brave)
+[ 06/26/2025 09:32:54.556 win_release_shadow DEBUG ] Releasing shadow of window 0x00400013 (Picom config symlink check - Brave)
+[ 06/26/2025 09:32:54.556 win_release_pixmap DEBUG ] Releasing pixmap of window 0x00400014 ((null))
+[ 06/26/2025 09:32:54.556 win_release_shadow DEBUG ] Releasing shadow of window 0x00400014 ((null))
+[ 06/26/2025 09:32:54.556 win_release_pixmap DEBUG ] Releasing pixmap of window 0x00400010 (Awesome drawin)
+[ 06/26/2025 09:32:54.557 win_release_shadow DEBUG ] Releasing shadow of window 0x00400010 (Awesome drawin)
+[ 06/26/2025 09:32:54.557 win_release_pixmap DEBUG ] Releasing pixmap of window 0x0040000d ((null))
+[ 06/26/2025 09:32:54.557 win_release_shadow DEBUG ] Releasing shadow of window 0x0040000d ((null))
+[ 06/26/2025 09:32:54.557 win_release_pixmap DEBUG ] Releasing pixmap of window 0x00400007 (Awesome no input window)
+[ 06/26/2025 09:32:54.557 win_release_shadow DEBUG ] Releasing shadow of window 0x00400007 (Awesome no input window)
+[ 06/26/2025 09:32:54.557 win_release_pixmap DEBUG ] Releasing pixmap of window 0x00400006 ((null))
+[ 06/26/2025 09:32:54.557 win_release_shadow DEBUG ] Releasing shadow of window 0x00400006 ((null))
+[ 06/26/2025 09:32:54.557 win_release_pixmap DEBUG ] Releasing pixmap of window 0x00400005 ((null))
+[ 06/26/2025 09:32:54.557 win_release_shadow DEBUG ] Releasing shadow of window 0x00400005 ((null))
+[ 06/26/2025 09:32:54.557 win_release_pixmap DEBUG ] Releasing pixmap of window 0x00400004 ((null))
+[ 06/26/2025 09:32:54.557 win_release_shadow DEBUG ] Releasing shadow of window 0x00400004 ((null))
+[ 06/26/2025 09:32:54.557 win_release_pixmap DEBUG ] Releasing pixmap of window 0x01c00006 ((null))
+[ 06/26/2025 09:32:54.557 win_release_shadow DEBUG ] Releasing shadow of window 0x01c00006 ((null))
+[ 06/26/2025 09:32:54.557 win_release_pixmap DEBUG ] Releasing pixmap of window 0x01e00003 ((null))
+[ 06/26/2025 09:32:54.557 win_release_shadow DEBUG ] Releasing shadow of window 0x01e00003 ((null))
+[ 06/26/2025 09:32:54.557 win_release_pixmap DEBUG ] Releasing pixmap of window 0x01a00000 ((null))
+[ 06/26/2025 09:32:54.557 win_release_shadow DEBUG ] Releasing shadow of window 0x01a00000 ((null))
+[ 06/26/2025 09:32:54.557 win_release_pixmap DEBUG ] Releasing pixmap of window 0x01800000 ((null))
+[ 06/26/2025 09:32:54.557 win_release_shadow DEBUG ] Releasing shadow of window 0x01800000 ((null))
+[ 06/26/2025 09:32:54.557 win_release_pixmap DEBUG ] Releasing pixmap of window 0x01600000 ((null))
+[ 06/26/2025 09:32:54.557 win_release_shadow DEBUG ] Releasing shadow of window 0x01600000 ((null))
+[ 06/26/2025 09:32:54.557 win_release_pixmap DEBUG ] Releasing pixmap of window 0x01400000 ((null))
+[ 06/26/2025 09:32:54.557 win_release_shadow DEBUG ] Releasing shadow of window 0x01400000 ((null))
+[ 06/26/2025 09:32:54.557 win_release_pixmap DEBUG ] Releasing pixmap of window 0x00800003 ((null))
+[ 06/26/2025 09:32:54.557 win_release_shadow DEBUG ] Releasing shadow of window 0x00800003 ((null))
+[ 06/26/2025 09:32:54.557 win_release_pixmap DEBUG ] Releasing pixmap of window 0x00600005 ((null))
+[ 06/26/2025 09:32:54.557 win_release_shadow DEBUG ] Releasing shadow of window 0x00600005 ((null))
+[ 06/26/2025 09:32:54.568 unredirect DEBUG ] Screen unredirected.
+[ 06/26/2025 09:32:54.569 file_watch_destroy DEBUG ] Stopping watching for file changes
