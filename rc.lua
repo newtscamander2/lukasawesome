@@ -118,9 +118,15 @@ local tasklist_buttons = gears.table.join(
 
 awful.screen.connect_for_each_screen(function(s)
 
-local gears = require("gears")
+local vicious = require("vicious")
+local cpuwidget = wibox.widget.textbox()
+vicious.register(cpuwidget, vicious.widgets.cpu, "CPU: $1%", 2)
 
+local memwidget = wibox.widget.textbox()
+vicious.register(memwidget, vicious.widgets.mem, " RAM: $1% ", 5)
+    
 -- Create tags and use icons    
+local gears = require("gears")
 local icon_dir = os.getenv("HOME") .. "/dotfiles/tagicons/"
 local tag_names = { "1", "2", "3", "4", "5" }
 local icon_files = {
@@ -143,6 +149,7 @@ for i, name in ipairs(tag_names) do
         gap = 10,
         screen = s,
         selected = (i == 1), -- Select the first tag by default
+        master_width_factor = 1,
     })
 end
 
@@ -197,6 +204,8 @@ end
         s.mytasklist, -- Middle widget
         { -- Right widgets
             layout = wibox.layout.fixed.horizontal,
+            cpuwidget,
+            memwidget,
             wibox.widget.systray(),
             mytextclock,
             s.mylayoutbox,
@@ -419,7 +428,7 @@ awful.rules.rules = {
                      keys = clientkeys,
                      buttons = clientbuttons,
                      screen = awful.screen.preferred,
-                     placement = awful.placement.no_overlap+awful.placement.no_offscreen
+                     placement = awful.placement.no_overlap+awful.placement.no_offscreen,
      }
     },
     { rule_any = { class = { "Brave-browser", "code-oss" } },
