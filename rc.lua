@@ -52,6 +52,7 @@ beautiful.init(os.getenv("HOME") .. "/.config/awesome/themes/default/theme.lua")
 -- This is used later as the default terminal and editor to run.
 terminal = "alacritty"
 filemanager = "dolphin"
+screenshot = "flameshot gui"
 browser = "brave"
 password_manager = "keepassxc"
 editor = "vim"
@@ -264,6 +265,8 @@ globalkeys = gears.table.join(
               {description = "open KeepassXC", group = "launcher"}),
     awful.key({ modkey,           }, "c", function () awful.spawn(filemanager) end,
               {description = "open Dolphin", group = "launcher"}),
+    awful.key({ modkey,           }, "m", function () awful.spawn(screenshot) end,
+              {description = "open Flameshot", group = "launcher"}),
               
     awful.key({ modkey, "Control" }, "r", awesome.restart,
               {description = "reload awesome", group = "awesome"}),
@@ -469,3 +472,4 @@ client.connect_signal("unfocus", function(c) c.border_color = beautiful.border_n
 -- Autostart
 awful.spawn.with_shell("feh --randomize --bg-fill ~/Media/wallpapers/*")
 awful.spawn.with_shell("picom")
+awful.spawn.with_shell("flameshot")
