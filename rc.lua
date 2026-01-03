@@ -145,12 +145,11 @@ for i, name in ipairs(tag_names) do
     awful.tag.add(name, {
         icon = white_icon,
         layout = awful.layout.suit.tile,
-        master_fill_policy = "master_width_factor",
+        master_fill_policy = "expand",
         gap_single_client = true,
         gap = 10,
         screen = s,
         selected = (i == 1), -- Select the first tag by default
-        master_width_factor = 0.55,
     })
 end
 
