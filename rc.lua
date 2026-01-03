@@ -150,7 +150,7 @@ for i, name in ipairs(tag_names) do
         gap = 10,
         screen = s,
         selected = (i == 1), -- Select the first tag by default
-        master_width_factor = 1,
+        master_width_factor = 0.55,
     })
 end
 
