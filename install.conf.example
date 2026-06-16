@@ -1,0 +1,37 @@
+# Dotfiles installer configuration.
+#
+# Copy to "install.conf" (the questionnaire does this for you) and edit, or run
+# `make configure` to generate it interactively. install.conf is gitignored.
+#
+# Values are yes/no unless noted.
+
+# --- Hardware ---
+GPU=amd                       # amd | intel | nvidia | hybrid
+
+# --- Display manager ---
+DISPLAY_MANAGER=lightdm       # lightdm | sddm | ly | none
+
+# --- Stow packages to symlink into $HOME ---
+STOW_PACKAGES="awesome nvim tmux alacritty"
+
+# --- AwesomeWM themes to keep available (cycled with Super+Shift+T) ---
+THEMES="arch ubuntu windows7 win11"
+
+# --- Package groups ---
+INSTALL_BASE=yes              # git, stow, base-devel, zathura, rofi, feh, neofetch, keepassxc, dolphin, flameshot, timeshift
+INSTALL_DEV=yes               # docker, g++, jdk, python, tmux, ansible, kubernetes (kubectl/helm/minikube/k9s)
+INSTALL_VIRT=yes              # wine, virtualbox
+INSTALL_MEDIA=yes             # obs-studio, gimp, shotcut, kazam
+INSTALL_TEXLIVE=yes           # texlive-most, texlive-langextra, biber (for LaTeX / goat / cv)
+INSTALL_VSCODE=yes            # VSCode OSS (code) + dark mode + LaTeX Workshop
+INSTALL_BROWSER=yes           # brave-bin (AUR)
+INSTALL_CLAUDE=yes            # claude-code (AUR)
+INSTALL_LVM_GUI=yes           # kvpm graphical LVM manager (AUR)
+INSTALL_OPTIONAL=no           # best-effort: proton drive, eurooffice (may need manual steps)
+
+# --- Personal repos cloned into ~/projects ---
+CLONE_CV=yes                  # git@gitlab.com:newtscamander/cv.git
+CLONE_GOAT=yes                # git@gitlab.com:newtscamander/goat.git  (required by the nvim config)
+
+# --- Desktop ---
+VIDEO_WALLPAPER=no            # opt-in looping video wallpaper (xwinwrap + mpv)
