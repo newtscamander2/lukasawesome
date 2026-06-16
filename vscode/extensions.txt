@@ -1,0 +1,4 @@
+# VSCode OSS extensions installed by the dotfiles installer via:
+#   code --install-extension <id>
+# One extension id per line; lines starting with # are ignored.
+James-Yu.latex-workshop
