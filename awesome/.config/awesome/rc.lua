@@ -1,4 +1,6 @@
--- Theme dispatcher: route to rc_win11.lua when active_theme says so.
+-- Theme dispatcher: arch-family themes (arch/ubuntu/windows7) share this
+-- config and only swap palette; win11 has its own bespoke layout.
+local ARCH_FAMILY = { arch = true, ubuntu = true, windows7 = true }
 do
     local path = os.getenv("HOME") .. "/.config/awesome/active_theme"
     local f = io.open(path, "r")
@@ -7,6 +9,8 @@ do
     if t == "win11" then
         return dofile(os.getenv("HOME") .. "/.config/awesome/rc_win11.lua")
     end
+    -- Unknown themes fall back to arch.
+    ACTIVE_THEME = ARCH_FAMILY[t] and t or "arch"
 end
 
 -- If LuaRocks is installed, make sure that packages installed through it are
@@ -51,7 +55,7 @@ end
 -- }}}
 
 -- {{{ Variable definitions
-beautiful.init(os.getenv("HOME") .. "/.config/awesome/themes/arch/theme.lua")
+beautiful.init(os.getenv("HOME") .. "/.config/awesome/themes/" .. ACTIVE_THEME .. "/theme.lua")
 
 -- Catppuccin palette shortcuts
 local C = {
@@ -99,8 +103,10 @@ local function rounded(r)
     return function(cr, w, h) gears.shape.rounded_rect(cr, w, h, r) end
 end
 
+-- Rofi theme follows the active arch-family theme (rofi-<theme>.rasi).
 local rofi_arch = "rofi -show drun -show-icons -theme "
-    .. os.getenv("HOME") .. "/.config/awesome/themes/arch/rofi-arch.rasi"
+    .. os.getenv("HOME") .. "/.config/awesome/themes/" .. ACTIVE_THEME
+    .. "/rofi-" .. ACTIVE_THEME .. ".rasi"
 
 -- Build a "glyph + text" cell for the wibar right cluster.
 -- Returns the widget and its textbox so callers can update the value.
@@ -1507,16 +1513,21 @@ globalkeys = gears.table.join(
               {description = "quit awesome", group = "awesome"}),
     awful.key({ modkey, "Shift" }, "t",
         function()
+            local order = { "arch", "ubuntu", "windows7", "win11" }
             local path = os.getenv("HOME") .. "/.config/awesome/active_theme"
             local f = io.open(path, "r")
             local curr = (f and f:read("*l")) or "arch"
             if f then f:close() end
-            local next_theme = (curr == "arch") and "win11" or "arch"
+            local idx = 1
+            for i, name in ipairs(order) do
+                if name == curr then idx = i break end
+            end
+            local next_theme = order[(idx % #order) + 1]
             local w = io.open(path, "w")
             w:write(next_theme); w:close()
             awesome.restart()
         end,
-        {description = "toggle Arch/Win11 theme", group = "awesome"}),
+        {description = "cycle theme (arch/ubuntu/windows7/win11)", group = "awesome"}),
 
     awful.key({ modkey,           }, "l",     function () awful.tag.incmwfact( 0.05)          end,
               {description = "increase master width factor", group = "layout"}),
