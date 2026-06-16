@@ -1,0 +1,115 @@
+/*
+ * Windows 7 (Aero) — dark glass base, Aero blue accent.
+ * Same 720x620 centered 6x5 grid as the other themes.
+ */
+
+configuration {
+    show-icons: true;
+    display-drun: "";
+    drun-display-format: "{name}";
+}
+
+* {
+    bg:           #1c2b3a;
+    bg-alt:       #2e4760;
+    bg-selected:  #3d5a78;
+    fg:           #eaf3fb;
+    fg-dim:       #7fa0bd;
+    accent:       #4aa3df;
+    accent-alt:   #1ba1e2;
+    border:       #3d5a78;
+
+    background-color: transparent;
+    text-color:       @fg;
+    font:             "FiraCode Nerd Font 11";
+}
+
+window {
+    width:            720px;
+    height:           620px;
+    location:         center;
+    anchor:           center;
+    padding:          0;
+    border:           2px;
+    border-color:     @accent;
+    border-radius:    14px;
+    background-color: @bg;
+    children:         [ mainbox ];
+}
+
+mainbox {
+    padding:  28px;
+    spacing:  20px;
+    children: [ inputbar, listview ];
+}
+
+inputbar {
+    padding:          12px 18px;
+    background-color: @bg-alt;
+    border:           1px;
+    border-color:     @border;
+    border-radius:    10px;
+    children:         [ prompt-icon, entry ];
+    spacing:          12px;
+}
+
+prompt-icon {
+    expand:           false;
+    str:              "";
+    text-color:       @accent;
+    vertical-align:   0.5;
+}
+
+entry {
+    placeholder:       "Search apps…";
+    placeholder-color: @fg-dim;
+    text-color:        @fg;
+    cursor:            text;
+}
+
+message {
+    enabled:  false;
+}
+
+listview {
+    columns:      6;
+    lines:        5;
+    spacing:      10px;
+    padding:      4px 0px;
+    fixed-height: true;
+    scrollbar:    false;
+    layout:       vertical;
+    cycle:        true;
+}
+
+element {
+    padding:          14px 8px;
+    border-radius:    10px;
+    orientation:      vertical;
+    spacing:          8px;
+    children:         [ element-icon, element-text ];
+    background-color: transparent;
+    text-color:       @fg;
+    cursor:           pointer;
+}
+
+element selected {
+    background-color: @bg-selected;
+    text-color:       @fg;
+    border:           0px 0px 2px 0px;
+    border-color:     @accent;
+    border-radius:    10px;
+}
+
+element-icon {
+    size:             44px;
+    horizontal-align: 0.5;
+    background-color: transparent;
+}
+
+element-text {
+    horizontal-align: 0.5;
+    vertical-align:   0.5;
+    text-color:       inherit;
+    background-color: transparent;
+}
