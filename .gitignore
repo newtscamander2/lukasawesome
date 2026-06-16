@@ -1,0 +1,27 @@
+# --- Secrets: NEVER commit these ---
+*.kdbx
+*.kdbx.lock
+*.key
+*.pem
+secrets/
+
+# --- Installer state (written by the questionnaire) ---
+install.conf
+
+# --- Logs ---
+*.log
+
+# --- LaTeX build artifacts ---
+*.aux
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.out
+*.toc
+*.bbl
+*.blg
+
+# --- Editor / OS cruft ---
+*.swp
+*~
+.DS_Store
