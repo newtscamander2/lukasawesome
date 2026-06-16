@@ -33,6 +33,39 @@ local hotkeys_popup = require("awful.hotkeys_popup")
 -- when client with a matching name is opened:
 require("awful.hotkeys_popup.keys")
 
+-- Informational cheatsheets shown in the super+F1 popup: these are not real
+-- AwesomeWM bindings, just reminders for tools used inside the terminal.
+require("awful.hotkeys_popup.widget").add_hotkeys({
+    nvim = {{
+        modifiers = {},
+        keys = {
+            ["Space w"]   = "save file",
+            ["Space q"]   = "quit",
+            ["Space h"]   = "clear search highlight",
+            ["Space m"]   = "toggle minimap",
+            ["C-h/j/k/l"] = "move between splits",
+            ["C-J"]       = "accept Copilot suggestion (insert)",
+            ["M-] / M-["] = "next / previous Copilot suggestion",
+            [", ll"]      = "VimTeX compile",
+            [", lv"]      = "VimTeX view PDF (zathura)",
+            ["C-Space"]   = "trigger goat completion",
+        },
+    }},
+    ["claude code"] = {{
+        modifiers = {},
+        keys = {
+            ["claude"]    = "start Claude Code in current dir",
+            ["/"]         = "slash commands (skills)",
+            ["@"]         = "reference a file",
+            ["! cmd"]     = "run a shell command in-session",
+            ["Shift-Tab"] = "cycle permission mode (plan/auto)",
+            ["Esc Esc"]   = "edit previous message",
+            ["/clear"]    = "clear conversation context",
+            ["/resume"]   = "resume a previous session",
+        },
+    }},
+})
+
 -- {{{ Error handling
 if awesome.startup_errors then
     naughty.notify({ preset = naughty.config.presets.critical,
