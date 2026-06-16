@@ -81,34 +81,20 @@ require("lazy").setup({
     end,
   },
 
-  -- Minimap (code overview on the right). Pure Lua, renders with block
-  -- characters that any monospace font has — no external binary, no braille
-  -- font dependency.
+  -- Minimap: VSCode-style scaled, syntax-colored code overview. Renders with
+  -- braille, so it needs a terminal font that has Braille Patterns — the
+  -- Alacritty config uses IosevkaTerm Nerd Font for exactly this.
   {
-    "echasnovski/mini.map",
-    version = false,
-    config = function()
-      local map = require("mini.map")
-      map.setup({
-        symbols = {
-          -- 2x2 block quadrants: dense and present in FiraCode Nerd Font.
-          encode = map.gen_encode_symbols.block("2x2"),
-          scroll_line = "█",
-          scroll_view = "┃",
-        },
-        window = {
-          width = 12,
-          winblend = 0,
-          show_integration_count = false,
-        },
-        integrations = {
-          map.gen_integration.builtin_search(),
-          map.gen_integration.diagnostic(),
-        },
-      })
-      -- Command aliases for muscle memory (mini.map is keymap-driven by default).
-      vim.api.nvim_create_user_command("Minimap", function() map.toggle() end, {})
-      vim.api.nvim_create_user_command("MinimapToggle", function() map.toggle() end, {})
+    "Isrothy/neominimap.nvim",
+    version = "v3.*.*",
+    lazy = false,
+    init = function()
+      vim.g.neominimap = {
+        auto_enable = true,
+      }
+      -- Command aliases for muscle memory.
+      vim.api.nvim_create_user_command("Minimap", "Neominimap toggle", {})
+      vim.api.nvim_create_user_command("MinimapToggle", "Neominimap toggle", {})
     end,
   },
 
@@ -225,8 +211,8 @@ vim.opt.foldlevelstart = 0
 vim.opt.foldenable = true
 
 
--- Minimap toggle (mini.map). Opens a block-character code overview on the right.
-vim.keymap.set("n", "<leader>m", function() require("mini.map").toggle() end,
+-- Minimap toggle (neominimap). VSCode-style colored code overview.
+vim.keymap.set("n", "<leader>m", "<cmd>Neominimap toggle<cr>",
   { noremap = true, silent = true, desc = "toggle minimap" })
 
 
