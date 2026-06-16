@@ -106,6 +106,9 @@ require("lazy").setup({
           map.gen_integration.diagnostic(),
         },
       })
+      -- Command aliases for muscle memory (mini.map is keymap-driven by default).
+      vim.api.nvim_create_user_command("Minimap", function() map.toggle() end, {})
+      vim.api.nvim_create_user_command("MinimapToggle", function() map.toggle() end, {})
     end,
   },
 
