@@ -1,0 +1,45 @@
+{
+  "workbench.colorTheme": "Default Dark Modern",
+  "editor.fontFamily": "FiraCode Nerd Font, 'Droid Sans Mono', monospace",
+  "editor.fontLigatures": true,
+  "editor.fontSize": 14,
+  "editor.renderWhitespace": "boundary",
+  "editor.tabSize": 4,
+  "files.autoSave": "onFocusChange",
+  "telemetry.telemetryLevel": "off",
+
+  "latex-workshop.latex.outDir": "%DIR%",
+  "latex-workshop.view.pdf.viewer": "external",
+  "latex-workshop.view.pdf.external.viewer.command": "zathura",
+  "latex-workshop.view.pdf.external.viewer.args": ["%PDF%"],
+  "latex-workshop.view.pdf.external.synctex.command": "zathura",
+  "latex-workshop.view.pdf.external.synctex.args": [
+    "--synctex-forward",
+    "%LINE%:0:%TEX%",
+    "%PDF%"
+  ],
+  "latex-workshop.latex.recipes": [
+    {
+      "name": "latexmk",
+      "tools": ["latexmk"]
+    }
+  ],
+  "latex-workshop.latex.tools": [
+    {
+      "name": "latexmk",
+      "command": "latexmk",
+      "args": [
+        "-pdf",
+        "-interaction=nonstopmode",
+        "-synctex=1",
+        "-file-line-error",
+        "%DOC%"
+      ]
+    }
+  ],
+  "latex-workshop.latex.autoClean.run": "onBuilt",
+  "latex-workshop.latex.clean.fileTypes": [
+    "*.aux", "*.bbl", "*.blg", "*.fdb_latexmk", "*.fls",
+    "*.log", "*.out", "*.synctex.gz", "*.toc"
+  ]
+}
