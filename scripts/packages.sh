@@ -22,10 +22,7 @@ if enabled INSTALL_BASE; then
         timeshift                      # system snapshots/backup
         vicious                        # awesome widget library (wibar stats)
         xdotool xorg-xrandr            # window/display helpers
-        ttf-firacode-nerd              # AwesomeWM wibar glyphs
-        ttf-iosevkaterm-nerd           # terminal font: braille (nvim minimap) + icons
-        noto-fonts noto-fonts-emoji
-        gnu-free-fonts                 # FreeMono: extra monospace braille coverage
+        ttf-firacode-nerd noto-fonts noto-fonts-emoji
         unzip wget curl
     )
     aur+=(neofetch)                    # dropped from official repos -> AUR
