@@ -1762,7 +1762,20 @@ client.connect_signal("unfocus", function(c) c.border_color = beautiful.border_n
 -- }}}
 
 -- Autostart
-awful.spawn.with_shell("feh --randomize --bg-fill ~/Media/wallpapers/*")
+-- Wallpaper: if the "video_wallpaper" marker file exists, use the looping
+-- video wallpaper (which itself falls back to a still image when unsuitable);
+-- otherwise set a random still image via feh.
+do
+    local marker = os.getenv("HOME") .. "/.config/awesome/video_wallpaper"
+    local f = io.open(marker, "r")
+    if f then
+        f:close()
+        awful.spawn.with_shell(
+            os.getenv("HOME") .. "/.config/awesome/scripts/wallpaper-video.sh")
+    else
+        awful.spawn.with_shell("feh --randomize --bg-fill ~/Media/wallpapers/*")
+    end
+end
 awful.spawn.with_shell("pkill -x picom; picom --config " .. os.getenv("HOME") .. "/.config/awesome/picom.conf")
 awful.spawn.with_shell("pgrep -x flameshot >/dev/null || flameshot &")
 
