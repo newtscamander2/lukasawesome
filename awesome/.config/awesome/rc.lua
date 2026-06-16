@@ -497,38 +497,38 @@ end
 gears.timer { timeout = 180, autostart = true, call_now = true, callback = poll_claude }
 -- }}}
 
--- {{{ Random greeting (rotates per awesome restart)
+-- {{{ Random philosopher quote (English, rotates per awesome restart)
 math.randomseed(os.time())
-local greetings = {
-    { t = "Goddag",    l = "Danish"     },
-    { t = "Hej",       l = "Danish"     },
-    { t = "Hallo",     l = "German"     },
-    { t = "Bonjour",   l = "French"     },
-    { t = "Hola",      l = "Spanish"    },
-    { t = "Ciao",      l = "Italian"    },
-    { t = "Olá",       l = "Portuguese" },
-    { t = "こんにちは",  l = "Japanese"   },
-    { t = "안녕하세요", l = "Korean"     },
-    { t = "你好",       l = "Chinese"    },
-    { t = "Привет",    l = "Russian"    },
-    { t = "Hej",       l = "Swedish"    },
-    { t = "Hei",       l = "Norwegian"  },
-    { t = "Namaste",   l = "Hindi"      },
-    { t = "Shalom",    l = "Hebrew"     },
-    { t = "Salaam",    l = "Arabic"     },
-    { t = "Xin chào",  l = "Vietnamese" },
-    { t = "Merhaba",   l = "Turkish"    },
-    { t = "Kia ora",   l = "Māori"      },
-    { t = "Aloha",     l = "Hawaiian"   },
-    { t = "Γειά σου",  l = "Greek"      },
-    { t = "Sawubona",  l = "Zulu"       },
-    { t = "Hei hei",   l = "Finnish"    },
-    { t = "Ahoj",      l = "Czech"      },
-    { t = "Tere",      l = "Estonian"   },
+local quotes = {
+    { q = "The unexamined life is not worth living.",                                  a = "Socrates" },
+    { q = "We are what we repeatedly do. Excellence, then, is not an act, but a habit.", a = "Aristotle" },
+    { q = "He who has a why to live can bear almost any how.",                         a = "Friedrich Nietzsche" },
+    { q = "I think, therefore I am.",                                                  a = "René Descartes" },
+    { q = "Happiness depends upon ourselves.",                                         a = "Aristotle" },
+    { q = "The only true wisdom is in knowing you know nothing.",                      a = "Socrates" },
+    { q = "Man is condemned to be free.",                                              a = "Jean-Paul Sartre" },
+    { q = "There is nothing permanent except change.",                                 a = "Heraclitus" },
+    { q = "He who is not contented with what he has, would not be contented with what he would like to have.", a = "Socrates" },
+    { q = "The life of money-making is one undertaken under compulsion.",              a = "Aristotle" },
+    { q = "That which does not kill us makes us stronger.",                            a = "Friedrich Nietzsche" },
+    { q = "Whereof one cannot speak, thereof one must be silent.",                     a = "Ludwig Wittgenstein" },
+    { q = "The function of prayer is not to influence God, but rather to change the nature of the one who prays.", a = "Søren Kierkegaard" },
+    { q = "Life can only be understood backwards; but it must be lived forwards.",     a = "Søren Kierkegaard" },
+    { q = "Liberty consists in doing what one desires.",                               a = "John Stuart Mill" },
+    { q = "It is not death that a man should fear, but he should fear never beginning to live.", a = "Marcus Aurelius" },
+    { q = "You have power over your mind — not outside events. Realize this, and you will find strength.", a = "Marcus Aurelius" },
+    { q = "We suffer more often in imagination than in reality.",                      a = "Seneca" },
+    { q = "Wonder is the beginning of wisdom.",                                        a = "Socrates" },
+    { q = "Entities should not be multiplied without necessity.",                      a = "William of Ockham" },
+    { q = "God is dead, and we have killed him.",                                      a = "Friedrich Nietzsche" },
+    { q = "The greatest happiness of the greatest number is the foundation of morals and legislation.", a = "Jeremy Bentham" },
+    { q = "One cannot step twice in the same river.",                                  a = "Heraclitus" },
+    { q = "Knowledge is power.",                                                       a = "Francis Bacon" },
+    { q = "Hell is other people.",                                                     a = "Jean-Paul Sartre" },
 }
-local pick = greetings[math.random(#greetings)]
-local greeting_text = pick.t
-local greeting_lang = pick.l
+local pick = quotes[math.random(#quotes)]
+local quote_text = pick.q
+local quote_author = pick.a
 -- }}}
 
 -- {{{ Neofetch-style static info (read directly from /proc & /etc)
@@ -932,17 +932,24 @@ awful.screen.connect_for_each_screen(function(s)
     -- Capitalize first letter of username nicely
     local display_name = user_name:sub(1,1):upper() .. user_name:sub(2)
 
+    -- Escape any pango-significant characters in the quote text.
+    local function pango_escape(s)
+        return (s:gsub("[&<>]", { ["&"] = "&amp;", ["<"] = "&lt;", [">"] = "&gt;" }))
+    end
     local hero_greeting = wibox.widget {
-        markup = "<span font='FiraCode Nerd Font 22' foreground='" .. C.mauve ..
-                 "' weight='bold'>" .. greeting_text .. ", " ..
-                 display_name .. "!</span>",
+        markup = "<span font='FiraCode Nerd Font 13' foreground='" .. C.mauve ..
+                 "' style='italic'>\u{201c}" .. pango_escape(quote_text) .. "\u{201d}</span>",
+        wrap   = "word",
+        forced_width = 400,
         widget = wibox.widget.textbox,
     }
     local hero_greeting_sub = wibox.widget {
-        markup = "<span font='FiraCode Nerd Font 9' foreground='" .. C.overlay0 ..
-                 "'>" .. greeting_lang:lower() .. "</span>",
+        markup = "<span font='FiraCode Nerd Font 10' foreground='" .. C.overlay0 ..
+                 "'>\u{2014} " .. pango_escape(quote_author) .. "</span>",
         widget = wibox.widget.textbox,
     }
+    -- display_name kept for potential reuse elsewhere.
+    local _ = display_name
 
     local hero_clock = wibox.widget.textclock(
         "<span font='FiraCode Nerd Font 42' foreground='" .. C.text ..
