@@ -21,6 +21,7 @@ require("awful.hotkeys_popup.widget").add_hotkeys({
             ["Space w"]   = "save file",
             ["Space q"]   = "quit",
             ["Space h"]   = "clear search highlight",
+            ["Space e"]   = "toggle file explorer (nvim-tree)",
             ["Space m"]   = "toggle minimap",
             ["C-h/j/k/l"] = "move between splits",
             ["C-J"]       = "accept Copilot suggestion (insert)",
