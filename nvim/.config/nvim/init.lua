@@ -81,11 +81,32 @@ require("lazy").setup({
     end,
   },
 
-  -- Minimap (code overview on the right). Requires the `code-minimap`
-  -- binary on PATH; the dotfiles installer adds it.
+  -- Minimap (code overview on the right). Pure Lua, renders with block
+  -- characters that any monospace font has — no external binary, no braille
+  -- font dependency.
   {
-    "wfxr/minimap.vim",
-    cmd = { "Minimap", "MinimapToggle" },
+    "echasnovski/mini.map",
+    version = false,
+    config = function()
+      local map = require("mini.map")
+      map.setup({
+        symbols = {
+          -- 2x2 block quadrants: dense and present in FiraCode Nerd Font.
+          encode = map.gen_encode_symbols.block("2x2"),
+          scroll_line = "█",
+          scroll_view = "┃",
+        },
+        window = {
+          width = 12,
+          winblend = 0,
+          show_integration_count = false,
+        },
+        integrations = {
+          map.gen_integration.builtin_search(),
+          map.gen_integration.diagnostic(),
+        },
+      })
+    end,
   },
 
   -- File explorer sidebar, VSCode-like.
@@ -201,14 +222,9 @@ vim.opt.foldlevelstart = 0
 vim.opt.foldenable = true
 
 
--- minimap settings
-vim.g.minimap_width = 10               -- how wide the minimap is
-vim.g.minimap_auto_start = 1           -- start minimap automatically when opening a file
-vim.g.minimap_highlight_range = 1      -- highlight your current view in the minimap
-vim.g.minimap_scan_method = 'v:lua'    -- scanning method for faster performance
-vim.g.minimap_right = 1                -- show minimap on the right side
-
-vim.api.nvim_set_keymap('n', '<Leader>m', ':MinimapToggle<CR>', { noremap = true, silent = true })
+-- Minimap toggle (mini.map). Opens a block-character code overview on the right.
+vim.keymap.set("n", "<leader>m", function() require("mini.map").toggle() end,
+  { noremap = true, silent = true, desc = "toggle minimap" })
 
 
 -- =====================

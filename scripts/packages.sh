@@ -27,7 +27,6 @@ if enabled INSTALL_BASE; then
         unzip wget curl
     )
     aur+=(neofetch)                    # dropped from official repos -> AUR
-    aur+=(code-minimap)                # binary backend for nvim minimap.vim
 fi
 
 # --- Developer toolchains ---
