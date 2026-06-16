@@ -14,6 +14,10 @@ if not vim.loop.fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
+-- Disable netrw in favour of nvim-tree (must be set before plugins load).
+vim.g.loaded_netrw = 1
+vim.g.loaded_netrwPlugin = 1
+
 -- =====================
 -- Plugins
 -- =====================
@@ -73,6 +77,27 @@ require("lazy").setup({
           ["<S-Tab>"] = cmp.mapping.select_prev_item(),
           ["<CR>"] = cmp.mapping.confirm({ select = false }),
         }),
+      })
+    end,
+  },
+
+  -- Minimap (code overview on the right). Requires the `code-minimap`
+  -- binary on PATH; the dotfiles installer adds it.
+  {
+    "wfxr/minimap.vim",
+    cmd = { "Minimap", "MinimapToggle" },
+  },
+
+  -- File explorer sidebar, VSCode-like.
+  {
+    "nvim-tree/nvim-tree.lua",
+    dependencies = { "nvim-tree/nvim-web-devicons" },
+    config = function()
+      require("nvim-tree").setup({
+        view = { width = 32 },
+        renderer = { group_empty = true },
+        update_focused_file = { enable = true },
+        hijack_directories = { enable = true, auto_open = true },
       })
     end,
   },
@@ -184,6 +209,23 @@ vim.g.minimap_scan_method = 'v:lua'    -- scanning method for faster performance
 vim.g.minimap_right = 1                -- show minimap on the right side
 
 vim.api.nvim_set_keymap('n', '<Leader>m', ':MinimapToggle<CR>', { noremap = true, silent = true })
+
+
+-- =====================
+-- File explorer (nvim-tree)
+--   <leader>e toggles the sidebar. Starting `nvim <dir>` (e.g. `nvim .`)
+--   opens the tree automatically, like `code .`.
+-- =====================
+vim.keymap.set("n", "<leader>e", "<cmd>NvimTreeToggle<CR>", { noremap = true, silent = true })
+
+vim.api.nvim_create_autocmd("VimEnter", {
+  callback = function(data)
+    -- Only when nvim was opened on a directory argument.
+    if vim.fn.isdirectory(data.file) ~= 1 then return end
+    vim.cmd.cd(data.file)
+    require("nvim-tree.api").tree.open()
+  end,
+})
 
 
 -- =====================
