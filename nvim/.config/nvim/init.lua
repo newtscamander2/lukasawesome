@@ -140,6 +140,30 @@ require("lazy").setup({
       vim.keymap.set("n", "<leader>fh", builtin.help_tags, vim.tbl_extend("force", opts, { desc = "help tags" }))
     end,
   },
+
+  -- Bufferline: VSCode-style tabs across the top for open buffers.
+  {
+    "akinsho/bufferline.nvim",
+    version = "*",
+    dependencies = { "nvim-tree/nvim-web-devicons" },
+    config = function()
+      require("bufferline").setup({
+        options = {
+          mode = "buffers",
+          diagnostics = false,            -- no LSP wired up yet
+          show_buffer_close_icons = true,
+          show_close_icon = false,
+          offsets = {
+            { filetype = "NvimTree", text = "File Explorer", separator = true },
+          },
+        },
+      })
+      -- Cycle buffers (vim-unimpaired style; clicking a tab also works).
+      local o = { noremap = true, silent = true }
+      vim.keymap.set("n", "]b", "<cmd>BufferLineCycleNext<cr>", o)
+      vim.keymap.set("n", "[b", "<cmd>BufferLineCyclePrev<cr>", o)
+    end,
+  },
 })
 
 -- =====================
