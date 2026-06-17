@@ -33,6 +33,15 @@ local hotkeys_popup = require("awful.hotkeys_popup")
 -- when client with a matching name is opened:
 require("awful.hotkeys_popup.keys")
 
+-- Roomier popup with tight group spacing so all groups (AwesomeWM + the Nvim/
+-- Claude cheatsheets) fit on one page instead of overflowing to page 2.
+-- width/height clamp to the screen work area, so large values are safe.
+local hotkeys_widget = require("awful.hotkeys_popup.widget").new({
+    width = 1900,
+    height = 1000,
+    group_margin = 12,
+})
+
 -- Informational cheatsheets shown in the super+F1 popup: these are not real
 -- AwesomeWM bindings, just reminders for tools used inside the terminal.
 require("awful.hotkeys_popup.widget").add_hotkeys({
@@ -1534,7 +1543,7 @@ end)
 
 -- {{{ Key bindings
 globalkeys = gears.table.join(
-    awful.key({ modkey,           }, "F1",      hotkeys_popup.show_help,
+    awful.key({ modkey,           }, "F1",      function() hotkeys_widget:show_help() end,
               {description="show help", group="awesome"}),
     awful.key({ modkey,           }, "Left",   awful.tag.viewprev,
               {description = "view previous", group = "tag"}),

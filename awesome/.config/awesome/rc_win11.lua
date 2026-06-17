@@ -13,6 +13,13 @@ local menubar = require("menubar")
 local hotkeys_popup = require("awful.hotkeys_popup")
 require("awful.hotkeys_popup.keys")
 
+-- Roomier popup so all groups fit on one page (clamps to screen work area).
+local hotkeys_widget = require("awful.hotkeys_popup.widget").new({
+    width = 1900,
+    height = 1000,
+    group_margin = 12,
+})
+
 -- Informational cheatsheets shown in the super+F1 popup (nvim, claude code).
 require("awful.hotkeys_popup.widget").add_hotkeys({
     ["Nvim: Files"] = {{
@@ -429,7 +436,7 @@ end)
 
 -- {{{ Key bindings (same as Arch mode — including the Super+Shift+T toggle)
 globalkeys = gears.table.join(
-    awful.key({ modkey,           }, "F1",      hotkeys_popup.show_help,
+    awful.key({ modkey,           }, "F1",      function() hotkeys_widget:show_help() end,
               {description="show help", group="awesome"}),
     awful.key({ modkey,           }, "Left",   awful.tag.viewprev,
               {description = "view previous", group = "tag"}),
