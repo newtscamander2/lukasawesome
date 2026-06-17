@@ -184,13 +184,20 @@ require("lazy").setup({
 -- =====================
 -- Treesitter setup
 -- =====================
-require('nvim-treesitter.configs').setup {
-  ensure_installed = { "lua", "python", "latex" },
-  highlight = {
-    enable = true,
-    additional_vim_regex_highlighting = false,
-  },
-}
+-- Guarded so a missing/half-installed plugin can't crash startup (e.g. before
+-- the first :Lazy sync, or mid branch-switch).
+local ts_ok, ts_configs = pcall(require, 'nvim-treesitter.configs')
+if ts_ok then
+  ts_configs.setup {
+    ensure_installed = { "lua", "python", "latex" },
+    highlight = {
+      enable = true,
+      additional_vim_regex_highlighting = false,
+    },
+  }
+else
+  vim.notify("nvim-treesitter not ready yet; run :Lazy sync", vim.log.levels.WARN)
+end
 
 -- =====================
 -- VimTeX: single-file mainfile detection & auto-compile
