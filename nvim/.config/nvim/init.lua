@@ -35,13 +35,24 @@ require("lazy").setup({
       vim.g.copilot_no_tab_map = true
     end,
   },
-  -- Treesitter. Pinned to the stable `master` branch; the `main` branch is an
-  -- API-incompatible rewrite that breaks Telescope's preview highlighter.
+  -- Treesitter on the `main` branch (the rewrite) — required for Neovim 0.11+.
+  -- On main, parsers are installed via install() and highlighting is started
+  -- per-buffer with vim.treesitter.start() (there is no `highlight` module).
   {
     "nvim-treesitter/nvim-treesitter",
-    branch = "master",
+    branch = "main",
     lazy = false,
     build = ":TSUpdate",
+    config = function()
+      local ok, ts = pcall(require, "nvim-treesitter")
+      if ok and ts.install then
+        ts.install({ "lua", "python" })  -- async; no-op if already present
+      end
+      vim.api.nvim_create_autocmd("FileType", {
+        pattern = { "lua", "python" },
+        callback = function() pcall(vim.treesitter.start) end,
+      })
+    end,
   },
 
   -- VimTeX
@@ -140,7 +151,8 @@ require("lazy").setup({
   -- `ripgrep` binary; the dotfiles installer provides it.
   {
     "nvim-telescope/telescope.nvim",
-    branch = "0.1.x",
+    -- master (not 0.1.x): the stable branch calls nvim-treesitter's removed
+    -- ft_to_lang; master uses the modern treesitter API.
     dependencies = { "nvim-lua/plenary.nvim" },
     config = function()
       local builtin = require("telescope.builtin")
@@ -181,26 +193,9 @@ require("lazy").setup({
   },
 })
 
--- =====================
--- Treesitter setup
--- =====================
--- Guarded so a missing/half-installed plugin can't crash startup (e.g. before
--- the first :Lazy sync, or mid branch-switch).
-local ts_ok, ts_configs = pcall(require, 'nvim-treesitter.configs')
-if ts_ok then
-  ts_configs.setup {
-    -- latex omitted: its parser needs `tree-sitter generate`, which fails on
-    -- modern tree-sitter CLIs (the master branch is archived). vimtex provides
-    -- LaTeX syntax highlighting instead.
-    ensure_installed = { "lua", "python" },
-    highlight = {
-      enable = true,
-      additional_vim_regex_highlighting = false,
-    },
-  }
-else
-  vim.notify("nvim-treesitter not ready yet; run :Lazy sync", vim.log.levels.WARN)
-end
+-- Treesitter parser install + highlighting are handled in the plugin's
+-- config() above (main branch API). LaTeX intentionally uses vimtex's
+-- highlighting rather than a treesitter parser.
 
 -- =====================
 -- VimTeX: single-file mainfile detection & auto-compile
