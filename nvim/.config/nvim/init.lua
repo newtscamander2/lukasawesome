@@ -18,6 +18,10 @@ vim.opt.rtp:prepend(lazypath)
 vim.g.loaded_netrw = 1
 vim.g.loaded_netrwPlugin = 1
 
+-- Leader MUST be set before lazy.setup so plugin <leader> mappings (telescope,
+-- bufferline) bind to Space rather than the default backslash.
+vim.g.mapleader = " "
+
 -- =====================
 -- Plugins
 -- =====================
@@ -121,6 +125,11 @@ require("lazy").setup({
         renderer = { group_empty = true },
         update_focused_file = { enable = true },
         hijack_directories = { enable = true, auto_open = true },
+        -- Show everything: dotfiles and files ignored by git (e.g. build PDFs).
+        filters = {
+          dotfiles = false,
+          git_ignored = false,
+        },
       })
     end,
   },
@@ -238,7 +247,7 @@ vim.cmd("filetype plugin indent on")
 -- =====================
 -- Keymaps
 -- =====================
-vim.g.mapleader = " "
+-- (mapleader is set near the top, before lazy.setup.)
 local keymap = vim.keymap.set
 local opts = { noremap = true, silent = true }
 
