@@ -267,6 +267,18 @@ vim.api.nvim_create_autocmd("VimEnter", {
   end,
 })
 
+-- Quit nvim if nvim-tree is the last remaining window, so `:x`/`:q` on the
+-- last file closes the editor instead of leaving the explorer as a lone buffer.
+vim.api.nvim_create_autocmd("BufEnter", {
+  nested = true,
+  callback = function()
+    if #vim.api.nvim_list_wins() == 1
+      and vim.api.nvim_buf_get_name(0):match("NvimTree_") ~= nil then
+      vim.cmd("quit")
+    end
+  end,
+})
+
 
 -- =====================
 -- Goat library: key completion for \goatlookup{} / \goatdefine{}
