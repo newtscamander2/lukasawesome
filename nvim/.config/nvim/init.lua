@@ -208,6 +208,12 @@ keymap("n", "<C-d>", "<C-d>zz", opts)
 keymap("n", "<C-u>", "<C-u>zz", opts)
 keymap("n", "x", '"_x', opts)
 
+-- Disable the arrow keys in normal mode to force using hjkl.
+keymap("n", "<Up>",    "<Nop>", opts)
+keymap("n", "<Down>",  "<Nop>", opts)
+keymap("n", "<Left>",  "<Nop>", opts)
+keymap("n", "<Right>", "<Nop>", opts)
+
 
 -- Copilot keymaps (insert mode):
 --   <C-J> accept suggestion, <C-]> dismiss, Alt-] / Alt-[ cycle suggestions.
