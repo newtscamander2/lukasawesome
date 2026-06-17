@@ -143,6 +143,12 @@ require("lazy").setup({
           dotfiles = false,
           git_ignored = false,
         },
+        -- Don't prompt "Which window?" — open directly / in a fresh split.
+        actions = {
+          open_file = {
+            window_picker = { enable = false },
+          },
+        },
       })
     end,
   },
