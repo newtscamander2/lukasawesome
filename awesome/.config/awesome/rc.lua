@@ -47,57 +47,39 @@ local hotkeys_widget = require("awful.hotkeys_popup.widget").new({
 -- Informational cheatsheets shown in the super+F1 popup: these are not real
 -- AwesomeWM bindings, just reminders for tools used inside the terminal.
 require("awful.hotkeys_popup.widget").add_hotkeys({
-    ["Nvim: Files"] = {{
+    ["Nvim: Files & Find"] = {{
         modifiers = {},
         keys = {
-            ["Space e"]   = "toggle file explorer",
-            ["Enter / o"] = "tree: open file",
-            ["C-v / C-x"] = "tree: vertical / horizontal split",
-            ["C-t"]       = "tree: open in new tab",
-            ["Space w"]   = "save (:w)",
-            ["Space q"]   = "quit (:q)",
-            [":bd"]       = "close current buffer",
+            ["Space e"]     = "file explorer",
+            ["Enter / o"]   = "tree: open file",
+            ["C-v / C-x"]   = "tree: vert / horiz split",
+            ["C-t"]         = "tree: new tab",
+            ["Space f"]     = "find files",
+            ["Space g"]     = "live grep across files",
+            ["Space b"]     = "list buffers",
+            ["Space fh"]    = "help tags",
+            ["/text"]       = "search in file (n/N next)",
+            ["Space h"]     = "clear highlight",
         },
     }},
-    ["Nvim: Find"] = {{
+    ["Nvim: Edit & Buffers"] = {{
         modifiers = {},
         keys = {
-            ["Space f"]   = "find files (telescope)",
-            ["Space g"]   = "live grep across files",
-            ["Space b"]   = "list open buffers",
-            ["Space fh"]  = "search help tags",
-            ["/text"]     = "search in current file",
-            ["n / N"]     = "next / previous match",
-            ["Space h"]   = "clear search highlight",
-        },
-    }},
-    ["Nvim: Buffers"] = {{
-        modifiers = {},
-        keys = {
-            ["Space 1-9"] = "jump to buffer/tab N",
-            ["]b / [b"]   = "next / previous buffer",
-            ["C-^"]       = "toggle last two buffers",
-            ["C-h/j/k/l"] = "move between splits",
-        },
-    }},
-    ["Nvim: Move/Edit"] = {{
-        modifiers = {},
-        keys = {
-            ["C-d / C-u"] = "half-page down / up (centered)",
-            ["x"]         = "delete char without yanking",
-            ["za"]        = "toggle fold",
-            ["zR / zM"]   = "open all / close all folds",
-            ["Space m"]   = "toggle minimap",
-        },
-    }},
-    ["Nvim: Code"] = {{
-        modifiers = {},
-        keys = {
-            ["C-J"]       = "accept Copilot suggestion (insert)",
-            ["M-] / M-["] = "Copilot next / previous suggestion",
-            [", ll"]      = "VimTeX compile",
-            [", lv"]      = "VimTeX view PDF (zathura)",
-            ["C-Space"]   = "trigger goat completion",
+            ["Space 1-9"]   = "jump to buffer N",
+            ["]b / [b"]     = "next / prev buffer",
+            ["C-^"]         = "last two buffers",
+            ["C-h/j/k/l"]   = "move between splits",
+            ["Space w / q"] = "save / quit",
+            [":bd"]         = "close buffer",
+            ["C-d / C-u"]   = "half-page down / up",
+            ["x"]           = "delete char (no yank)",
+            ["za"]          = "toggle fold",
+            ["zR / zM"]     = "open / close all folds",
+            ["Space m"]     = "toggle minimap",
+            ["C-J"]         = "accept Copilot",
+            ["M-] / M-["]   = "Copilot next / prev",
+            [", ll / , lv"] = "VimTeX compile / view",
+            ["C-Space"]     = "goat completion",
         },
     }},
     ["claude code"] = {{
