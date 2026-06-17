@@ -29,20 +29,22 @@ local beautiful = require("beautiful")
 local naughty = require("naughty")
 local menubar = require("menubar")
 local hotkeys_popup = require("awful.hotkeys_popup")
--- Enable hotkeys help widget for VIM and other apps
--- when client with a matching name is opened:
-require("awful.hotkeys_popup.keys")
 
--- Near-fullscreen popup with small font + tight spacing so every group
--- (AwesomeWM + the Nvim/Claude cheatsheets) fits on a single page — no paging.
--- width/height clamp to the screen work area, so these values are safe.
-local hotkeys_widget = require("awful.hotkeys_popup.widget").new({
+-- Configure the DEFAULT hotkeys widget (the one show_help and add_hotkeys both
+-- use) BEFORE anything populates it, with a near-fullscreen size + small font
+-- so every group fits on a single page. width/height clamp to the work area.
+local hk_widget = require("awful.hotkeys_popup.widget")
+hk_widget.default_widget = hk_widget.new({
     width            = 1860,
     height           = 1040,
     group_margin     = 8,
     font             = "FiraCode Nerd Font 9",
     description_font = "FiraCode Nerd Font 8",
 })
+
+-- Enable hotkeys help widget for VIM and other apps
+-- when client with a matching name is opened:
+require("awful.hotkeys_popup.keys")
 
 -- Informational cheatsheets shown in the super+F1 popup: these are not real
 -- AwesomeWM bindings, just reminders for tools used inside the terminal.
@@ -1527,7 +1529,7 @@ end)
 
 -- {{{ Key bindings
 globalkeys = gears.table.join(
-    awful.key({ modkey,           }, "F1",      function() hotkeys_widget:show_help() end,
+    awful.key({ modkey,           }, "F1",      hotkeys_popup.show_help,
               {description="show help", group="awesome"}),
     awful.key({ modkey,           }, "Left",   awful.tag.viewprev,
               {description = "view previous", group = "tag"}),
