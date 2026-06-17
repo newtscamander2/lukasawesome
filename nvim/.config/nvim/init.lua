@@ -189,7 +189,10 @@ require("lazy").setup({
 local ts_ok, ts_configs = pcall(require, 'nvim-treesitter.configs')
 if ts_ok then
   ts_configs.setup {
-    ensure_installed = { "lua", "python", "latex" },
+    -- latex omitted: its parser needs `tree-sitter generate`, which fails on
+    -- modern tree-sitter CLIs (the master branch is archived). vimtex provides
+    -- LaTeX syntax highlighting instead.
+    ensure_installed = { "lua", "python" },
     highlight = {
       enable = true,
       additional_vim_regex_highlighting = false,
