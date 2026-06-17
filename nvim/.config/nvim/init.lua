@@ -267,14 +267,24 @@ vim.api.nvim_create_autocmd("VimEnter", {
   end,
 })
 
--- Quit nvim if nvim-tree is the last remaining window, so `:x`/`:q` on the
--- last file closes the editor instead of leaving the explorer as a lone buffer.
-vim.api.nvim_create_autocmd("BufEnter", {
-  nested = true,
+-- When `:x`/`:q` would leave only the nvim-tree window, close the tree too so
+-- nvim exits cleanly. Uses QuitPre (fires only on an actual quit command), so
+-- it does NOT trigger at startup for `nvim .`.
+vim.api.nvim_create_autocmd("QuitPre", {
   callback = function()
-    if #vim.api.nvim_list_wins() == 1
-      and vim.api.nvim_buf_get_name(0):match("NvimTree_") ~= nil then
-      vim.cmd("quit")
+    local tree_wins = {}
+    local wins = vim.api.nvim_list_wins()
+    for _, w in ipairs(wins) do
+      local bufname = vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(w))
+      if bufname:match("NvimTree_") ~= nil then
+        table.insert(tree_wins, w)
+      end
+    end
+    -- Exactly one non-tree window is being quit -> close the tree window(s).
+    if #tree_wins == #wins - 1 then
+      for _, w in ipairs(tree_wins) do
+        vim.api.nvim_win_close(w, true)
+      end
     end
   end,
 })
