@@ -15,31 +15,52 @@ require("awful.hotkeys_popup.keys")
 
 -- Informational cheatsheets shown in the super+F1 popup (nvim, claude code).
 require("awful.hotkeys_popup.widget").add_hotkeys({
-    ["Nvim"] = {{
+    ["Nvim: Files"] = {{
         modifiers = {},
         keys = {
+            ["Space e"]   = "toggle file explorer",
+            ["Enter / o"] = "tree: open file",
+            ["C-v / C-x"] = "tree: vertical / horizontal split",
+            ["C-t"]       = "tree: open in new tab",
             ["Space w"]   = "save (:w)",
             ["Space q"]   = "quit (:q)",
             [":bd"]       = "close current buffer",
-            ["Space e"]   = "toggle file explorer",
-            ["Enter / o"] = "tree: open file",
-            ["C-v / C-x"] = "tree: open in vertical / horizontal split",
-            ["C-t"]       = "tree: open in new tab",
+        },
+    }},
+    ["Nvim: Find"] = {{
+        modifiers = {},
+        keys = {
             ["Space f"]   = "find files (telescope)",
             ["Space g"]   = "live grep across files",
             ["Space b"]   = "list open buffers",
             ["Space fh"]  = "search help tags",
-            ["/text"]     = "search in file (n / N = next / prev)",
+            ["/text"]     = "search in current file",
+            ["n / N"]     = "next / previous match",
             ["Space h"]   = "clear search highlight",
+        },
+    }},
+    ["Nvim: Buffers"] = {{
+        modifiers = {},
+        keys = {
             ["Space 1-9"] = "jump to buffer/tab N",
             ["]b / [b"]   = "next / previous buffer",
             ["C-^"]       = "toggle last two buffers",
             ["C-h/j/k/l"] = "move between splits",
+        },
+    }},
+    ["Nvim: Move/Edit"] = {{
+        modifiers = {},
+        keys = {
             ["C-d / C-u"] = "half-page down / up (centered)",
             ["x"]         = "delete char without yanking",
             ["za"]        = "toggle fold",
             ["zR / zM"]   = "open all / close all folds",
             ["Space m"]   = "toggle minimap",
+        },
+    }},
+    ["Nvim: Code"] = {{
+        modifiers = {},
+        keys = {
             ["C-J"]       = "accept Copilot suggestion (insert)",
             ["M-] / M-["] = "Copilot next / previous suggestion",
             [", ll"]      = "VimTeX compile",
