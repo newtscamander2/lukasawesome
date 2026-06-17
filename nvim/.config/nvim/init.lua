@@ -175,6 +175,7 @@ vim.opt.cursorline = true
 vim.opt.termguicolors = true
 vim.opt.scrolloff = 8
 vim.opt.signcolumn = "yes"
+vim.opt.fillchars:append({ eob = " " })  -- hide the ~ end-of-buffer markers
 vim.opt.wrap = false
 vim.opt.clipboard = "unnamedplus"
 vim.opt.mouse = "a"
