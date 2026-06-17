@@ -33,13 +33,15 @@ local hotkeys_popup = require("awful.hotkeys_popup")
 -- when client with a matching name is opened:
 require("awful.hotkeys_popup.keys")
 
--- Roomier popup with tight group spacing so all groups (AwesomeWM + the Nvim/
--- Claude cheatsheets) fit on one page instead of overflowing to page 2.
--- width/height clamp to the screen work area, so large values are safe.
+-- Near-fullscreen popup with small font + tight spacing so every group
+-- (AwesomeWM + the Nvim/Claude cheatsheets) fits on a single page — no paging.
+-- width/height clamp to the screen work area, so these values are safe.
 local hotkeys_widget = require("awful.hotkeys_popup.widget").new({
-    width = 1900,
-    height = 1000,
-    group_margin = 12,
+    width            = 1860,
+    height           = 1040,
+    group_margin     = 8,
+    font             = "FiraCode Nerd Font 9",
+    description_font = "FiraCode Nerd Font 8",
 })
 
 -- Informational cheatsheets shown in the super+F1 popup: these are not real

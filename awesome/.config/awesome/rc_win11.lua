@@ -13,11 +13,14 @@ local menubar = require("menubar")
 local hotkeys_popup = require("awful.hotkeys_popup")
 require("awful.hotkeys_popup.keys")
 
--- Roomier popup so all groups fit on one page (clamps to screen work area).
+-- Near-fullscreen popup with small font + tight spacing so every group fits on
+-- a single page — no paging. width/height clamp to the screen work area.
 local hotkeys_widget = require("awful.hotkeys_popup.widget").new({
-    width = 1900,
-    height = 1000,
-    group_margin = 12,
+    width            = 1860,
+    height           = 1040,
+    group_margin     = 8,
+    font             = "FiraCode Nerd Font 9",
+    description_font = "FiraCode Nerd Font 8",
 })
 
 -- Informational cheatsheets shown in the super+F1 popup (nvim, claude code).
