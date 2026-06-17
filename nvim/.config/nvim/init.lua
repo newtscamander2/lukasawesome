@@ -179,6 +179,7 @@ require("lazy").setup({
       require("bufferline").setup({
         options = {
           mode = "buffers",
+          numbers = "ordinal",            -- show 1,2,3… matching <leader>1-9
           diagnostics = false,            -- no LSP wired up yet
           show_buffer_close_icons = true,
           show_close_icon = false,
