@@ -42,9 +42,10 @@ hk_widget.default_widget = hk_widget.new({
     description_font = "FiraCode Nerd Font 8",
 })
 
--- Enable hotkeys help widget for VIM and other apps
--- when client with a matching name is opened:
-require("awful.hotkeys_popup.keys")
+-- NOTE: we deliberately do NOT require("awful.hotkeys_popup.keys"). It loads
+-- huge built-in cheatsheets (VIM ~99 entries, Qutebrowser, termite, tmux…) that
+-- flood the F1 popup and push the real groups off-page. Our own "Nvim" sections
+-- below replace the built-in VIM one.
 
 -- Informational cheatsheets shown in the super+F1 popup: these are not real
 -- AwesomeWM bindings, just reminders for tools used inside the terminal.

@@ -23,7 +23,9 @@ hk_widget.default_widget = hk_widget.new({
     description_font = "FiraCode Nerd Font 8",
 })
 
-require("awful.hotkeys_popup.keys")
+-- Intentionally NOT requiring "awful.hotkeys_popup.keys" — it floods the popup
+-- with huge built-in cheatsheets (VIM ~99 entries, etc.). Our Nvim sections below
+-- cover that.
 
 -- Informational cheatsheets shown in the super+F1 popup (nvim, claude code).
 require("awful.hotkeys_popup.widget").add_hotkeys({
