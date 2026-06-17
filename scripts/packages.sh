@@ -23,6 +23,7 @@ if enabled INSTALL_BASE; then
         vicious                        # awesome widget library (wibar stats)
         xdotool xorg-xrandr            # window/display helpers
         ttf-firacode-nerd noto-fonts noto-fonts-emoji
+        ripgrep fd                     # telescope live_grep + fast find_files
         unzip wget curl
     )
     aur+=(neofetch)                    # dropped from official repos -> AUR

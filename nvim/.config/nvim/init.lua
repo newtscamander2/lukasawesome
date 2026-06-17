@@ -124,6 +124,22 @@ require("lazy").setup({
       })
     end,
   },
+
+  -- Telescope: fuzzy finder (files, live grep, buffers). live_grep needs the
+  -- `ripgrep` binary; the dotfiles installer provides it.
+  {
+    "nvim-telescope/telescope.nvim",
+    branch = "0.1.x",
+    dependencies = { "nvim-lua/plenary.nvim" },
+    config = function()
+      local builtin = require("telescope.builtin")
+      local opts = { noremap = true, silent = true }
+      vim.keymap.set("n", "<leader>f", builtin.find_files, vim.tbl_extend("force", opts, { desc = "find files" }))
+      vim.keymap.set("n", "<leader>g", builtin.live_grep,  vim.tbl_extend("force", opts, { desc = "live grep" }))
+      vim.keymap.set("n", "<leader>b", builtin.buffers,    vim.tbl_extend("force", opts, { desc = "open buffers" }))
+      vim.keymap.set("n", "<leader>fh", builtin.help_tags, vim.tbl_extend("force", opts, { desc = "help tags" }))
+    end,
+  },
 })
 
 -- =====================
