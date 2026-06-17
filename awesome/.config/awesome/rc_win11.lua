@@ -17,7 +17,7 @@ local hotkeys_popup = require("awful.hotkeys_popup")
 local hk_widget = require("awful.hotkeys_popup.widget")
 hk_widget.default_widget = hk_widget.new({
     width            = 1860,
-    height           = 1040,
+    height           = 900,
     group_margin     = 8,
     font             = "FiraCode Nerd Font 9",
     description_font = "FiraCode Nerd Font 8",
@@ -27,41 +27,55 @@ require("awful.hotkeys_popup.keys")
 
 -- Informational cheatsheets shown in the super+F1 popup (nvim, claude code).
 require("awful.hotkeys_popup.widget").add_hotkeys({
-    ["Nvim: Files & Find"] = {{
-        modifiers = {},
-        keys = {
-            ["Space e"]     = "file explorer",
-            ["Enter / o"]   = "tree: open file",
-            ["C-v / C-x"]   = "tree: vert / horiz split",
-            ["C-t"]         = "tree: new tab",
-            ["Space f"]     = "find files",
-            ["Space g"]     = "live grep across files",
-            ["Space b"]     = "list buffers",
-            ["Space fh"]    = "help tags",
-            ["/text"]       = "search in file (n/N next)",
-            ["Space h"]     = "clear highlight",
-        },
-    }},
-    ["Nvim: Edit & Buffers"] = {{
-        modifiers = {},
-        keys = {
-            ["Space 1-9"]   = "jump to buffer N",
-            ["]b / [b"]     = "next / prev buffer",
-            ["C-^"]         = "last two buffers",
-            ["C-h/j/k/l"]   = "move between splits",
-            ["Space w / q"] = "save / quit",
-            [":bd"]         = "close buffer",
-            ["C-d / C-u"]   = "half-page down / up",
-            ["x"]           = "delete char (no yank)",
-            ["za"]          = "toggle fold",
-            ["zR / zM"]     = "open / close all folds",
-            ["Space m"]     = "toggle minimap",
-            ["C-J"]         = "accept Copilot",
-            ["M-] / M-["]   = "Copilot next / prev",
-            [", ll / , lv"] = "VimTeX compile / view",
-            ["C-Space"]     = "goat completion",
-        },
-    }},
+    ["Nvim: Files & Find"] = {
+        { modifiers = { "Space" }, keys = {
+            e  = "file explorer",
+            f  = "find files",
+            g  = "live grep across files",
+            b  = "list buffers",
+            fh = "help tags",
+            h  = "clear search highlight",
+        }},
+        { modifiers = { "Ctrl" }, keys = {
+            v = "tree: vertical split",
+            x = "tree: horizontal split",
+            t = "tree: new tab",
+        }},
+        { modifiers = {}, keys = {
+            ["Enter / o"] = "tree: open file",
+            ["/text"]     = "search in file (n / N = next / prev)",
+        }},
+    },
+    ["Nvim: Edit & Buffers"] = {
+        { modifiers = { "Space" }, keys = {
+            ["1-9"] = "jump to buffer N",
+            w = "save",
+            q = "quit",
+            m = "toggle minimap",
+        }},
+        { modifiers = { "Ctrl" }, keys = {
+            ["h/j/k/l"] = "move between splits",
+            ["d / u"]   = "half-page down / up",
+            J           = "accept Copilot suggestion",
+            ["^"]       = "toggle last two buffers",
+            Space       = "goat completion",
+        }},
+        { modifiers = { "Alt" }, keys = {
+            ["]"] = "Copilot next suggestion",
+            ["["] = "Copilot prev suggestion",
+        }},
+        { modifiers = { "," }, keys = {
+            ll = "VimTeX compile",
+            lv = "VimTeX view PDF (zathura)",
+        }},
+        { modifiers = {}, keys = {
+            ["]b / [b"] = "next / previous buffer",
+            [":bd"]     = "close buffer",
+            x           = "delete char (no yank)",
+            za          = "toggle fold",
+            ["zR / zM"] = "open / close all folds",
+        }},
+    },
     ["claude code"] = {{
         modifiers = {},
         keys = {
