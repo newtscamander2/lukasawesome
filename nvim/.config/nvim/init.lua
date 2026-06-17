@@ -35,9 +35,11 @@ require("lazy").setup({
       vim.g.copilot_no_tab_map = true
     end,
   },
-  -- Treesitter
+  -- Treesitter. Pinned to the stable `master` branch; the `main` branch is an
+  -- API-incompatible rewrite that breaks Telescope's preview highlighter.
   {
     "nvim-treesitter/nvim-treesitter",
+    branch = "master",
     lazy = false,
     build = ":TSUpdate",
   },
@@ -182,7 +184,7 @@ require("lazy").setup({
 -- =====================
 -- Treesitter setup
 -- =====================
-require('nvim-treesitter').setup {
+require('nvim-treesitter.configs').setup {
   ensure_installed = { "lua", "python", "latex" },
   highlight = {
     enable = true,
