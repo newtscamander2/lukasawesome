@@ -162,6 +162,10 @@ require("lazy").setup({
       local o = { noremap = true, silent = true }
       vim.keymap.set("n", "]b", "<cmd>BufferLineCycleNext<cr>", o)
       vim.keymap.set("n", "[b", "<cmd>BufferLineCyclePrev<cr>", o)
+      -- Jump straight to tab N (like Alt+1..9 in a browser).
+      for i = 1, 9 do
+        vim.keymap.set("n", "<leader>" .. i, "<cmd>BufferLineGoToBuffer " .. i .. "<cr>", o)
+      end
     end,
   },
 })
