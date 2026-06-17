@@ -11,17 +11,19 @@ local beautiful = require("beautiful")
 local naughty = require("naughty")
 local menubar = require("menubar")
 local hotkeys_popup = require("awful.hotkeys_popup")
-require("awful.hotkeys_popup.keys")
 
--- Near-fullscreen popup with small font + tight spacing so every group fits on
--- a single page — no paging. width/height clamp to the screen work area.
-local hotkeys_widget = require("awful.hotkeys_popup.widget").new({
+-- Configure the DEFAULT hotkeys widget before anything populates it, so
+-- show_help and add_hotkeys share one near-fullscreen, small-font instance.
+local hk_widget = require("awful.hotkeys_popup.widget")
+hk_widget.default_widget = hk_widget.new({
     width            = 1860,
     height           = 1040,
     group_margin     = 8,
     font             = "FiraCode Nerd Font 9",
     description_font = "FiraCode Nerd Font 8",
 })
+
+require("awful.hotkeys_popup.keys")
 
 -- Informational cheatsheets shown in the super+F1 popup (nvim, claude code).
 require("awful.hotkeys_popup.widget").add_hotkeys({
@@ -421,7 +423,7 @@ end)
 
 -- {{{ Key bindings (same as Arch mode — including the Super+Shift+T toggle)
 globalkeys = gears.table.join(
-    awful.key({ modkey,           }, "F1",      function() hotkeys_widget:show_help() end,
+    awful.key({ modkey,           }, "F1",      hotkeys_popup.show_help,
               {description="show help", group="awesome"}),
     awful.key({ modkey,           }, "Left",   awful.tag.viewprev,
               {description = "view previous", group = "tag"}),
