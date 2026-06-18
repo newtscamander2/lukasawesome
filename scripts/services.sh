@@ -46,4 +46,33 @@ if enabled INSTALL_VIRT; then
     warn "VirtualBox/DKMS modules require a reboot to load fully."
 fi
 
+# --- Networking (NetworkManager handles wifi / eduroam) ---
+if enabled INSTALL_BASE; then
+    log "Enabling NetworkManager, Bluetooth, firewall and mirror refresh"
+    run sudo systemctl enable NetworkManager.service
+    run sudo systemctl enable bluetooth.service
+    # Firewall: deny inbound, allow outbound, then enable.
+    run sudo ufw default deny incoming
+    run sudo ufw default allow outgoing
+    run sudo ufw --force enable
+    run sudo systemctl enable ufw.service
+    run sudo systemctl enable reflector.timer
+fi
+
+# --- Laptop: power management + touchpad ---
+if enabled LAPTOP; then
+    log "Enabling TLP and installing touchpad config"
+    run sudo systemctl enable tlp.service
+    # tap-to-click + natural scrolling for the touchpad
+    run_sh "sudo install -d /etc/X11/xorg.conf.d && sudo tee /etc/X11/xorg.conf.d/30-touchpad.conf >/dev/null <<'EOF'
+Section \"InputClass\"
+    Identifier \"touchpad\"
+    Driver \"libinput\"
+    MatchIsTouchpad \"on\"
+    Option \"Tapping\" \"on\"
+    Option \"NaturalScrolling\" \"true\"
+    Option \"ClickMethod\" \"clickfinger\"
+EOF"
+fi
+
 ok "Services configured. Log out/in (or reboot) for group changes to take effect."
