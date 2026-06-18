@@ -1546,6 +1546,25 @@ end)
 globalkeys = gears.table.join(
     awful.key({ modkey,           }, "F1",      hotkeys_popup.show_help,
               {description="show help", group="awesome"}),
+
+    -- Hardware / media keys (volume via pactl to match the wibar widget)
+    awful.key({}, "XF86AudioRaiseVolume", function() awful.spawn("pactl set-sink-volume @DEFAULT_SINK@ +5%") end,
+              {description="raise volume", group="media"}),
+    awful.key({}, "XF86AudioLowerVolume", function() awful.spawn("pactl set-sink-volume @DEFAULT_SINK@ -5%") end,
+              {description="lower volume", group="media"}),
+    awful.key({}, "XF86AudioMute", function() awful.spawn("pactl set-sink-mute @DEFAULT_SINK@ toggle") end,
+              {description="mute toggle", group="media"}),
+    awful.key({}, "XF86MonBrightnessUp", function() awful.spawn("brightnessctl set 5%+") end,
+              {description="brightness up", group="media"}),
+    awful.key({}, "XF86MonBrightnessDown", function() awful.spawn("brightnessctl set 5%-") end,
+              {description="brightness down", group="media"}),
+    awful.key({}, "XF86AudioPlay", function() awful.spawn("playerctl play-pause") end,
+              {description="play / pause", group="media"}),
+    awful.key({}, "XF86AudioNext", function() awful.spawn("playerctl next") end,
+              {description="next track", group="media"}),
+    awful.key({}, "XF86AudioPrev", function() awful.spawn("playerctl previous") end,
+              {description="previous track", group="media"}),
+
     awful.key({ modkey,           }, "Left",   awful.tag.viewprev,
               {description = "view previous", group = "tag"}),
     awful.key({ modkey,           }, "Right",  awful.tag.viewnext,
