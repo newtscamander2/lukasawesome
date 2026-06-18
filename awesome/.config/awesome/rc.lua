@@ -1565,9 +1565,11 @@ globalkeys = gears.table.join(
     awful.key({}, "XF86AudioPrev", function() awful.spawn("playerctl previous") end,
               {description="previous track", group="media"}),
 
-    -- Fake Windows Update overlay (prank); Escape dismisses it.
-    awful.key({ modkey, "Shift" }, "u", function() require("windows_update").show() end,
+    -- Fake Windows screens (pranks); Escape dismisses them.
+    awful.key({ modkey, "Shift" }, "u", function() require("win_pranks").update() end,
               {description="fake Windows Update overlay", group="fun"}),
+    awful.key({ modkey, "Shift" }, "b", function() require("win_pranks").bsod() end,
+              {description="fake blue screen of death", group="fun"}),
 
     awful.key({ modkey,           }, "Left",   awful.tag.viewprev,
               {description = "view previous", group = "tag"}),
