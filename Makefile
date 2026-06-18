@@ -5,7 +5,7 @@ SHELL  := /bin/bash
 INSTALL := scripts/install.sh
 
 .DEFAULT_GOAL := help
-.PHONY: help configure plan install yay packages drivers services stow apps
+.PHONY: help configure plan install yay packages drivers services stow apps check-system
 
 help: ## Show this help
 	@echo "Dotfiles bootstrap targets:"
@@ -38,3 +38,6 @@ stow: ## Symlink config packages into $$HOME
 
 apps: ## Apply VSCode settings + clone personal repos
 	@bash $(INSTALL) apps
+
+check-system: ## Verify packages, services, audio and symlinks are set up
+	@bash $(INSTALL) check-system

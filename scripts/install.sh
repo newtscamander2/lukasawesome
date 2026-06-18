@@ -104,5 +104,6 @@ case "${1:-install}" in
     services)  bash "$HERE/services.sh" ;;
     stow)      bash "$HERE/stow.sh" ;;
     apps)      bash "$HERE/apps.sh" ;;
+    check-system) bash "$HERE/check-system.sh" ;;
     *)         err "Unknown command '$1'"; exit 1 ;;
 esac
