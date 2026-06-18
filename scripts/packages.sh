@@ -25,8 +25,24 @@ if enabled INSTALL_BASE; then
         ttf-firacode-nerd noto-fonts noto-fonts-emoji
         ripgrep fd                     # telescope live_grep + fast find_files
         unzip wget curl
+        networkmanager network-manager-applet  # wifi / eduroam (802.1X)
+        pipewire pipewire-pulse wireplumber pavucontrol  # audio (volume widget uses pactl)
+        bluez bluez-utils blueman      # bluetooth
+        playerctl                      # media-key control (play/pause/next)
+        amd-ucode                      # AMD CPU microcode (harmless if Intel)
+        ufw                            # firewall (public / uni networks)
+        reflector                      # keep pacman mirrors fast
     )
     aur+=(neofetch)                    # dropped from official repos -> AUR
+fi
+
+# --- Laptop-only essentials ---
+if enabled LAPTOP; then
+    pac+=(
+        tlp tlp-rdw                    # battery / power management
+        brightnessctl                  # screen backlight control
+        xf86-input-libinput            # touchpad driver
+    )
 fi
 
 # --- Developer toolchains ---
