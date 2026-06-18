@@ -95,7 +95,7 @@ Four themes cycle with **Super+Shift+T**: `arch` (default, Catppuccin Mocha),
 
 - **Super+F1** shows all keybindings, including Neovim and Claude Code cheatsheets.
 - Volume / brightness / media hardware keys (`XF86*`) are bound (pactl, brightnessctl, playerctl).
-- **Super+Shift+U** shows a fake "Windows Update" fullscreen overlay (prank); Escape dismisses it.
+- Pranks (Escape dismisses; nothing actually crashes): **Super+Shift+U** = fake "Working on updates" screen, **Super+Shift+B** = fake Blue Screen of Death.
 - A random philosopher quote (English) appears on the desktop, refreshed each
   AwesomeWM restart.
 - Video wallpaper (xwinwrap + mpv) is opt-in; enable it in the questionnaire.
