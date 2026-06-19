@@ -105,8 +105,16 @@ Four themes cycle with **Super+Shift+T**: `arch` (default, Catppuccin Mocha),
 - **GitHub Copilot**: open Neovim and run `:Copilot setup` to authenticate.
 - **Claude Code**: run `claude` and follow the login prompt.
 - **Docker / VirtualBox**: log out/in (or reboot) for group membership to apply.
-- **Proton Drive / EuroOffice**: best-effort AUR; if unavailable, install
-  manually (for Proton Drive, rclone's Proton Drive backend works well).
+- **Proton Drive** (via rclone, mounted at `~/ProtonDrive`): the `rclone` package
+  and a systemd user service ship in the dotfiles. After install, do the one-time
+  login and enable the mount:
+  ```bash
+  rclone config                 # add a remote named exactly "protondrive" (type: protondrive)
+  systemctl --user enable --now protondrive.service
+  ```
+  Then `~/ProtonDrive` works like a normal folder (on-demand up/download). It's an
+  unofficial backend — fine for access/backup; use Syncthing for always-on sync.
+- **EuroOffice**: best-effort AUR; if unavailable, install manually.
 
 ## Secrets
 

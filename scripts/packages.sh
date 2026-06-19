@@ -32,6 +32,7 @@ if enabled INSTALL_BASE; then
         amd-ucode                      # AMD CPU microcode (harmless if Intel)
         ufw                            # firewall (public / uni networks)
         reflector                      # keep pacman mirrors fast
+        rclone fuse3                   # Proton Drive mount (~/ProtonDrive)
     )
     aur+=(neofetch)                    # dropped from official repos -> AUR
 fi
