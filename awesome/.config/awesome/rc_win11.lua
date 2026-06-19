@@ -33,7 +33,7 @@ require("awful.hotkeys_popup.widget").add_hotkeys({
         { modifiers = { "Space" }, keys = {
             e  = "file explorer",
             f  = "find files",
-            g  = "live grep across files",
+            ["/"] = "live grep across files",
             b  = "list buffers",
             fh = "help tags",
             h  = "clear search highlight",
