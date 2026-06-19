@@ -180,7 +180,7 @@ require("lazy").setup({
       local builtin = require("telescope.builtin")
       local opts = { noremap = true, silent = true }
       vim.keymap.set("n", "<leader>f", builtin.find_files, vim.tbl_extend("force", opts, { desc = "find files" }))
-      vim.keymap.set("n", "<leader>g", builtin.live_grep,  vim.tbl_extend("force", opts, { desc = "live grep" }))
+      vim.keymap.set("n", "<leader>/", builtin.live_grep,  vim.tbl_extend("force", opts, { desc = "live grep" }))
       vim.keymap.set("n", "<leader>b", builtin.buffers,    vim.tbl_extend("force", opts, { desc = "open buffers" }))
       vim.keymap.set("n", "<leader>fh", builtin.help_tags, vim.tbl_extend("force", opts, { desc = "help tags" }))
       -- Git history / status — run in the CURRENT FILE's directory so it uses
