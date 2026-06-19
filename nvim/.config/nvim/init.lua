@@ -183,10 +183,18 @@ require("lazy").setup({
       vim.keymap.set("n", "<leader>g", builtin.live_grep,  vim.tbl_extend("force", opts, { desc = "live grep" }))
       vim.keymap.set("n", "<leader>b", builtin.buffers,    vim.tbl_extend("force", opts, { desc = "open buffers" }))
       vim.keymap.set("n", "<leader>fh", builtin.help_tags, vim.tbl_extend("force", opts, { desc = "help tags" }))
-      -- Git history / status
-      vim.keymap.set("n", "<leader>gc", builtin.git_commits,  vim.tbl_extend("force", opts, { desc = "git commits (repo history)" }))
-      vim.keymap.set("n", "<leader>gf", builtin.git_bcommits, vim.tbl_extend("force", opts, { desc = "git file history" }))
-      vim.keymap.set("n", "<leader>gs", builtin.git_status,   vim.tbl_extend("force", opts, { desc = "git status" }))
+      -- Git history / status — run in the CURRENT FILE's directory so it uses
+      -- that file's repo (handles a non-git parent folder with git subprojects).
+      local function git_cwd()
+        local f = vim.api.nvim_buf_get_name(0)
+        return (f ~= "" and vim.fn.fnamemodify(f, ":h")) or vim.loop.cwd()
+      end
+      vim.keymap.set("n", "<leader>gc", function() builtin.git_commits({ cwd = git_cwd() }) end,
+        vim.tbl_extend("force", opts, { desc = "git commits (repo history)" }))
+      vim.keymap.set("n", "<leader>gf", function() builtin.git_bcommits({ cwd = git_cwd() }) end,
+        vim.tbl_extend("force", opts, { desc = "git file history" }))
+      vim.keymap.set("n", "<leader>gs", function() builtin.git_status({ cwd = git_cwd() }) end,
+        vim.tbl_extend("force", opts, { desc = "git status" }))
     end,
   },
 
