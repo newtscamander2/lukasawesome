@@ -1,0 +1,17 @@
+[Unit]
+Description=Mount Proton Drive via rclone at ~/ProtonDrive
+# Best-effort wait for network; Restart= below retries until it's actually up.
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+ExecStartPre=/usr/bin/mkdir -p %h/ProtonDrive
+ExecStart=/usr/bin/rclone mount protondrive: %h/ProtonDrive --vfs-cache-mode full --vfs-cache-max-age 24h --dir-cache-time 12h --umask 077 --log-level INFO
+ExecStop=/usr/bin/fusermount -uz %h/ProtonDrive
+# Recover from dropped network / transient auth failures.
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target
