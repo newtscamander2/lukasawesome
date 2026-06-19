@@ -135,7 +135,7 @@ require("lazy").setup({
     config = function()
       require("nvim-tree").setup({
         view = { width = 24 },
-        renderer = { group_empty = true },
+        renderer = { group_empty = false },  -- show single-child folders normally
         update_focused_file = { enable = true },
         hijack_directories = { enable = true, auto_open = true },
         -- Show everything: dotfiles and files ignored by git (e.g. build PDFs).
