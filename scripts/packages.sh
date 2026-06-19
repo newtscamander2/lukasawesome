@@ -50,6 +50,7 @@ if enabled INSTALL_DEV; then
     pac+=(
         docker docker-compose docker-buildx
         gcc                            # provides g++
+        clang                          # clangd + clang-format (C/C++ LSP/format)
         jdk-openjdk                    # java compile/run
         python python-pip
         tmux
