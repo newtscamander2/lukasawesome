@@ -13,7 +13,7 @@ LAPTOP=no                     # yes on a laptop: adds tlp, brightnessctl, touchp
 DISPLAY_MANAGER=lightdm       # lightdm | sddm | ly | none
 
 # --- Stow packages to symlink into $HOME ---
-STOW_PACKAGES="awesome nvim tmux alacritty fontconfig"
+STOW_PACKAGES="awesome nvim tmux alacritty fontconfig bash"
 
 # --- AwesomeWM themes to keep available (cycled with Super+Shift+T) ---
 THEMES="arch ubuntu windows7 win11"
