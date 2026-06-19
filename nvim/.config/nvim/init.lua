@@ -46,10 +46,10 @@ require("lazy").setup({
     config = function()
       local ok, ts = pcall(require, "nvim-treesitter")
       if ok and ts.install then
-        ts.install({ "lua", "python" })  -- async; no-op if already present
+        ts.install({ "lua", "python", "c", "cpp", "java", "json", "markdown", "bash" })
       end
       vim.api.nvim_create_autocmd("FileType", {
-        pattern = { "lua", "python" },
+        pattern = { "lua", "python", "c", "cpp", "java", "json", "markdown", "bash", "sh" },
         callback = function() pcall(vim.treesitter.start) end,
       })
     end,
@@ -75,19 +75,35 @@ require("lazy").setup({
     end,
   },
 
-  -- Completion: nvim-cmp with the goat key source (auto-popup inside
-  -- \goatlookup{} / \goatdefine{}). Pure Lua, native snippets, no extra deps.
+  -- Completion: nvim-cmp with LSP, buffer, path, snippets, and the goat source.
   {
     "hrsh7th/nvim-cmp",
     event = "InsertEnter",
+    dependencies = {
+      "hrsh7th/cmp-nvim-lsp",
+      "hrsh7th/cmp-buffer",
+      "hrsh7th/cmp-path",
+      "L3MON4D3/LuaSnip",
+      "saadparwaiz1/cmp_luasnip",
+      "rafamadriz/friendly-snippets",
+    },
     config = function()
       local cmp = require("cmp")
+      local luasnip = require("luasnip")
+      require("luasnip.loaders.from_vscode").lazy_load()  -- friendly-snippets
       local goat = dofile(vim.fn.expand("~/projects/goat/tools/nvim/goat.lua"))
       cmp.register_source("goat", goat.cmp_source())
       cmp.setup({
-        snippet = { expand = function(args) vim.snippet.expand(args.body) end },
+        snippet = { expand = function(args) luasnip.lsp_expand(args.body) end },
         completion = { keyword_length = 0 },
-        sources = { { name = "goat" } },
+        sources = cmp.config.sources({
+          { name = "nvim_lsp" },
+          { name = "luasnip" },
+          { name = "goat" },
+        }, {
+          { name = "buffer" },
+          { name = "path" },
+        }),
         mapping = cmp.mapping.preset.insert({
           ["<C-Space>"] = cmp.mapping.complete(),
           ["<Tab>"] = cmp.mapping.select_next_item(),
@@ -197,6 +213,89 @@ require("lazy").setup({
         vim.keymap.set("n", "<leader>" .. i, "<cmd>BufferLineGoToBuffer " .. i .. "<cr>", o)
       end
     end,
+  },
+
+  -- LSP: mason installs the servers, lspconfig + the native vim.lsp API wire
+  -- them up. Java (jdtls) is intentionally left out — it wants nvim-jdtls.
+  {
+    "neovim/nvim-lspconfig",
+    dependencies = {
+      "mason-org/mason.nvim",
+      "mason-org/mason-lspconfig.nvim",
+      "hrsh7th/cmp-nvim-lsp",
+    },
+    config = function()
+      require("mason").setup()
+      local caps = require("cmp_nvim_lsp").default_capabilities()
+      vim.lsp.config("*", { capabilities = caps })
+      require("mason-lspconfig").setup({
+        ensure_installed = { "clangd", "lua_ls", "pyright" },
+      })
+      -- Buffer-local keymaps once a server attaches.
+      vim.api.nvim_create_autocmd("LspAttach", {
+        callback = function(ev)
+          local o = { buffer = ev.buf, silent = true }
+          vim.keymap.set("n", "gd", vim.lsp.buf.definition, o)
+          vim.keymap.set("n", "gr", vim.lsp.buf.references, o)
+          vim.keymap.set("n", "K", vim.lsp.buf.hover, o)
+          vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, o)
+          vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, o)
+          vim.keymap.set("n", "[d", function() vim.diagnostic.jump({ count = -1 }) end, o)
+          vim.keymap.set("n", "]d", function() vim.diagnostic.jump({ count = 1 }) end, o)
+        end,
+      })
+    end,
+  },
+
+  -- Git signs in the gutter + hunk navigation.
+  {
+    "lewis6991/gitsigns.nvim",
+    event = "BufReadPre",
+    config = function()
+      require("gitsigns").setup({
+        on_attach = function(buf)
+          local gs = require("gitsigns")
+          local o = { buffer = buf, silent = true }
+          vim.keymap.set("n", "]c", function() gs.nav_hunk("next") end, o)
+          vim.keymap.set("n", "[c", function() gs.nav_hunk("prev") end, o)
+          vim.keymap.set("n", "<leader>hs", gs.stage_hunk, o)
+          vim.keymap.set("n", "<leader>hp", gs.preview_hunk, o)
+          vim.keymap.set("n", "<leader>hb", gs.blame_line, o)
+        end,
+      })
+    end,
+  },
+
+  -- which-key: shows available keybindings as you type the leader.
+  { "folke/which-key.nvim", event = "VeryLazy", opts = {} },
+
+  -- gcc / gc to (un)comment.
+  { "numToStr/Comment.nvim", opts = {} },
+
+  -- Auto-close brackets/quotes.
+  { "windwp/nvim-autopairs", event = "InsertEnter", opts = {} },
+
+  -- Format on save (uses LSP as fallback when no formatter is configured).
+  {
+    "stevearc/conform.nvim",
+    event = "BufWritePre",
+    opts = {
+      formatters_by_ft = {
+        lua = { "stylua" },
+        python = { "ruff_format" },
+        c = { "clang-format" },
+        cpp = { "clang-format" },
+        java = { "google-java-format" },
+      },
+      format_on_save = { timeout_ms = 1500, lsp_format = "fallback" },
+    },
+  },
+
+  -- Statusline (mode, git branch, diagnostics, position).
+  {
+    "nvim-lualine/lualine.nvim",
+    dependencies = { "nvim-tree/nvim-web-devicons" },
+    opts = { options = { theme = "auto", globalstatus = true } },
   },
 })
 
