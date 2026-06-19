@@ -80,6 +80,7 @@ for pkg_name in $(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig"); d
         tmux)      target="$HOME/.config/tmux" ;;
         alacritty) target="$HOME/.config/alacritty" ;;
         fontconfig)target="$HOME/.config/fontconfig/fonts.conf" ;;
+        bash)      target="$HOME/.bashrc" ;;
         *)         target="" ;;
     esac
     [ -z "$target" ] && continue
