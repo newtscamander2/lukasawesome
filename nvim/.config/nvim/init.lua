@@ -267,19 +267,25 @@ require("lazy").setup({
       require("gitsigns").setup({
         on_attach = function(buf)
           local gs = require("gitsigns")
-          local o = { buffer = buf, silent = true }
-          vim.keymap.set("n", "]c", function() gs.nav_hunk("next") end, o)
-          vim.keymap.set("n", "[c", function() gs.nav_hunk("prev") end, o)
-          vim.keymap.set("n", "<leader>hs", gs.stage_hunk, o)
-          vim.keymap.set("n", "<leader>hp", gs.preview_hunk, o)
-          vim.keymap.set("n", "<leader>hb", gs.blame_line, o)
+          local function map(lhs, rhs, desc)
+            vim.keymap.set("n", lhs, rhs, { buffer = buf, silent = true, desc = desc })
+          end
+          map("]c", function() gs.nav_hunk("next") end, "Next hunk")
+          map("[c", function() gs.nav_hunk("prev") end, "Previous hunk")
+          map("<leader>ga", gs.stage_hunk, "Stage hunk")
+          map("<leader>gp", gs.preview_hunk, "Preview hunk")
+          map("<leader>gb", gs.blame_line, "Blame line")
         end,
       })
     end,
   },
 
   -- which-key: shows available keybindings as you type the leader.
-  { "folke/which-key.nvim", event = "VeryLazy", opts = {} },
+  {
+    "folke/which-key.nvim",
+    event = "VeryLazy",
+    opts = { spec = { { "<leader>g", group = "git" } } },
+  },
 
   -- gcc / gc to (un)comment.
   { "numToStr/Comment.nvim", opts = {} },
