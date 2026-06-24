@@ -29,55 +29,35 @@ hk_widget.default_widget = hk_widget.new({
 
 -- Informational cheatsheets shown in the super+F1 popup (nvim, claude code).
 require("awful.hotkeys_popup.widget").add_hotkeys({
-    ["Nvim: Files & Find"] = {
-        { modifiers = { "Space" }, keys = {
-            e  = "file explorer",
-            f  = "find files",
-            ["/"] = "live grep across files",
-            b  = "list buffers",
-            fh = "help tags",
-            h  = "clear search highlight",
-        }},
-        { modifiers = { "Ctrl" }, keys = {
-            v = "tree: vertical split",
-            x = "tree: horizontal split",
-            t = "tree: new tab",
-        }},
-        { modifiers = {}, keys = {
-            ["Enter / o"] = "tree: open file",
-            ["/text"]     = "search in file (n / N = next / prev)",
-        }},
-    },
-    ["Nvim: Edit & Buffers"] = {
-        { modifiers = { "Space" }, keys = {
+    -- Single reference of every Space (leader) operation in Neovim. The rest
+    -- (Ctrl splits, Copilot, VimTeX, folds…) is discoverable via which-key
+    -- inside nvim, so it's intentionally not duplicated here.
+    ["Nvim (Space leader)"] = {{
+        modifiers = { "Space" },
+        keys = {
+            e       = "file explorer (toggle tree)",
+            f       = "find files",
+            ["/"]   = "live grep across files",
+            b       = "list open buffers",
+            fh      = "help tags",
+            fd      = "list diagnostics (warnings/errors)",
+            d       = "show diagnostic on current line",
             ["1-9"] = "jump to buffer N",
-            w = "save",
-            q = "quit",
-            m = "toggle minimap",
-        }},
-        { modifiers = { "Ctrl" }, keys = {
-            ["h/j/k/l"] = "move between splits",
-            ["d / u"]   = "half-page down / up",
-            J           = "accept Copilot suggestion",
-            ["^"]       = "toggle last two buffers",
-            Space       = "goat completion",
-        }},
-        { modifiers = { "Alt" }, keys = {
-            ["]"] = "Copilot next suggestion",
-            ["["] = "Copilot prev suggestion",
-        }},
-        { modifiers = { "," }, keys = {
-            ll = "VimTeX compile",
-            lv = "VimTeX view PDF (zathura)",
-        }},
-        { modifiers = {}, keys = {
-            ["]b / [b"] = "next / previous buffer",
-            [":bd"]     = "close buffer",
-            x           = "delete char (no yank)",
-            za          = "toggle fold",
-            ["zR / zM"] = "open / close all folds",
-        }},
-    },
+            m       = "toggle minimap",
+            w       = "write (save)",
+            q       = "quit",
+            x       = "write and quit",
+            H       = "clear search highlight",
+            rn      = "LSP rename symbol",
+            ca      = "LSP code action",
+            gc      = "git commits (repo history)",
+            gf      = "git file history",
+            gs      = "git status",
+            ga      = "git stage hunk",
+            gp      = "git preview hunk",
+            gb      = "git blame line",
+        },
+    }},
     ["claude code"] = {{
         modifiers = {},
         keys = {
