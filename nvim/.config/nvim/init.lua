@@ -198,11 +198,24 @@ require("lazy").setup({
         local f = vim.api.nvim_buf_get_name(0)
         return (f ~= "" and vim.fn.fnamemodify(f, ":h")) or vim.loop.cwd()
       end
-      vim.keymap.set("n", "<leader>gc", function() builtin.git_commits({ cwd = git_cwd() }) end,
+      -- Wrap a git picker so that, outside a repo, we show a tidy notification
+      -- instead of telescope's raw "not a git directory" stack traceback.
+      local function git_picker(fn)
+        return function()
+          local cwd = git_cwd()
+          vim.fn.system({ "git", "-C", cwd, "rev-parse", "--is-inside-work-tree" })
+          if vim.v.shell_error ~= 0 then
+            vim.notify("Not a git repository: " .. cwd, vim.log.levels.WARN)
+            return
+          end
+          fn({ cwd = cwd })
+        end
+      end
+      vim.keymap.set("n", "<leader>gc", git_picker(builtin.git_commits),
         vim.tbl_extend("force", opts, { desc = "git commits (repo history)" }))
-      vim.keymap.set("n", "<leader>gf", function() builtin.git_bcommits({ cwd = git_cwd() }) end,
+      vim.keymap.set("n", "<leader>gf", git_picker(builtin.git_bcommits),
         vim.tbl_extend("force", opts, { desc = "git file history" }))
-      vim.keymap.set("n", "<leader>gs", function() builtin.git_status({ cwd = git_cwd() }) end,
+      vim.keymap.set("n", "<leader>gs", git_picker(builtin.git_status),
         vim.tbl_extend("force", opts, { desc = "git status" }))
     end,
   },
