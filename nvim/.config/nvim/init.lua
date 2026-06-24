@@ -183,6 +183,15 @@ require("lazy").setup({
       vim.keymap.set("n", "<leader>/", builtin.live_grep,  vim.tbl_extend("force", opts, { desc = "live grep" }))
       vim.keymap.set("n", "<leader>b", builtin.buffers,    vim.tbl_extend("force", opts, { desc = "open buffers" }))
       vim.keymap.set("n", "<leader>fh", builtin.help_tags, vim.tbl_extend("force", opts, { desc = "help tags" }))
+      -- Vertical layout = results span the full window width (preview on top),
+      -- and line_width="full" stops the message being truncated to a narrow column.
+      vim.keymap.set("n", "<leader>fd", function()
+        builtin.diagnostics({
+          line_width = "full",
+          layout_strategy = "vertical",
+          layout_config = { width = 0.9, height = 0.9, preview_height = 0.4 },
+        })
+      end, vim.tbl_extend("force", opts, { desc = "diagnostics (all warnings/errors)" }))
       -- Git history / status — run in the CURRENT FILE's directory so it uses
       -- that file's repo (handles a non-git parent folder with git subprojects).
       local function git_cwd()
@@ -252,8 +261,15 @@ require("lazy").setup({
           vim.keymap.set("n", "K", vim.lsp.buf.hover, o)
           vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, o)
           vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, o)
-          vim.keymap.set("n", "[d", function() vim.diagnostic.jump({ count = -1 }) end, o)
-          vim.keymap.set("n", "]d", function() vim.diagnostic.jump({ count = 1 }) end, o)
+          -- Jump to prev/next diagnostic AND pop up its message (float = true).
+          vim.keymap.set("n", "[d", function() vim.diagnostic.jump({ count = -1, float = true }) end, o)
+          vim.keymap.set("n", "]d", function() vim.diagnostic.jump({ count = 1, float = true }) end, o)
+          -- Show the diagnostic(s) on the current line in a float. focus=false
+          -- keeps the cursor in the buffer, so any motion dismisses the popup
+          -- (and a second <leader>d won't trap focus inside the float).
+          vim.keymap.set("n", "<leader>d", function()
+            vim.diagnostic.open_float({ focus = false, scope = "line" })
+          end, vim.tbl_extend("force", o, { desc = "Show diagnostic (float)" }))
         end,
       })
     end,
