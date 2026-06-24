@@ -244,7 +244,11 @@ require("lazy").setup({
       vim.keymap.set("n", "[b", "<cmd>BufferLineCyclePrev<cr>", o)
       -- Jump straight to tab N (like Alt+1..9 in a browser).
       for i = 1, 9 do
-        vim.keymap.set("n", "<leader>" .. i, "<cmd>BufferLineGoToBuffer " .. i .. "<cr>", o)
+        -- Only the first carries a which-key label; hide 2-9 so the popup
+        -- shows a single "Go to buffer 1-9" line instead of nine entries.
+        local desc = (i == 1) and "Go to buffer 1-9" or "which_key_ignore"
+        vim.keymap.set("n", "<leader>" .. i, "<cmd>BufferLineGoToBuffer " .. i .. "<cr>",
+          { noremap = true, silent = true, desc = desc })
       end
     end,
   },
