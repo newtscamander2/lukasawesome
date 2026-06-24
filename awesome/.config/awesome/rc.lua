@@ -1673,6 +1673,10 @@ clientkeys = gears.table.join(
               {description = "move to screen", group = "client"}),
     awful.key({ modkey,           }, "t",      function (c) c.ontop = not c.ontop            end,
               {description = "toggle keep on top", group = "client"}),
+    -- Sticky = show on every tag, so the window stays mapped and OBS can
+    -- capture it from any tag (off-tag windows are unmapped -> black otherwise).
+    awful.key({ modkey,           }, "s",      function (c) c.sticky = not c.sticky          end,
+              {description = "toggle sticky (visible on all tags, for OBS capture)", group = "client"}),
     awful.key({ modkey,           }, "n",
         function (c)
             -- The client currently has the input focus, so it cannot be
