@@ -1819,6 +1819,10 @@ client.connect_signal("unfocus", function(c) c.border_color = beautiful.border_n
 -- }}}
 
 -- Autostart
+-- Faster keyboard autorepeat (300 ms delay, 50 chars/sec) so holding j/k etc.
+-- moves quickly — matches Luke Smith's `xset r rate 300 50`.
+awful.spawn.with_shell("xset r rate 300 50")
+
 -- Wallpaper: if the "video_wallpaper" marker file exists, use the looping
 -- video wallpaper (which itself falls back to a still image when unsuitable);
 -- otherwise set a random still image via feh.

@@ -704,6 +704,10 @@ client.connect_signal("unfocus", function(c) c.border_color = beautiful.border_n
 -- }}}
 
 -- Autostart
+-- Faster keyboard autorepeat (300 ms delay, 50 chars/sec) so holding j/k etc.
+-- moves quickly — matches Luke Smith's `xset r rate 300 50`.
+awful.spawn.with_shell("xset r rate 300 50")
+
 local win11_wallpaper = os.getenv("HOME") .. "/.config/awesome/themes/win11/wallpaper.jpg"
 if gears.filesystem.file_readable(win11_wallpaper) then
     awful.spawn.with_shell("feh --bg-fill " .. win11_wallpaper)
