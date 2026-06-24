@@ -82,6 +82,7 @@ for pkg_name in $(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig"); d
         fontconfig)target="$HOME/.config/fontconfig/fonts.conf" ;;
         bash)      target="$HOME/.bashrc" ;;
         rclone)    target="$HOME/.config/systemd/user/protondrive.service" ;;
+        clang-format) target="$HOME/.clang-format" ;;
         *)         target="" ;;
     esac
     [ -z "$target" ] && continue

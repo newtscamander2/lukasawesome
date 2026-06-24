@@ -1,0 +1,17 @@
+# Global clang-format style (used by conform.nvim and clangd).
+# Stowed to ~/.clang-format, so it applies to all C/C++ under $HOME
+# unless a project ships its own .clang-format.
+BasedOnStyle: LLVM
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 100
+
+# Readable braces: { and } each get their own line (Allman style)…
+BreakBeforeBraces: Allman
+# …and short constructs are never squeezed onto one line.
+AllowShortFunctionsOnASingleLine: None
+AllowShortBlocksOnASingleLine: Never
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false

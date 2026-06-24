@@ -7,7 +7,7 @@ load_config
 command -v stow >/dev/null 2>&1 || pac_install stow
 
 cd "$DOTFILES_DIR"
-for pkg in $(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash rclone"); do
+for pkg in $(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash rclone clang-format"); do
     if [ -d "$pkg" ]; then
         log "Stowing '$pkg' -> \$HOME"
         # -R (restow) makes re-runs idempotent.
