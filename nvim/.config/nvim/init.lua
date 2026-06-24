@@ -411,8 +411,9 @@ vim.cmd("filetype plugin indent on")
 local keymap = vim.keymap.set
 local opts = { noremap = true, silent = true }
 
-keymap("n", "<leader>w", ":w<CR>", opts)
-keymap("n", "<leader>q", ":q<CR>", opts)
+keymap("n", "<leader>w", ":w<CR>", { noremap = true, silent = true, desc = "Write" })
+keymap("n", "<leader>q", ":q<CR>", { noremap = true, silent = true, desc = "Quit" })
+keymap("n", "<leader>x", ":x<CR>", { noremap = true, silent = true, desc = "Write and quit" })
 keymap("n", "<C-h>", "<C-w>h", opts)
 keymap("n", "<C-j>", "<C-w>j", opts)
 keymap("n", "<C-k>", "<C-w>k", opts)
