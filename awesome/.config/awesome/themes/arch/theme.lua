@@ -49,6 +49,8 @@ theme.fg_minimize   = theme.cat_overlay0
 
 theme.useless_gap   = dpi(6)
 theme.border_width  = dpi(2)
+-- Focused window gets a wider border so the active window is easy to spot
+theme.border_width_focus = dpi(4)
 theme.border_normal = theme.cat_surface0
 theme.border_focus  = theme.cat_mauve
 theme.border_marked = theme.cat_peach
