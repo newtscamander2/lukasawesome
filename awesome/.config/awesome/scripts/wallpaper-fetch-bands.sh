@@ -21,7 +21,7 @@ api() {
         echo "API request failed (after retries)" >&2
 }
 
-count_files() { find "$DEST" -type f | wc -l; }
+count_files() { find "$DEST" -maxdepth 1 -type f ! -name ".*" | wc -l; }
 
 # --- 1. Collect candidate file titles by crawling categories -----------------
 ROOTS=("Category:Rammstein" "Category:Till Lindemann" "Category:Members of Rammstein")
@@ -107,4 +107,47 @@ for name in "${!DIRECT[@]}"; do
     [ -e "$DEST/$name" ] || { echo "Direct: $name"; curl -sf -A "$UA" -o "$DEST/$name" "${DIRECT[$name]}" || rm -f "$DEST/$name"; }
 done
 
-echo "Done. $(count_files) wallpapers in $DEST"
+# --- 4. Build captions file (.captions.tsv: filename<TAB>caption) ------------
+# Caption = Commons image description (HTML stripped) plus the capture year.
+# Files unknown to Commons (your own drops) need no row here — they get a
+# prettified filename at display time.
+CAPTIONS="$DEST/.captions.tsv"
+touch "$CAPTIONS"
+
+has_caption() { awk -F'\t' -v k="$1" '$1==k{f=1} END{exit !f}' "$CAPTIONS"; }
+
+caption_batch() {
+    api --data-urlencode "action=query" --data-urlencode "titles=$1" \
+        --data-urlencode "prop=imageinfo" --data-urlencode "iiprop=extmetadata" \
+        --data-urlencode "format=json" |
+        jq -r '.query.pages[] | select(.imageinfo != null) |
+            [ .title,
+              ((.imageinfo[0].extmetadata.ImageDescription.value // "")
+                 | gsub("<[^>]*>"; "") | gsub("[\\n\\t\\r]"; " ") | gsub(" +"; " ")),
+              ((.imageinfo[0].extmetadata.DateTimeOriginal.value // "")
+                 | gsub("<[^>]*>"; "") | gsub("[\\n\\t\\r]"; " ")) ] | @tsv' |
+        while IFS=$'\t' read -r title desc dto; do
+            fname=$(echo "${title#File:}" | tr ' /' '__')
+            [ -e "$DEST/$fname" ] || continue
+            desc=$(echo "$desc" | sed -e 's/&amp;/\&/g; s/&quot;/"/g; s/&#39;/'"'"'/g' \
+                                      -e 's/^ *//; s/ *$//')
+            [ -n "$desc" ] || desc=$(echo "${fname%.*}" | tr '_' ' ')
+            year=$(echo "$dto" | grep -oE '(19|20)[0-9]{2}' | head -1)
+            if [ -n "$year" ] && ! echo "$desc" | grep -q "$year"; then
+                desc="$desc ($year)"
+            fi
+            printf '%s\t%s\n' "$fname" "$desc" >> "$CAPTIONS"
+            echo "  caption: $fname"
+        done
+}
+
+batch=""; n=0
+while IFS= read -r fname; do
+    has_caption "$fname" && continue
+    batch="${batch:+$batch|}File:$fname"
+    n=$((n + 1))
+    if [ "$n" -eq 50 ]; then caption_batch "$batch"; batch=""; n=0; fi
+done < <(find "$DEST" -maxdepth 1 -type f -printf '%f\n' | sort)
+[ -n "$batch" ] && caption_batch "$batch"
+
+echo "Done. $(count_files) wallpapers in $DEST ($(wc -l < "$CAPTIONS") captions)"

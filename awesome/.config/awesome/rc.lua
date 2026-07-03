@@ -1907,14 +1907,73 @@ do
         awful.spawn.with_shell(
             os.getenv("HOME") .. "/.config/awesome/scripts/wallpaper-video.sh")
     else
-        -- Fall back to the generic wallpaper folder if the bands one is empty.
-        local wp_cmd = "feh --randomize --bg-fill ~/Media/wallpapers/bands/* " ..
-                       "|| feh --randomize --bg-fill ~/Media/wallpapers/*"
-        awful.spawn.with_shell(wp_cmd)
+        -- Random band wallpaper with a small caption box (bottom-right)
+        -- showing where/when the picture was taken. Captions come from
+        -- ~/Media/wallpapers/bands/.captions.tsv, written by
+        -- scripts/wallpaper-fetch-bands.sh; fallback is the file name.
+        local function esc(s)
+            return (s:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;"))
+        end
+
+        local cap_text = wibox.widget {
+            markup = "",
+            align  = "right",
+            widget = wibox.widget.textbox,
+        }
+        local cap_box = wibox({
+            screen            = screen.primary,
+            width             = 640,
+            height            = 30,
+            visible           = false,
+            ontop             = false,
+            type              = "desktop",
+            input_passthrough = true,
+            bg                = C.mantle .. "b3",
+            fg                = C.subtext1,
+            shape             = rounded(8),
+        })
+        cap_box:setup {
+            cap_text,
+            left = 14, right = 14, top = 5, bottom = 5,
+            widget = wibox.container.margin,
+        }
+        local function place_caption()
+            local g = screen.primary.workarea
+            cap_box.x = g.x + g.width  - cap_box.width  - 22
+            cap_box.y = g.y + g.height - cap_box.height - 16
+        end
+        screen.primary:connect_signal("property::geometry", place_caption)
+
+        -- Pick a random image, set it, and print its caption on stdout.
+        local ROTATE_CMD = [[bash -c '
+dir="$HOME/Media/wallpapers/bands"
+f=$(find "$dir" -maxdepth 1 -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" \) -printf "%f\n" | shuf -n1)
+if [ -z "$f" ]; then feh --randomize --bg-fill "$HOME"/Media/wallpapers/*; exit 0; fi
+feh --bg-fill "$dir/$f"
+cap=$(awk -F"\t" -v k="$f" "\$1==k{print \$2; exit}" "$dir/.captions.tsv" 2>/dev/null)
+if [ -z "$cap" ]; then cap="${f%.*}"; cap="${cap//_/ }"; fi
+echo "$cap"
+']]
+
+        local function rotate_wallpaper()
+            awful.spawn.easy_async(ROTATE_CMD, function(stdout)
+                local cap = (stdout or ""):gsub("%s+$", "")
+                if cap == "" then
+                    cap_box.visible = false
+                    return
+                end
+                cap_text:set_markup("<span font='FiraCode Nerd Font 9'>\u{f03e}  " ..
+                                    esc(cap) .. "</span>")
+                place_caption()
+                cap_box.visible = true
+            end)
+        end
+
+        rotate_wallpaper()
         gears.timer {
             timeout   = 600, -- new random wallpaper every 10 minutes
             autostart = true,
-            callback  = function() awful.spawn.with_shell(wp_cmd) end,
+            callback  = rotate_wallpaper,
         }
     end
 end
