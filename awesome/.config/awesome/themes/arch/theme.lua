@@ -38,7 +38,9 @@ theme.bg_normal     = theme.cat_base
 theme.bg_focus      = theme.cat_surface0
 theme.bg_urgent     = theme.cat_red
 theme.bg_minimize   = theme.cat_surface1
-theme.bg_systray    = theme.cat_mantle
+-- Must match the bg of the tray chip in rc.lua: xembed icons cannot be
+-- transparent and always paint on this color.
+theme.bg_systray    = theme.cat_surface0
 
 theme.fg_normal     = theme.cat_text
 theme.fg_focus      = theme.cat_mauve

@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Push every commit immediately. GitLab's contribution calendar dates activity
+# by PUSH event (unlike GitHub, which uses the commit author date), so pushing
+# on the day of the commit keeps both graphs green on the same days.
+# Enable with: git config core.hooksPath scripts/git-hooks
+# Runs in the background and stays silent so committing never blocks.
+(
+    export SSH_AUTH_SOCK="${SSH_AUTH_SOCK:-${XDG_RUNTIME_DIR}/ssh-agent.socket}"
+    git push --quiet origin HEAD >/dev/null 2>&1 &
+)

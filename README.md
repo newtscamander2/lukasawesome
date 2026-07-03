@@ -1,11 +1,11 @@
-# dotfiles
+# lukasawesome
 
 Reproducible setup for a fresh Arch Linux machine: AwesomeWM rice, Neovim,
 terminal, dev toolchains, and apps — driven by one configurable installer.
 
 ## Fresh Arch install (from `archinstall`)
 
-These dotfiles assume a base Arch system already exists. The easiest path is the
+This setup assumes a base Arch system already exists. The easiest path is the
 official `archinstall` script. When prompted, choose:
 
 - **Disk:** enable **disk encryption (LUKS)**, filesystem **btrfs** with the
@@ -15,11 +15,11 @@ official `archinstall` script. When prompted, choose:
 - **Audio:** select **pipewire**.
 - `archinstall` installs CPU **microcode** (`amd-ucode`) automatically.
 
-Then reboot into the new system and run the dotfiles:
+Then reboot into the new system and run the setup:
 
 ```bash
-git clone git@gitlab.com:newtscamander/lukasawesome.git ~/dotfiles
-cd ~/dotfiles
+git clone git@gitlab.com:newtscamander/lukasawesome.git ~/lukasawesome
+cd ~/lukasawesome
 make configure      # answer e.g. laptop = yes, GPU = amd
 make install        # dry-run preview -> confirm -> install
 make check-system   # verify everything came up correctly
@@ -31,8 +31,8 @@ so re-installing those packages here is harmless.
 ## Quick start (existing system)
 
 ```bash
-git clone git@gitlab.com:newtscamander/lukasawesome.git ~/dotfiles
-cd ~/dotfiles
+git clone git@gitlab.com:newtscamander/lukasawesome.git ~/lukasawesome
+cd ~/lukasawesome
 make install        # questionnaire -> dry-run preview -> confirm -> install
 ```
 
@@ -64,7 +64,7 @@ make check-system # verify packages, services, audio and symlinks
 ## Syncing two machines (desktop + laptop)
 
 Both machines clone this repo and `make stow`, so the configs are symlinks into
-`~/dotfiles`. To sync a change:
+`~/lukasawesome`. To sync a change:
 
 1. On the machine you edited: `git add -A && git commit && git push`.
 2. On the other machine: `git pull` (NOT just `git fetch` — fetch downloads but
@@ -106,7 +106,7 @@ Four themes cycle with **Super+Shift+T**: `arch` (default, Catppuccin Mocha),
 - **Claude Code**: run `claude` and follow the login prompt.
 - **Docker / VirtualBox**: log out/in (or reboot) for group membership to apply.
 - **Proton Drive** (via rclone, mounted at `~/ProtonDrive`): the `rclone` package
-  and a systemd user service ship in the dotfiles. After install, do the one-time
+  and a systemd user service ship in the repo. After install, do the one-time
   login and enable the mount:
   ```bash
   rclone config                 # add a remote named exactly "protondrive" (type: protondrive)

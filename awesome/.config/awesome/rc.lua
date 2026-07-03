@@ -1494,9 +1494,77 @@ awful.screen.connect_for_each_screen(function(s)
     }
 
     ---------------------------------------------------------------
+    -- Tile 4: Git connectivity (SSH auth to GitHub / GitLab)
+    ---------------------------------------------------------------
+    local GIT_W = 320
+    local GIT_H = 200
+
+    local git_title = wibox.widget {
+        markup = "<span font='FiraCode Nerd Font 13' foreground='" .. C.mauve ..
+                 "' weight='bold'>\u{e702}  Git connectivity</span>",
+        widget = wibox.widget.textbox,
+    }
+    local git_github = wibox.widget {
+        markup = "<span foreground='" .. C.overlay0 .. "'>\u{f09b}  GitHub    checking\u{2026}</span>",
+        widget = wibox.widget.textbox,
+    }
+    local git_gitlab = wibox.widget {
+        markup = "<span foreground='" .. C.overlay0 .. "'>\u{f296}  GitLab    checking\u{2026}</span>",
+        widget = wibox.widget.textbox,
+    }
+    local git_agent = wibox.widget {
+        markup = "<span font='FiraCode Nerd Font 9' foreground='" .. C.overlay0 .. "'>agent: \u{2026}</span>",
+        widget = wibox.widget.textbox,
+    }
+
+    local function git_row_markup(icon, name, ok)
+        local color = ok and C.green or C.red
+        local text  = ok and "connected" or "offline"
+        return "<span font='FiraCode Nerd Font 12' foreground='" .. C.text .. "'>" ..
+               icon .. "  " .. name .. "</span>" ..
+               "<span font='FiraCode Nerd Font 12' foreground='" .. color .. "'>   \u{f111} " .. text .. "</span>"
+    end
+
+    -- One probe for both hosts + agent state; BatchMode so a locked agent
+    -- fails fast instead of prompting. Output: "<ok|err>|<ok|err>|<nkeys>"
+    local GIT_CHECK_CMD = [[sh -c 'export SSH_AUTH_SOCK="${XDG_RUNTIME_DIR}/ssh-agent.socket"; keys=$(ssh-add -l 2>/dev/null | grep -c ^256 || true); gh=err; ssh -o BatchMode=yes -o ConnectTimeout=5 -T git@github.com 2>&1 | grep -q "successfully authenticated" && gh=ok; gl=err; ssh -o BatchMode=yes -o ConnectTimeout=5 -T git@gitlab.com 2>&1 | grep -q "Welcome to GitLab" && gl=ok; echo "$gh|$gl|$keys"']]
+
+    awful.widget.watch(GIT_CHECK_CMD, 300, function(_, stdout)
+        local gh, gl, keys = (stdout or ""):match("(%a+)|(%a+)|(%d+)")
+        if not gh then return end
+        git_github:set_markup(git_row_markup("\u{f09b}", "GitHub", gh == "ok"))
+        git_gitlab:set_markup(git_row_markup("\u{f296}", "GitLab", gl == "ok"))
+        if keys == "0" then
+            git_agent:set_markup("<span font='FiraCode Nerd Font 9' foreground='" .. C.yellow ..
+                "'>\u{f023} agent locked \u{2014} run ssh-add</span>")
+        else
+            git_agent:set_markup("<span font='FiraCode Nerd Font 9' foreground='" .. C.overlay0 ..
+                "'>\u{f084} agent: " .. keys .. " key" .. (keys == "1" and "" or "s") .. " loaded</span>")
+        end
+    end)
+
+    local git_tile = make_tile(GIT_W, GIT_H)
+    git_tile:setup {
+        {
+            {
+                git_title,
+                { { bg = C.surface0, forced_height = 1, widget = wibox.container.background },
+                  top = 10, bottom = 10, widget = wibox.container.margin },
+                { git_github, top = 2,  widget = wibox.container.margin },
+                { git_gitlab, top = 10, widget = wibox.container.margin },
+                { git_agent,  top = 14, widget = wibox.container.margin },
+                layout = wibox.layout.fixed.vertical,
+            },
+            halign = "left", valign = "top", widget = wibox.container.place,
+        },
+        margins = 22, widget = wibox.container.margin,
+    }
+
+    ---------------------------------------------------------------
     -- Tile placement — L-shaped cluster on the left side:
     --   hero (top-left) ──  claude (right of both,
     --   neo  (below hero) ─   spanning hero + neo height)
+    --   git  (right of claude, aligned with hero top)
     ---------------------------------------------------------------
     local function place_tiles()
         local g = s.geometry
@@ -1515,6 +1583,10 @@ awful.screen.connect_for_each_screen(function(s)
         local left_col_width = math.max(HERO_W, NEO_W)
         cc_tile.x = hero_tile.x + left_col_width + gap
         cc_tile.y = hero_tile.y
+
+        -- Git connectivity sits right of the Claude column, same top.
+        git_tile.x = cc_tile.x + CC_W + gap
+        git_tile.y = hero_tile.y
     end
     place_tiles()
     s:connect_signal("property::geometry", place_tiles)
@@ -1825,7 +1897,8 @@ awful.spawn.with_shell("xset r rate 300 50")
 
 -- Wallpaper: if the "video_wallpaper" marker file exists, use the looping
 -- video wallpaper (which itself falls back to a still image when unsuitable);
--- otherwise set a random still image via feh.
+-- otherwise rotate random band stills (Rammstein / MoonSun) via feh.
+-- Populate/refresh the folder with scripts/wallpaper-fetch-bands.sh.
 do
     local marker = os.getenv("HOME") .. "/.config/awesome/video_wallpaper"
     local f = io.open(marker, "r")
@@ -1834,7 +1907,15 @@ do
         awful.spawn.with_shell(
             os.getenv("HOME") .. "/.config/awesome/scripts/wallpaper-video.sh")
     else
-        awful.spawn.with_shell("feh --randomize --bg-fill ~/Media/wallpapers/*")
+        -- Fall back to the generic wallpaper folder if the bands one is empty.
+        local wp_cmd = "feh --randomize --bg-fill ~/Media/wallpapers/bands/* " ..
+                       "|| feh --randomize --bg-fill ~/Media/wallpapers/*"
+        awful.spawn.with_shell(wp_cmd)
+        gears.timer {
+            timeout   = 600, -- new random wallpaper every 10 minutes
+            autostart = true,
+            callback  = function() awful.spawn.with_shell(wp_cmd) end,
+        }
     end
 end
 awful.spawn.with_shell("pkill -x picom; picom --config " .. os.getenv("HOME") .. "/.config/awesome/picom.conf")
