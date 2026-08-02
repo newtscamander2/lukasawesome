@@ -75,7 +75,9 @@ fi
 
 # --- LaTeX (texlive) ---
 if enabled INSTALL_TEXLIVE; then
-    pac+=(texlive-most texlive-langextra biber)
+    # texlive-most/-langextra were retired in Arch's TeX Live repackaging;
+    # texlive-meta = all collections, langeuropean = Danish hyphenation etc.
+    pac+=(texlive-meta texlive-langeuropean biber)
 fi
 
 # --- VSCode OSS (config applied separately by apps.sh) ---
