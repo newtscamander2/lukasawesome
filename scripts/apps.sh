@@ -25,6 +25,28 @@ if enabled INSTALL_VSCODE; then
     fi
 fi
 
+# --- Neovim: bootstrap lazy.nvim + install plugins from the lockfile ---
+# Owning this here means `make install` leaves a fully working editor: a
+# partial/interrupted first clone of lazy.nvim otherwise blocks every later
+# nvim start with "module 'lazy' not found".
+if command -v nvim >/dev/null 2>&1; then
+    lazydir="$HOME/.local/share/nvim/lazy/lazy.nvim"
+    if [ ! -f "$lazydir/lua/lazy/init.lua" ]; then
+        log "Bootstrapping lazy.nvim (removing any partial clone first)"
+        run rm -rf "$lazydir"
+        if ! run git clone --filter=blob:none --branch=stable \
+                https://github.com/folke/lazy.nvim.git "$lazydir"; then
+            err "Could not clone lazy.nvim from GitHub — check network and re-run 'make apps'."
+            exit 1
+        fi
+    fi
+    log "Installing nvim plugins from lazy-lock.json (headless, first run takes a minute)"
+    run nvim --headless "+Lazy! restore" +qa \
+        || warn "Plugin restore reported errors — open nvim and run :Lazy sync."
+else
+    warn "nvim not installed yet — re-run 'make packages' then 'make apps'."
+fi
+
 # --- Video wallpaper marker read by rc.lua ---
 marker="$HOME/.config/awesome/video_wallpaper"
 if enabled VIDEO_WALLPAPER; then
