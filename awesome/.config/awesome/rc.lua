@@ -1838,31 +1838,6 @@ globalkeys = gears.table.join(
               {description="show help", group="awesome"}),
 
     -- Hardware / media keys (volume via pactl to match the wibar widget)
-    awful.key({ modkey }, "Escape",
-              function()
-                  -- Self-healing lock: start light-locker if it's installed
-                  -- but not yet running, fall back to dm-tool, and surface
-                  -- the reason on screen when nothing can lock.
-                  awful.spawn.easy_async_with_shell([[
-if pgrep -x xss-lock >/dev/null 2>&1; then
-    loginctl lock-session 2>&1 && exit 0
-fi
-if command -v i3lock >/dev/null 2>&1; then
-    i3lock -c 1e1e2e 2>&1 && exit 0
-fi
-echo "No screen locker installed — run 'make install' (xss-lock + i3lock)."
-exit 1
-]], function(stdout, stderr, _, exit_code)
-                      if exit_code ~= 0 then
-                          naughty.notify({
-                              preset = naughty.config.presets.critical,
-                              title  = "Screen lock failed",
-                              text   = ((stdout or "") .. " " .. (stderr or "")):gsub("%s+$", ""),
-                          })
-                      end
-                  end)
-              end,
-              {description="lock screen", group="awesome"}),
     awful.key({}, "XF86AudioRaiseVolume", function() awful.spawn("pactl set-sink-volume @DEFAULT_SINK@ +5%") end,
               {description="raise volume", group="media"}),
     awful.key({}, "XF86AudioLowerVolume", function() awful.spawn("pactl set-sink-volume @DEFAULT_SINK@ -5%") end,
@@ -2275,13 +2250,6 @@ awful.spawn.with_shell("pkill -x picom; picom --config " .. os.getenv("HOME") ..
 awful.spawn.with_shell("pgrep -x flameshot >/dev/null || flameshot &")
 -- NetworkManager tray applet (wifi picker; eduroam setup in docs/eduroam-au.md)
 awful.spawn.with_shell("pgrep -x nm-applet >/dev/null || nm-applet &")
--- Screen lock (laptop: xss-lock/i3lock are installed there) — i3lock locks in
--- place on the same VT (no lightdm greeter dance, which black-screens when
--- the greeter fails to spawn). xss-lock triggers it after 5 min idle (X
--- screensaver) and before suspend/lid close; apps keep running underneath.
-awful.spawn.with_shell(
-    "command -v xss-lock >/dev/null && command -v i3lock >/dev/null && { xset s 300 5; " ..
-    "pgrep -x xss-lock >/dev/null || xss-lock --transfer-sleep-lock -- i3lock -n -c 1e1e2e & }")
 
 -- Apply dark GTK/system color scheme for other apps (Brave, GTK-based tools)
 awful.spawn.with_shell(

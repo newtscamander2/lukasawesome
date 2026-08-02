@@ -12,7 +12,10 @@ enable_multilib() {
     fi
     log "Enabling [multilib] repository in /etc/pacman.conf"
     run_sh "sudo sed -i '/^#\[multilib\]/,/^#Include/ s/^#//' /etc/pacman.conf"
-    run sudo pacman -Sy
+    # Full -Syu, never plain -Sy: refreshing the db and then installing
+    # packages against an un-upgraded system is a partial upgrade, which
+    # breaks X (mesa/xorg ABI mismatch -> "no screens found").
+    run sudo pacman -Syu --noconfirm
 }
 
 pac=(arandr autorandr xorg-xrandr)   # multi-monitor + projector tooling
