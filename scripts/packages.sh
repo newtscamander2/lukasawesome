@@ -50,6 +50,7 @@ if enabled LAPTOP; then
         tlp tlp-rdw                    # battery / power management
         brightnessctl                  # screen backlight control
         xf86-input-libinput            # touchpad driver
+        light-locker                   # screen lock via lightdm greeter (5 min idle, rc.lua)
     )
 fi
 
