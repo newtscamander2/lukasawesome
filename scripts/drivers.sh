@@ -21,7 +21,9 @@ case "$(cfg GPU amd)" in
     amd)
         log "Installing AMD GPU drivers"
         enable_multilib
-        pac+=(mesa vulkan-radeon libva-mesa-driver mesa-vdpau
+        # VA-API/VDPAU video drivers ship inside mesa itself since mesa 25;
+        # the old libva-mesa-driver / mesa-vdpau split packages are gone.
+        pac+=(mesa vulkan-radeon
               lib32-mesa lib32-vulkan-radeon xf86-video-amdgpu)
         ;;
     intel)

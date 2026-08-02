@@ -107,10 +107,10 @@ fi
 # --- Best-effort / niche (no dependable package) ---
 if enabled INSTALL_OPTIONAL; then
     log "Best-effort optional packages (may need manual steps)"
-    # Proton Drive has no official Linux client; protondrive-bin is community-maintained.
-    # EuroOffice is niche; the AUR name varies. Failures here are non-fatal.
-    aur_install_optional protondrive-bin eurooffice
-    warn "Proton Drive: if protondrive-bin is unavailable, use rclone's Proton Drive backend."
+    # protondrive-bin and eurooffice were deleted from the AUR (gone as of 2026).
+    # Proton Drive is covered by the rclone protondrive remote + user service
+    # that this repo already ships (see README "Manual steps after install").
+    warn "Proton Drive: no native client packaged; the rclone mount covers it."
 fi
 
 ok "Package installation complete."
