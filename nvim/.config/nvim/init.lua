@@ -3,7 +3,7 @@
 -- =====================
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not vim.loop.fs_stat(lazypath) then
-  vim.fn.system({
+  local out = vim.fn.system({
     "git",
     "clone",
     "--filter=blob:none",
@@ -11,6 +11,16 @@ if not vim.loop.fs_stat(lazypath) then
     "--branch=stable",
     lazypath,
   })
+  -- A failed clone can leave a partial dir that blocks all later attempts;
+  -- surface the error and clean up instead of failing silently forever.
+  if vim.v.shell_error ~= 0 then
+    vim.fn.delete(lazypath, "rf")
+    vim.api.nvim_echo({
+      { "lazy.nvim clone failed (check network/git):\n", "ErrorMsg" },
+      { out, "WarningMsg" },
+    }, true, {})
+    error("lazy.nvim bootstrap failed")
+  end
 end
 vim.opt.rtp:prepend(lazypath)
 
