@@ -352,9 +352,59 @@ mute_btn_bg:buttons(gears.table.join(
     end)
 ))
 
+-- {{ Output device selector (dropdown inside the volume popup)
+local sink_state = { list = {}, default = nil }
+local sink_dropdown_open = false
+local refresh_sinks -- forward declaration; defined below vol_popup
+
+-- One line default sink name, then alternating Name/Description per sink.
+local SINK_QUERY = [[sh -c 'pactl get-default-sink; pactl list sinks | sed -n "s/^\tName: //p;s/^\tDescription: //p"']]
+
+local sink_btn_lbl = wibox.widget {
+    markup    = "<span foreground='" .. C.text .. "'>…</span>",
+    widget    = wibox.widget.textbox,
+    valign    = "center",
+    ellipsize = "end",
+}
+local sink_btn_chev = wibox.widget {
+    markup = "<span foreground='" .. C.overlay0 .. "'>\u{f078}</span>",
+    widget = wibox.widget.textbox,
+    valign = "center",
+    align  = "center",
+}
+local sink_btn_bg = wibox.container.background()
+sink_btn_bg.bg    = C.surface0
+sink_btn_bg.shape = rounded(6)
+sink_btn_bg:set_widget(wibox.widget {
+    {
+        {
+            markup = "<span foreground='" .. C.mauve .. "'>\u{f025}</span>",
+            widget = wibox.widget.textbox,
+            valign = "center",
+        },
+        { sink_btn_lbl, left = 8, right = 8, widget = wibox.container.margin },
+        sink_btn_chev,
+        layout = wibox.layout.align.horizontal,
+    },
+    left = 12, right = 12, top = 6, bottom = 6,
+    widget = wibox.container.margin,
+})
+sink_btn_bg:buttons(gears.table.join(
+    awful.button({}, 1, function()
+        sink_dropdown_open = not sink_dropdown_open
+        refresh_sinks()
+    end)
+))
+
+local sink_rows = wibox.widget {
+    spacing = 4,
+    layout  = wibox.layout.fixed.vertical,
+}
+-- }}
+
 local vol_popup = wibox({
     width        = 340,
-    height       = 130,
+    height       = 174,
     ontop        = true,
     visible      = false,
     bg           = C.mantle,
@@ -386,12 +436,104 @@ vol_popup:setup {
             top = 8,
             widget = wibox.container.margin,
         },
+        {
+            sink_btn_bg,
+            top = 8,
+            widget = wibox.container.margin,
+        },
+        {
+            sink_rows,
+            top = 6,
+            widget = wibox.container.margin,
+        },
         spacing = 4,
         layout  = wibox.layout.fixed.vertical,
     },
     left = 20, right = 20, top = 14, bottom = 14,
     widget = wibox.container.margin,
 }
+
+-- {{ Output device selector logic (needs vol_popup to exist)
+local VOL_POPUP_BASE_H = 174 -- height with the device dropdown collapsed
+
+local function vol_popup_resize()
+    local extra = 0
+    if sink_dropdown_open and #sink_state.list > 0 then
+        extra = 4 + #sink_state.list * 34
+    end
+    vol_popup.height = VOL_POPUP_BASE_H + extra
+end
+
+local function make_sink_row(sink)
+    local active = (sink.name == sink_state.default)
+    local fg     = active and C.mauve or C.text
+    local mark   = active and "\u{f00c}  " or ""
+    local row = wibox.widget {
+        {
+            {
+                markup    = "<span foreground='" .. fg .. "'>" .. mark ..
+                            gears.string.xml_escape(sink.desc) .. "</span>",
+                widget    = wibox.widget.textbox,
+                valign    = "center",
+                ellipsize = "end",
+            },
+            left = 12, right = 12,
+            widget = wibox.container.margin,
+        },
+        bg            = active and C.surface1 or C.surface0,
+        shape         = rounded(6),
+        forced_height = 30,
+        widget        = wibox.container.background,
+    }
+    row:connect_signal("mouse::enter", function() row.bg = C.surface1 end)
+    row:connect_signal("mouse::leave", function()
+        row.bg = active and C.surface1 or C.surface0
+    end)
+    row:buttons(gears.table.join(
+        awful.button({}, 1, function()
+            -- Switch the default sink and move already-playing streams over,
+            -- so the change is audible immediately.
+            awful.spawn.easy_async(
+                "sh -c 'pactl set-default-sink " .. sink.name ..
+                "; pactl list short sink-inputs | cut -f1 | " ..
+                "while read i; do pactl move-sink-input \"$i\" " .. sink.name .. "; done'",
+                function()
+                    sink_dropdown_open = false
+                    refresh_sinks()
+                    refresh_volume()
+                end)
+        end)
+    ))
+    return row
+end
+
+refresh_sinks = function()
+    awful.spawn.easy_async(SINK_QUERY, function(stdout)
+        local lines = {}
+        for l in stdout:gmatch("[^\r\n]+") do lines[#lines + 1] = l end
+        sink_state.default = table.remove(lines, 1)
+        sink_state.list = {}
+        for i = 1, #lines - 1, 2 do
+            table.insert(sink_state.list, { name = lines[i], desc = lines[i + 1] })
+        end
+        local cur_desc = "no output device"
+        for _, s in ipairs(sink_state.list) do
+            if s.name == sink_state.default then cur_desc = s.desc end
+        end
+        sink_btn_lbl:set_markup("<span foreground='" .. C.text .. "'>" ..
+            gears.string.xml_escape(cur_desc) .. "</span>")
+        sink_btn_chev:set_markup("<span foreground='" .. C.overlay0 .. "'>" ..
+            (sink_dropdown_open and "\u{f077}" or "\u{f078}") .. "</span>")
+        sink_rows:reset()
+        if sink_dropdown_open then
+            for _, s in ipairs(sink_state.list) do
+                sink_rows:add(make_sink_row(s))
+            end
+        end
+        vol_popup_resize()
+    end)
+end
+-- }}
 
 -- Auto-hide popup on inactivity. Mouse hover pauses the timer so the
 -- user can drag the slider for as long as they want.
@@ -417,6 +559,9 @@ local function vol_popup_show(anchor_widget)
     awful.placement.top_right(vol_popup, { parent = scr, margins = { top = 56, right = 20 } })
     vol_popup.visible = true
     render_volume()
+    -- Re-scan outputs on every open so hotplugged devices show up
+    sink_dropdown_open = false
+    refresh_sinks()
     if vol_popup_timer.started then vol_popup_timer:again() else vol_popup_timer:start() end
 end
 local function vol_popup_toggle()
