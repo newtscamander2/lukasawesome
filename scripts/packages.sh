@@ -93,7 +93,7 @@ enabled INSTALL_LVM_GUI && aur+=(kvpm)
 # --- Video wallpaper deps (opt-in) ---
 if enabled VIDEO_WALLPAPER; then
     pac+=(mpv)
-    aur+=(xwinwrap)
+    aur+=(xwinwrap-git)  # maintained fork; plain 'xwinwrap' resolves to a dead bzr package
 fi
 
 log "Official packages (${#pac[@]}): ${pac[*]}"
