@@ -101,8 +101,10 @@ require("lazy").setup({
       local cmp = require("cmp")
       local luasnip = require("luasnip")
       require("luasnip.loaders.from_vscode").lazy_load()  -- friendly-snippets
-      local goat = dofile(vim.fn.expand("~/projects/goat/tools/nvim/goat.lua"))
-      cmp.register_source("goat", goat.cmp_source())
+      -- goat repo may not be cloned yet ('make repos'); cmp silently ignores
+      -- the "goat" source entry below when the source was never registered.
+      local ok_goat, goat = pcall(dofile, vim.fn.expand("~/projects/goat/tools/nvim/goat.lua"))
+      if ok_goat and goat then cmp.register_source("goat", goat.cmp_source()) end
       cmp.setup({
         snippet = { expand = function(args) luasnip.lsp_expand(args.body) end },
         completion = { keyword_length = 0 },
