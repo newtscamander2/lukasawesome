@@ -25,7 +25,9 @@ if enabled INSTALL_BASE; then
         ttf-firacode-nerd noto-fonts noto-fonts-emoji
         ripgrep fd                     # telescope live_grep + fast find_files
         unzip wget curl
-        networkmanager network-manager-applet  # wifi / eduroam (802.1X)
+        networkmanager network-manager-applet  # wifi / eduroam (802.1X); nm-applet = tray GUI
+        nm-connection-editor           # GUI connection editor (nm-applet launches it for editing)
+        python-dbus                    # eduroam CAT installer configures NM over D-Bus (docs/eduroam-au.md)
         pipewire pipewire-pulse wireplumber pavucontrol  # audio (volume widget uses pactl)
         bluez bluez-utils blueman      # bluetooth
         playerctl                      # media-key control (play/pause/next)

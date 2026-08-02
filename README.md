@@ -115,6 +115,9 @@ Four themes cycle with **Super+Shift+T**: `arch` (default, Catppuccin Mocha),
   Then `~/ProtonDrive` works like a normal folder (on-demand up/download). It's an
   unofficial backend — fine for access/backup; use Syncthing for always-on sync.
 - **EuroOffice**: best-effort AUR; if unavailable, install manually.
+- **Eduroam (AU) — laptop only**: connect to Aarhus University wifi via the
+  eduroam CAT installer; full walkthrough in [docs/eduroam-au.md](docs/eduroam-au.md).
+  Wifi GUI is `nm-applet` in the systray (autostarted by awesome).
 
 ## Secrets
 

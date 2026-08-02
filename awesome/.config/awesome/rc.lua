@@ -2130,6 +2130,8 @@ echo "$cap"
 end
 awful.spawn.with_shell("pkill -x picom; picom --config " .. os.getenv("HOME") .. "/.config/awesome/picom.conf")
 awful.spawn.with_shell("pgrep -x flameshot >/dev/null || flameshot &")
+-- NetworkManager tray applet (wifi picker; eduroam setup in docs/eduroam-au.md)
+awful.spawn.with_shell("pgrep -x nm-applet >/dev/null || nm-applet &")
 
 -- Apply dark GTK/system color scheme for other apps (Brave, GTK-based tools)
 awful.spawn.with_shell(
