@@ -18,11 +18,12 @@ official `archinstall` script. When prompted, choose:
 Then reboot into the new system and run the setup:
 
 ```bash
-git clone git@gitlab.com:newtscamander/lukasawesome.git ~/lukasawesome
+git clone https://gitlab.com/newtscamander/lukasawesome.git ~/lukasawesome
 cd ~/lukasawesome
 make configure      # answer e.g. laptop = yes, GPU = amd
-make install        # dry-run preview -> confirm -> install
+make install        # dry-run preview -> confirm -> install (no SSH keys needed)
 make check-system   # verify everything came up correctly
+make repos          # then: SSH key for GitLab/GitHub + personal repos + SSH remote
 ```
 
 `pacman --needed` means anything `archinstall` already set up is skipped cleanly,
@@ -31,9 +32,10 @@ so re-installing those packages here is harmless.
 ## Quick start (existing system)
 
 ```bash
-git clone git@gitlab.com:newtscamander/lukasawesome.git ~/lukasawesome
+git clone https://gitlab.com/newtscamander/lukasawesome.git ~/lukasawesome
 cd ~/lukasawesome
 make install        # questionnaire -> dry-run preview -> confirm -> install
+make repos          # optional: SSH key + personal repos (flips origin to SSH)
 ```
 
 `make install` first asks how you want the machine configured (writing

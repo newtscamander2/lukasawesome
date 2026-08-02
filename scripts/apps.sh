@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Post-install app provisioning: VSCode settings/extensions, personal repos,
-# and the video-wallpaper marker.
+# Post-install app provisioning: VSCode settings/extensions and the
+# video-wallpaper marker. (Personal repo cloning lives in repos.sh —
+# `make repos` — so `make install` never needs SSH keys.)
 set -euo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 load_config
@@ -23,21 +24,6 @@ if enabled INSTALL_VSCODE; then
         warn "'code' not found; install VSCode OSS, then re-run to add extensions."
     fi
 fi
-
-# --- Personal repos into ~/projects ---
-clone_repo() {
-    local url="$1" dir="$2"
-    if [ -d "$dir/.git" ]; then
-        ok "$dir already cloned."
-    else
-        run git clone "$url" "$dir"
-    fi
-}
-
-run mkdir -p "$HOME/projects"
-enabled CLONE_CV   && clone_repo "git@gitlab.com:newtscamander/cv.git"   "$HOME/projects/cv"
-# goat is required by the neovim config (goat completion source).
-enabled CLONE_GOAT && clone_repo "git@gitlab.com:newtscamander/goat.git" "$HOME/projects/goat"
 
 # --- Video wallpaper marker read by rc.lua ---
 marker="$HOME/.config/awesome/video_wallpaper"
