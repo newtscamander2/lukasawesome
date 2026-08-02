@@ -12,6 +12,10 @@ case "$(cfg DISPLAY_MANAGER lightdm)" in
         log "Setting up LightDM"
         pac_install lightdm lightdm-gtk-greeter lightdm-gtk-greeter-settings
         run sudo systemctl enable lightdm.service
+        # LightDM can start before the GPU driver is ready (fast NVMe boots),
+        # leaving a black screen on VT1 that a manual restart "fixes". Make it
+        # wait until logind marks the seat graphical.
+        run sudo sed -i 's/^#logind-check-graphical=.*/logind-check-graphical=true/' /etc/lightdm/lightdm.conf
         ;;
     sddm)
         log "Setting up SDDM"
