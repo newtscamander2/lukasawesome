@@ -2195,8 +2195,10 @@ f=$(find "$dir" -maxdepth 1 -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -ina
 if [ -z "$f" ]; then
     # Fresh machine: no wallpapers downloaded yet — fetch in the background
     # (needs network + jq); the retry below picks them up when done.
-    pgrep -f wallpaper-fetch-bands.sh >/dev/null ||
-        nohup "$HOME/.config/awesome/scripts/wallpaper-fetch-bands.sh" >/dev/null 2>&1 &
+    # flock (not pgrep -f: it would match this very command line) keeps
+    # concurrent retries from stacking fetches.
+    nohup flock -n /tmp/.lukas-wallpaper-fetch.lock \
+        "$HOME/.config/awesome/scripts/wallpaper-fetch-bands.sh" >/dev/null 2>&1 &
     exit 0
 fi
 feh --bg-fill "$dir/$f"
