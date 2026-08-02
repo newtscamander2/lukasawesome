@@ -24,6 +24,7 @@ if enabled INSTALL_BASE; then
         xdotool xorg-xrandr            # window/display helpers
         ttf-firacode-nerd noto-fonts noto-fonts-emoji
         neovim                         # the editor itself (config is stowed from nvim/)
+        tree-sitter-cli                # nvim-treesitter compiles grammars with this
         ripgrep fd                     # telescope live_grep + fast find_files
         unzip wget curl
         networkmanager network-manager-applet  # wifi / eduroam (802.1X); nm-applet = tray GUI
