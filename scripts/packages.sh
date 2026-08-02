@@ -22,6 +22,8 @@ if enabled INSTALL_BASE; then
         timeshift                      # system snapshots/backup
         vicious                        # awesome widget library (wibar stats)
         xdotool xorg-xrandr            # window/display helpers
+        xorg-xset                      # rc.lua sets keyboard repeat rate (xset r rate)
+        jq                             # wallpaper-fetch-bands.sh parses Commons API JSON
         ttf-firacode-nerd noto-fonts noto-fonts-emoji
         neovim                         # the editor itself (config is stowed from nvim/)
         tree-sitter-cli                # nvim-treesitter compiles grammars with this
