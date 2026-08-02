@@ -23,6 +23,7 @@ if enabled INSTALL_BASE; then
         vicious                        # awesome widget library (wibar stats)
         xdotool xorg-xrandr            # window/display helpers
         ttf-firacode-nerd noto-fonts noto-fonts-emoji
+        neovim                         # the editor itself (config is stowed from nvim/)
         ripgrep fd                     # telescope live_grep + fast find_files
         unzip wget curl
         networkmanager network-manager-applet  # wifi / eduroam (802.1X); nm-applet = tray GUI
@@ -55,6 +56,7 @@ if enabled INSTALL_DEV; then
         gcc                            # provides g++
         clang                          # clangd + clang-format (C/C++ LSP/format)
         jdk-openjdk                    # java compile/run
+        nodejs npm                     # nvim Copilot + JS tooling
         python python-pip
         tmux
         ansible                        # ansible-vault ships with ansible
