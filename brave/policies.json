@@ -1,0 +1,10 @@
+{
+  "_comment": "Installed to /etc/brave/policies/managed/ by 'make apps'. Extension IDs: 1Password, ColorZilla, No YouTube Shorts, Claude in Chrome.",
+  "ExtensionInstallForcelist": [
+    "aeblfdkhhhdcdjpifhhbdiojplfjncoa;https://clients2.google.com/service/update2/crx",
+    "bhlhnicpbhignbdhedgjhgdocnmhomnp;https://clients2.google.com/service/update2/crx",
+    "hjfkenebldkfgibelglepinlabpjfbll;https://clients2.google.com/service/update2/crx",
+    "fcoeoabgfenejglbffodgkkbkcdhcgfn;https://clients2.google.com/service/update2/crx"
+  ],
+  "BraveRewardsDisabled": true
+}

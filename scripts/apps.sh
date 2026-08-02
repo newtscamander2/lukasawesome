@@ -25,6 +25,13 @@ if enabled INSTALL_VSCODE; then
     fi
 fi
 
+# --- Brave: managed policy (forced extensions + Rewards disabled) ---
+if enabled INSTALL_BROWSER; then
+    log "Installing Brave managed policy (extensions, Rewards off)"
+    run sudo install -Dm644 "$DOTFILES_DIR/brave/policies.json" \
+        /etc/brave/policies/managed/lukasawesome.json
+fi
+
 # --- Neovim: bootstrap lazy.nvim + install plugins from the lockfile ---
 # Owning this here means `make install` leaves a fully working editor: a
 # partial/interrupted first clone of lazy.nvim otherwise blocks every later
