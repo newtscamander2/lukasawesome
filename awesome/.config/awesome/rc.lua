@@ -1839,7 +1839,28 @@ globalkeys = gears.table.join(
 
     -- Hardware / media keys (volume via pactl to match the wibar widget)
     awful.key({ modkey }, "Escape",
-              function() awful.spawn.with_shell("light-locker-command -l || dm-tool lock") end,
+              function()
+                  -- Self-healing lock: start light-locker if it's installed
+                  -- but not yet running, fall back to dm-tool, and surface
+                  -- the reason on screen when nothing can lock.
+                  awful.spawn.easy_async_with_shell([[
+if command -v light-locker-command >/dev/null 2>&1; then
+    pgrep -x light-locker >/dev/null || { light-locker --lock-after-screensaver=5 --lock-on-suspend >/dev/null 2>&1 & sleep 0.5; }
+    light-locker-command -l 2>&1 && exit 0
+fi
+dm-tool lock 2>&1 && exit 0
+echo "No working screen locker. Install light-locker (make install) and make sure the session runs under lightdm."
+exit 1
+]], function(stdout, stderr, _, exit_code)
+                      if exit_code ~= 0 then
+                          naughty.notify({
+                              preset = naughty.config.presets.critical,
+                              title  = "Screen lock failed",
+                              text   = ((stdout or "") .. " " .. (stderr or "")):gsub("%s+$", ""),
+                          })
+                      end
+                  end)
+              end,
               {description="lock screen", group="awesome"}),
     awful.key({}, "XF86AudioRaiseVolume", function() awful.spawn("pactl set-sink-volume @DEFAULT_SINK@ +5%") end,
               {description="raise volume", group="media"}),
