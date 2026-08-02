@@ -1844,12 +1844,13 @@ globalkeys = gears.table.join(
                   -- but not yet running, fall back to dm-tool, and surface
                   -- the reason on screen when nothing can lock.
                   awful.spawn.easy_async_with_shell([[
-if command -v light-locker-command >/dev/null 2>&1; then
-    pgrep -x light-locker >/dev/null || { light-locker --lock-after-screensaver=5 --lock-on-suspend >/dev/null 2>&1 & sleep 0.5; }
-    light-locker-command -l 2>&1 && exit 0
+if pgrep -x xss-lock >/dev/null 2>&1; then
+    loginctl lock-session 2>&1 && exit 0
 fi
-dm-tool lock 2>&1 && exit 0
-echo "No working screen locker. Install light-locker (make install) and make sure the session runs under lightdm."
+if command -v i3lock >/dev/null 2>&1; then
+    i3lock -c 1e1e2e 2>&1 && exit 0
+fi
+echo "No screen locker installed — run 'make install' (xss-lock + i3lock)."
 exit 1
 ]], function(stdout, stderr, _, exit_code)
                       if exit_code ~= 0 then
@@ -2274,11 +2275,13 @@ awful.spawn.with_shell("pkill -x picom; picom --config " .. os.getenv("HOME") ..
 awful.spawn.with_shell("pgrep -x flameshot >/dev/null || flameshot &")
 -- NetworkManager tray applet (wifi picker; eduroam setup in docs/eduroam-au.md)
 awful.spawn.with_shell("pgrep -x nm-applet >/dev/null || nm-applet &")
--- Screen lock (laptop: light-locker is installed there) — lock to the lightdm
--- greeter after 5 min idle and on suspend/lid close; apps keep running.
+-- Screen lock (laptop: xss-lock/i3lock are installed there) — i3lock locks in
+-- place on the same VT (no lightdm greeter dance, which black-screens when
+-- the greeter fails to spawn). xss-lock triggers it after 5 min idle (X
+-- screensaver) and before suspend/lid close; apps keep running underneath.
 awful.spawn.with_shell(
-    "command -v light-locker >/dev/null && { xset s 300 300; " ..
-    "pgrep -x light-locker >/dev/null || light-locker --lock-after-screensaver=5 --lock-on-suspend & }")
+    "command -v xss-lock >/dev/null && command -v i3lock >/dev/null && { xset s 300 5; " ..
+    "pgrep -x xss-lock >/dev/null || xss-lock --transfer-sleep-lock -- i3lock -n -c 1e1e2e & }")
 
 -- Apply dark GTK/system color scheme for other apps (Brave, GTK-based tools)
 awful.spawn.with_shell(
