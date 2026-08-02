@@ -50,7 +50,6 @@ if enabled LAPTOP; then
         tlp tlp-rdw                    # battery / power management
         brightnessctl                  # screen backlight control
         xf86-input-libinput            # touchpad driver
-        xss-lock i3lock                # same-VT screen lock (5 min idle + suspend, rc.lua)
     )
 fi
 
