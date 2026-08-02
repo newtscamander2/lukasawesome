@@ -2192,7 +2192,13 @@ do
         local ROTATE_CMD = [[bash -c '
 dir="$HOME/Media/wallpapers/bands"
 f=$(find "$dir" -maxdepth 1 -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" \) -printf "%f\n" | shuf -n1)
-if [ -z "$f" ]; then feh --randomize --bg-fill "$HOME"/Media/wallpapers/*; exit 0; fi
+if [ -z "$f" ]; then
+    # Fresh machine: no wallpapers downloaded yet — fetch in the background
+    # (needs network + jq); the retry below picks them up when done.
+    pgrep -f wallpaper-fetch-bands.sh >/dev/null ||
+        nohup "$HOME/.config/awesome/scripts/wallpaper-fetch-bands.sh" >/dev/null 2>&1 &
+    exit 0
+fi
 feh --bg-fill "$dir/$f"
 cap=$(awk -F"\t" -v k="$f" "\$1==k{print \$2; exit}" "$dir/.captions.tsv" 2>/dev/null)
 if [ -z "$cap" ]; then cap="${f%.*}"; cap="${cap//_/ }"; fi
@@ -2203,7 +2209,13 @@ echo "$cap"
             awful.spawn.easy_async(ROTATE_CMD, function(stdout)
                 local cap = (stdout or ""):gsub("%s+$", "")
                 if cap == "" then
+                    -- No image was set (first boot: downloads still running) —
+                    -- retry soon instead of waiting for the 10-minute timer.
                     cap_box.visible = false
+                    gears.timer.start_new(90, function()
+                        rotate_wallpaper()
+                        return false
+                    end)
                     return
                 end
                 cap_text:set_markup("<span font='FiraCode Nerd Font 9'>\u{f03e}  " ..
