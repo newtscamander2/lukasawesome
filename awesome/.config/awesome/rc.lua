@@ -2144,17 +2144,12 @@ awful.spawn.with_shell("xset r rate 300 50")
 -- otherwise rotate random band stills (Rammstein / MoonSun) via feh.
 -- Populate/refresh the folder with scripts/wallpaper-fetch-bands.sh.
 do
-    local marker = os.getenv("HOME") .. "/.config/awesome/video_wallpaper"
-    local f = io.open(marker, "r")
-    if f then
-        f:close()
-        awful.spawn.with_shell(
-            os.getenv("HOME") .. "/.config/awesome/scripts/wallpaper-video.sh")
-    else
-        -- Random band wallpaper with a small caption box (bottom-right)
-        -- showing where/when the picture was taken. Captions come from
-        -- ~/Media/wallpapers/bands/.captions.tsv, written by
-        -- scripts/wallpaper-fetch-bands.sh; fallback is the file name.
+    -- Random band wallpaper with a small caption box (bottom-right) showing
+    -- where/when the picture was taken. Captions come from
+    -- ~/Media/wallpapers/bands/.captions.tsv, written by
+    -- scripts/wallpaper-fetch-bands.sh (auto-run when the folder is empty);
+    -- fallback is the file name.
+    local function start_band_wallpaper()
         local function esc(s)
             return (s:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;"))
         end
@@ -2233,6 +2228,22 @@ echo "$cap"
             autostart = true,
             callback  = rotate_wallpaper,
         }
+    end
+
+    local marker = os.getenv("HOME") .. "/.config/awesome/video_wallpaper"
+    local f = io.open(marker, "r")
+    if f then
+        f:close()
+        -- The script exits 3 when it can't/won't run the video (no video
+        -- file, on battery, multi-monitor, missing tools) — in that case
+        -- run the band-still rotation instead of leaving the default.
+        awful.spawn.easy_async_with_shell(
+            os.getenv("HOME") .. "/.config/awesome/scripts/wallpaper-video.sh",
+            function(_, _, _, exit_code)
+                if exit_code ~= 0 then start_band_wallpaper() end
+            end)
+    else
+        start_band_wallpaper()
     end
 end
 awful.spawn.with_shell("pkill -x picom; picom --config " .. os.getenv("HOME") .. "/.config/awesome/picom.conf")

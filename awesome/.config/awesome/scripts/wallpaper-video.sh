@@ -20,7 +20,9 @@ still_fallback() {
         # shellcheck disable=SC2086
         feh --randomize --bg-fill "$FALLBACK_DIR"/* 2>/dev/null || true
     fi
-    exit 0
+    # Exit 3 tells rc.lua the video wallpaper is NOT running, so it can start
+    # the band-still rotation (incl. first-time download) instead.
+    exit 3
 }
 
 command -v xwinwrap >/dev/null 2>&1 || still_fallback
