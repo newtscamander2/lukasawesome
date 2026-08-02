@@ -106,6 +106,7 @@ case "${1:-install}" in
     stow)      bash "$HERE/stow.sh" ;;
     apps)      bash "$HERE/apps.sh" ;;
     repos)     bash "$HERE/repos.sh" ;;
+    protondrive) bash "$HERE/protondrive.sh" ;;
     check-system) bash "$HERE/check-system.sh" ;;
     *)         err "Unknown command '$1'"; exit 1 ;;
 esac

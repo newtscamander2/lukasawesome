@@ -29,6 +29,7 @@ if enabled INSTALL_BASE; then
         unzip wget curl
         networkmanager network-manager-applet  # wifi / eduroam (802.1X); nm-applet = tray GUI
         nm-connection-editor           # GUI connection editor (nm-applet launches it for editing)
+        networkmanager-openvpn         # OpenVPN GUI: import .ovpn in nm-connection-editor
         python-dbus                    # eduroam CAT installer configures NM over D-Bus (docs/eduroam-au.md)
         pipewire pipewire-pulse wireplumber pavucontrol  # audio (volume widget uses pactl)
         bluez bluez-utils blueman      # bluetooth
