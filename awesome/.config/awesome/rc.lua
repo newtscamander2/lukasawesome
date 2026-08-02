@@ -672,6 +672,95 @@ end
 
 gears.timer { timeout = 2, autostart = true, call_now = true, callback = poll_cpu }
 gears.timer { timeout = 3, autostart = true, call_now = true, callback = poll_mem }
+
+-- {{{ Battery (laptop only — widget is skipped entirely when no battery)
+local BAT_PATH
+for _, name in ipairs({ "BAT0", "BAT1", "BATT" }) do
+    local probe = io.open("/sys/class/power_supply/" .. name .. "/capacity", "r")
+    if probe then probe:close(); BAT_PATH = "/sys/class/power_supply/" .. name; break end
+end
+
+local bat_subs = {}
+
+local function read_sys(p)
+    local f = io.open(p, "r")
+    if not f then return nil end
+    local v = f:read("*l"); f:close()
+    return v
+end
+
+local function bat_glyph(cap, charging)
+    if charging then return "\u{f0e7}" end -- bolt
+    if cap >= 90 then return "\u{f240}" end
+    if cap >= 65 then return "\u{f241}" end
+    if cap >= 40 then return "\u{f242}" end
+    if cap >= 15 then return "\u{f243}" end
+    return "\u{f244}"
+end
+
+local function poll_battery()
+    if not BAT_PATH then return end
+    local cap    = tonumber(read_sys(BAT_PATH .. "/capacity")) or 0
+    local status = read_sys(BAT_PATH .. "/status") or "Unknown"
+    -- energy_* (µWh/µW) on most laptops, charge_* (µAh/µA) on some.
+    local now  = tonumber(read_sys(BAT_PATH .. "/energy_now"))  or tonumber(read_sys(BAT_PATH .. "/charge_now"))
+    local full = tonumber(read_sys(BAT_PATH .. "/energy_full")) or tonumber(read_sys(BAT_PATH .. "/charge_full"))
+    local rate = tonumber(read_sys(BAT_PATH .. "/power_now"))   or tonumber(read_sys(BAT_PATH .. "/current_now"))
+    local charging = (status == "Charging")
+
+    -- Time to empty (discharging) or to full (charging). rate is 0/absent
+    -- for a moment right after plugging/unplugging — show no estimate then.
+    local hours
+    if rate and rate > 0 and now then
+        if status == "Discharging" then
+            hours = now / rate
+        elseif charging and full then
+            hours = (full - now) / rate
+        end
+    end
+    local time_str = ""
+    if hours then
+        local mins = math.floor(hours * 60 + 0.5)
+        time_str = string.format(" %d:%02d", math.floor(mins / 60), mins % 60)
+    end
+
+    local color = charging and C.green
+        or (cap <= 15 and C.red or (cap <= 30 and C.peach or C.sky))
+    local label = ("%d%%%s"):format(cap, time_str)
+    if status == "Full" then label = cap .. "%" end
+
+    for _, sub in ipairs(bat_subs) do
+        sub.icon:set_markup("<span foreground='" .. color .. "'>" .. bat_glyph(cap, charging) .. "</span>")
+        sub.text:set_markup("<span foreground='" .. C.text .. "'>" .. label .. "</span>")
+    end
+end
+
+if BAT_PATH then
+    gears.timer { timeout = 30, autostart = true, call_now = true, callback = poll_battery }
+end
+
+local function make_battery_widget()
+    local icon = wibox.widget { widget = wibox.widget.textbox, align = "center", valign = "center" }
+    local text = wibox.widget { widget = wibox.widget.textbox, valign = "center" }
+    table.insert(bat_subs, { icon = icon, text = text })
+    local w = wibox.widget {
+        {
+            {
+                { icon, forced_width = 20, widget = wibox.container.background },
+                { text, left = 6, widget = wibox.container.margin },
+                layout = wibox.layout.fixed.horizontal,
+            },
+            left = 12, right = 14, top = 4, bottom = 4,
+            widget = wibox.container.margin,
+        },
+        bg     = C.surface0,
+        shape  = rounded(6),
+        widget = wibox.container.background,
+    }
+    poll_battery()
+    return w
+end
+-- }}}
 -- }}}
 
 -- {{{ Claude Code usage — local JSONL entry counts only.
@@ -1072,6 +1161,19 @@ awful.screen.connect_for_each_screen(function(s)
         fg       = C.text,
     })
 
+    -- Right-side widget strip; battery only exists on machines that have one.
+    local right_widgets = {
+        layout  = wibox.layout.fixed.horizontal,
+        spacing = 6,
+        cpu_box,
+        mem_box,
+        upd_box,
+        make_volume_widget(),
+    }
+    if BAT_PATH then table.insert(right_widgets, make_battery_widget()) end
+    table.insert(right_widgets, tray)
+    table.insert(right_widgets, clock_box)
+
     s.mywibox:setup {
         {
             {
@@ -1084,16 +1186,7 @@ awful.screen.connect_for_each_screen(function(s)
                         s.mypromptbox,
                     },
                     s.mytasklist,
-                    {
-                        layout  = wibox.layout.fixed.horizontal,
-                        spacing = 6,
-                        cpu_box,
-                        mem_box,
-                        upd_box,
-                        make_volume_widget(),
-                        tray,
-                        clock_box,
-                    },
+                    right_widgets,
                     layout = wibox.layout.align.horizontal,
                 },
                 left = 10, right = 10, top = 4, bottom = 4,
