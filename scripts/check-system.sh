@@ -46,8 +46,34 @@ if svc_enabled reflector.timer; then pass "reflector.timer enabled"; else note "
 
 log "Display manager"
 for dm in lightdm sddm ly; do
-    svc_enabled "$dm.service" && pass "$dm enabled"
+    svc_enabled "$dm.service" || continue
+    # "enabled" alone hides the common failure: the unit is enabled but crashed
+    # on boot, so VT1 is black. Check that it actually came up.
+    if svc_active "$dm.service"; then pass "$dm enabled and active"
+    else miss "$dm enabled but NOT active (journalctl -b -u $dm)"; fi
 done
+# LightDM needs org.freedesktop.Accounts at startup or it exits immediately.
+if svc_enabled lightdm.service; then
+    check_pkg accountsservice
+    [ -d /usr/share/xsessions ] && [ -n "$(ls -A /usr/share/xsessions 2>/dev/null)" ] \
+        && pass "xsessions present ($(ls /usr/share/xsessions | tr '\n' ' '))" \
+        || miss "no sessions in /usr/share/xsessions — greeter will have nothing to launch"
+fi
+
+log "Xorg config snippets"
+# One truncated snippet aborts the whole X server, so validate every file, not
+# just the ones this repo writes.
+shopt -s nullglob
+xorg_snippets=(/etc/X11/xorg.conf.d/*.conf)
+shopt -u nullglob
+if [ "${#xorg_snippets[@]}" -eq 0 ]; then
+    note "no snippets in /etc/X11/xorg.conf.d"
+else
+    for snippet in "${xorg_snippets[@]}"; do
+        if xorg_conf_valid "$snippet"; then pass "$(basename "$snippet") parses"
+        else miss "$(basename "$snippet") is malformed — Xorg will refuse to start"; fi
+    done
+fi
 
 log "GPU / microcode (GPU=$(cfg GPU amd))"
 check_pkg amd-ucode
@@ -61,7 +87,9 @@ if enabled LAPTOP; then
     log "Laptop extras"
     check_svc tlp.service
     check_cmd brightnessctl
-    [ -f /etc/X11/xorg.conf.d/30-touchpad.conf ] && pass "touchpad config present" || miss "touchpad config missing"
+    if xorg_conf_valid /etc/X11/xorg.conf.d/30-touchpad.conf; then pass "touchpad config present and valid"
+    elif [ -f /etc/X11/xorg.conf.d/30-touchpad.conf ]; then miss "touchpad config present but malformed"
+    else miss "touchpad config missing"; fi
 fi
 
 if enabled INSTALL_DEV; then
