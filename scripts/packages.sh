@@ -37,14 +37,18 @@ if enabled INSTALL_BASE; then
         networkmanager-openvpn         # OpenVPN GUI: import .ovpn in nm-connection-editor
         python-dbus                    # eduroam CAT installer configures NM over D-Bus (docs/eduroam-au.md)
         pipewire pipewire-pulse wireplumber pavucontrol  # audio (volume widget uses pactl)
+        cava                           # audio visualizer (bottom-edge wave in rc.lua)
         bluez bluez-utils blueman      # bluetooth
         playerctl                      # media-key control (play/pause/next)
+        light-locker                   # lock to lightdm greeter (Super+Escape + 5 min idle, rc.lua)
+        xclip                          # X clipboard CLI: nvim unnamedplus provider + clipboard plumbing
         amd-ucode                      # AMD CPU microcode (harmless if Intel)
         ufw                            # firewall (public / uni networks)
         reflector                      # keep pacman mirrors fast
         rclone fuse3                   # Proton Drive mount (~/ProtonDrive)
     )
     aur+=(neofetch)                    # dropped from official repos -> AUR
+    aur+=(catppuccin-cursors-mocha)    # matching cursor theme (rc.lua GTK/xrdb writer)
 fi
 
 # --- Laptop-only essentials ---
@@ -98,6 +102,12 @@ fi
 enabled INSTALL_BROWSER && aur+=(brave-bin)
 enabled INSTALL_CLAUDE  && aur+=(claude-code)
 enabled INSTALL_LVM_GUI && aur+=(kvpm)
+
+# --- Proton VPN (official GUI app) ---
+if enabled INSTALL_VPN; then
+    pac+=(libappindicator-gtk3)  # tray icon support (best-effort under awesome)
+    aur+=(proton-vpn-gtk-app)    # official Proton VPN Linux client
+fi
 
 # --- Video wallpaper deps (opt-in) ---
 if enabled VIDEO_WALLPAPER; then

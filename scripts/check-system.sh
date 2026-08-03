@@ -101,7 +101,7 @@ if enabled INSTALL_DEV; then
 fi
 
 log "Dotfiles symlinks"
-for pkg_name in $(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig"); do
+for pkg_name in $(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash rclone clang-format cava"); do
     case "$pkg_name" in
         awesome)   target="$HOME/.config/awesome" ;;
         nvim)      target="$HOME/.config/nvim" ;;
@@ -111,6 +111,7 @@ for pkg_name in $(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig"); d
         bash)      target="$HOME/.bashrc" ;;
         rclone)    target="$HOME/.config/systemd/user/protondrive.service" ;;
         clang-format) target="$HOME/.clang-format" ;;
+        cava)      target="$HOME/.config/cava/config" ;;
         *)         target="" ;;
     esac
     [ -z "$target" ] && continue

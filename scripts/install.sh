@@ -19,7 +19,7 @@ questionnaire() {
     dm="$(ask_str  "Display manager (lightdm/sddm/ly/none)" "$(cfg DISPLAY_MANAGER lightdm)")"
     laptop="$(ask_yn "Is this a laptop (adds tlp, brightnessctl, touchpad config)?" "$([ "$(cfg LAPTOP no)" = yes ] && echo y || echo n)")"
 
-    local base dev virt media tex vscode browser claude lvm optional
+    local base dev virt media tex vscode browser claude lvm vpn optional
     base="$(ask_yn    "Install base desktop apps (zathura, rofi, keepassxc, dolphin, flameshot, timeshift)?" "$([ "$(cfg INSTALL_BASE yes)"    = no ] && echo n || echo y)")"
     dev="$(ask_yn     "Install dev toolchains (docker, g++, java, python, ansible, kubernetes)?"             "$([ "$(cfg INSTALL_DEV yes)"     = no ] && echo n || echo y)")"
     virt="$(ask_yn    "Install virtualization (wine, virtualbox)?"                                          "$([ "$(cfg INSTALL_VIRT yes)"    = no ] && echo n || echo y)")"
@@ -29,6 +29,7 @@ questionnaire() {
     browser="$(ask_yn "Install Brave browser (AUR)?"                                                        "$([ "$(cfg INSTALL_BROWSER yes)" = no ] && echo n || echo y)")"
     claude="$(ask_yn  "Install Claude Code CLI (AUR)?"                                                       "$([ "$(cfg INSTALL_CLAUDE yes)"  = no ] && echo n || echo y)")"
     lvm="$(ask_yn     "Install graphical LVM manager (kvpm, AUR)?"                                           "$([ "$(cfg INSTALL_LVM_GUI yes)" = no ] && echo n || echo y)")"
+    vpn="$(ask_yn     "Install Proton VPN GUI (proton-vpn-gtk-app, AUR)?"                                    "$([ "$(cfg INSTALL_VPN yes)"     = no ] && echo n || echo y)")"
     optional="$(ask_yn "Try best-effort apps (Proton Drive, EuroOffice)?"                                   "$([ "$(cfg INSTALL_OPTIONAL no)" = yes ] && echo y || echo n)")"
 
     local clone_cv clone_goat video
@@ -41,7 +42,7 @@ questionnaire() {
 GPU=$gpu
 LAPTOP=$laptop
 DISPLAY_MANAGER=$dm
-STOW_PACKAGES="$(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash rclone clang-format")"
+STOW_PACKAGES="$(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash rclone clang-format cava")"
 THEMES="$(cfg THEMES "arch ubuntu windows7 win11")"
 INSTALL_BASE=$base
 INSTALL_DEV=$dev
@@ -52,6 +53,7 @@ INSTALL_VSCODE=$vscode
 INSTALL_BROWSER=$browser
 INSTALL_CLAUDE=$claude
 INSTALL_LVM_GUI=$lvm
+INSTALL_VPN=$vpn
 INSTALL_OPTIONAL=$optional
 CLONE_CV=$clone_cv
 CLONE_GOAT=$clone_goat

@@ -1,0 +1,13 @@
+# Cava config for the AwesomeWM bottom-edge visualizer (rc.lua consumes raw
+# ascii frames on stdout). Standalone terminal use still works: `cava -p
+# /dev/null` for defaults, or just run `cava` and ignore the raw numbers.
+[general]
+bars = 50
+framerate = 20
+autosens = 1
+
+[output]
+method = raw
+raw_target = /dev/stdout
+data_format = ascii
+ascii_max_range = 100

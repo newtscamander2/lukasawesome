@@ -10,6 +10,12 @@ decorations = "none"
 [scrolling]
 history = 10000
 
+# Hide transient "[WARN] Unable to store text in clipboard" message bars
+# (XCB selection-ownership races). Trade-off: other WARNs are hidden from the
+# in-terminal bar too; they still land in the log file.
+[debug]
+log_level = "Error"
+
 [font]
 size = 11.0
 normal = { family = "FiraCode Nerd Font", style = "Regular" }

@@ -13,7 +13,7 @@ LAPTOP=no                     # yes on a laptop: adds tlp, brightnessctl, touchp
 DISPLAY_MANAGER=lightdm       # lightdm | sddm | ly | none
 
 # --- Stow packages to symlink into $HOME ---
-STOW_PACKAGES="awesome nvim tmux alacritty fontconfig bash rclone"
+STOW_PACKAGES="awesome nvim tmux alacritty fontconfig bash rclone clang-format cava"
 
 # --- AwesomeWM themes to keep available (cycled with Super+Shift+T) ---
 THEMES="arch ubuntu windows7 win11"
@@ -23,11 +23,12 @@ INSTALL_BASE=yes              # git, stow, base-devel, zathura, rofi, feh, neofe
 INSTALL_DEV=yes               # docker, g++, jdk, python, tmux, ansible, kubernetes (kubectl/helm/minikube/k9s)
 INSTALL_VIRT=yes              # wine, virtualbox
 INSTALL_MEDIA=yes             # obs-studio, gimp, shotcut, kazam
-INSTALL_TEXLIVE=yes           # texlive-most, texlive-langextra, biber (for LaTeX / goat / cv)
+INSTALL_TEXLIVE=yes           # texlive-meta, texlive-langeuropean, biber (for LaTeX / goat / cv)
 INSTALL_VSCODE=yes            # VSCode OSS (code) + dark mode + LaTeX Workshop
 INSTALL_BROWSER=yes           # brave-bin (AUR)
 INSTALL_CLAUDE=yes            # claude-code (AUR)
 INSTALL_LVM_GUI=yes           # kvpm graphical LVM manager (AUR)
+INSTALL_VPN=yes               # Proton VPN official GUI (proton-vpn-gtk-app, AUR)
 INSTALL_OPTIONAL=no           # best-effort: proton drive, eurooffice (may need manual steps)
 
 # --- SSH identity (used by 'make repos') ---
