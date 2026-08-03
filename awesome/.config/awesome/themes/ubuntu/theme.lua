@@ -41,6 +41,7 @@ theme.bg_focus      = theme.cat_surface0
 theme.bg_urgent     = theme.cat_red
 theme.bg_minimize   = theme.cat_surface1
 theme.bg_systray    = theme.cat_mantle
+theme.systray_icon_spacing = dpi(4)
 
 theme.fg_normal     = theme.cat_text
 theme.fg_focus      = theme.cat_mauve

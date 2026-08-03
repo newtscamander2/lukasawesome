@@ -41,6 +41,7 @@ theme.bg_minimize   = theme.cat_surface1
 -- Must match the bg of the tray chip in rc.lua: xembed icons cannot be
 -- transparent and always paint on this color.
 theme.bg_systray    = theme.cat_surface0
+theme.systray_icon_spacing = dpi(4)
 
 theme.fg_normal     = theme.cat_text
 theme.fg_focus      = theme.cat_mauve

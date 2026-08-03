@@ -189,28 +189,30 @@ local rofi_arch = "rofi -show drun -show-icons -theme "
 
 -- Build a "glyph + text" cell for the wibar right cluster.
 -- Returns the widget and its textbox so callers can update the value.
+-- Returns the pill, its value textbox and its icon textbox — every wibar
+-- pill (cpu/mem/updates/volume/battery) is built from this one factory.
 local function stat_cell(glyph, glyph_color, initial)
     local txt = wibox.widget {
         markup = "<span foreground='" .. C.text .. "'>" .. (initial or "") .. "</span>",
         widget = wibox.widget.textbox,
         valign = "center",
     }
-    local icon = wibox.widget {
-        {
-            markup = "<span foreground='" .. (glyph_color or C.mauve) .. "'>" .. glyph .. "</span>",
-            widget = wibox.widget.textbox,
-            align  = "center",
-            valign = "center",
-        },
-        forced_width = UI.icon_w,
-        widget = wibox.container.background,
+    local icon_tb = wibox.widget {
+        markup = "<span foreground='" .. (glyph_color or C.mauve) .. "'>" .. glyph .. "</span>",
+        widget = wibox.widget.textbox,
+        align  = "center",
+        valign = "center",
     }
     local body = wibox.widget {
         {
-            icon,
+            {
+                icon_tb,
+                forced_width = UI.icon_w,
+                widget = wibox.container.background,
+            },
             {
                 txt,
-                left = 8,
+                left = UI.icon_gap,
                 widget = wibox.container.margin,
             },
             layout = wibox.layout.fixed.horizontal,
@@ -224,7 +226,7 @@ local function stat_cell(glyph, glyph_color, initial)
         shape  = rounded(UI.radius_inner),
         widget = wibox.container.background,
     }
-    return box, txt, icon
+    return box, txt, icon_tb
 end
 -- }}}
 
@@ -297,7 +299,7 @@ gears.timer {
 
 -- {{ Volume popup (interactive slider)
 vol_popup_icon = wibox.widget {
-    markup = "<span size='xx-large' foreground='" .. C.mauve .. "'>\u{f57e}</span>",
+    markup = "<span size='xx-large' foreground='" .. C.mauve .. "'>\u{f028}</span>",
     widget = wibox.widget.textbox,
     align  = "center", valign = "center",
 }
@@ -353,7 +355,7 @@ local mute_btn_bg = wibox.container.background()
 mute_btn_bg.bg    = C.surface0
 mute_btn_bg.shape = rounded(UI.radius_inner)
 local mute_btn_lbl = wibox.widget {
-    markup = "<span foreground='" .. C.mauve .. "' size='large'>\u{f75f}</span>",
+    markup = "<span foreground='" .. C.mauve .. "' size='large'>\u{f026}</span>",
     widget = wibox.widget.textbox,
     align  = "center", valign = "center",
 }
@@ -592,37 +594,8 @@ end
 
 -- Factory: make a wibar volume widget for a given screen.
 local function make_volume_widget()
-    local icon_tb = wibox.widget {
-        markup = "<span foreground='" .. C.mauve .. "'>\u{f028}</span>",
-        widget = wibox.widget.textbox,
-        align  = "center",
-        valign = "center",
-    }
-    local text_tb = wibox.widget {
-        markup = "<span foreground='" .. C.text .. "'>--%</span>",
-        widget = wibox.widget.textbox,
-        valign = "center",
-    }
+    local w, text_tb, icon_tb = stat_cell("\u{f028}", C.mauve, "--%")
     table.insert(vol_subscribers, { icon_tb = icon_tb, text_tb = text_tb })
-
-    local w = wibox.widget {
-        {
-            {
-                {
-                    icon_tb,
-                    forced_width = UI.icon_w,
-                    widget = wibox.container.background,
-                },
-                { text_tb, left = 8, widget = wibox.container.margin },
-                layout = wibox.layout.fixed.horizontal,
-            },
-            left = UI.pill_l, right = UI.pill_r, top = UI.pill_t, bottom = UI.pill_b,
-            widget = wibox.container.margin,
-        },
-        bg     = C.surface0,
-        shape  = rounded(UI.radius_inner),
-        widget = wibox.container.background,
-    }
     w:buttons(gears.table.join(
         awful.button({}, 1, function() vol_popup_toggle() end),
         awful.button({}, 3, function()
@@ -707,13 +680,15 @@ local function read_sys(p)
     return v
 end
 
+-- Material Design battery glyphs (Nerd Fonts v3 range) — single-cell width,
+-- unlike the Font Awesome f240-f244 set which is ~1.5em and clips in the cell.
 local function bat_glyph(cap, charging)
-    if charging then return "\u{f0e7}" end -- bolt
-    if cap >= 90 then return "\u{f240}" end
-    if cap >= 65 then return "\u{f241}" end
-    if cap >= 40 then return "\u{f242}" end
-    if cap >= 15 then return "\u{f243}" end
-    return "\u{f244}"
+    if charging then return "\u{f0084}" end -- battery-charging
+    if cap >= 90 then return "\u{f0079}" end -- full
+    if cap >= 65 then return "\u{f0081}" end -- 80
+    if cap >= 40 then return "\u{f007e}" end -- 50
+    if cap >= 15 then return "\u{f007c}" end -- 30
+    return "\u{f007a}"                       -- 10
 end
 
 local function poll_battery()
@@ -758,23 +733,8 @@ if BAT_PATH then
 end
 
 local function make_battery_widget()
-    local icon = wibox.widget { widget = wibox.widget.textbox, align = "center", valign = "center" }
-    local text = wibox.widget { widget = wibox.widget.textbox, valign = "center" }
+    local w, text, icon = stat_cell(bat_glyph(0, false), C.sky, "--")
     table.insert(bat_subs, { icon = icon, text = text })
-    local w = wibox.widget {
-        {
-            {
-                { icon, forced_width = 20, widget = wibox.container.background },
-                { text, left = 6, widget = wibox.container.margin },
-                layout = wibox.layout.fixed.horizontal,
-            },
-            left = UI.pill_l, right = UI.pill_r, top = UI.pill_t, bottom = UI.pill_b,
-            widget = wibox.container.margin,
-        },
-        bg     = C.surface0,
-        shape  = rounded(UI.radius_inner),
-        widget = wibox.container.background,
-    }
     poll_battery()
     return w
 end
@@ -968,7 +928,7 @@ awful.screen.connect_for_each_screen(function(s)
         cpu_txt:set_markup("<span foreground='" .. C.text .. "'>" .. pct .. "%</span>")
     end)
 
-    local mem_box, mem_txt = stat_cell("\u{efc5}", C.green, "--%")
+    local mem_box, mem_txt = stat_cell("\u{f2db}", C.green, "--%")
     subscribe_mem(function(pct)
         mem_txt:set_markup("<span foreground='" .. C.text .. "'>" .. pct .. "%</span>")
     end)
@@ -1051,21 +1011,33 @@ awful.screen.connect_for_each_screen(function(s)
                     {
                         {
                             {
-                                id     = "icon_role",
-                                widget = wibox.widget.imagebox,
+                                -- Fixed 20x20 icon cell: clients supply icons at
+                                -- arbitrary sizes; unsized they dictate pill height.
+                                {
+                                    {
+                                        id     = "icon_role",
+                                        widget = wibox.widget.imagebox,
+                                    },
+                                    width    = dpi(20),
+                                    height   = dpi(20),
+                                    strategy = "exact",
+                                    widget   = wibox.container.constraint,
+                                },
+                                margins = 3,
+                                widget  = wibox.container.margin,
                             },
-                            margins = 3,
-                            widget  = wibox.container.margin,
-                        },
-                        {
                             {
-                                id     = "text_role",
-                                widget = wibox.widget.textbox,
+                                {
+                                    id     = "text_role",
+                                    widget = wibox.widget.textbox,
+                                },
+                                left = 6, right = 8,
+                                widget = wibox.container.margin,
                             },
-                            left = 6, right = 8,
-                            widget = wibox.container.margin,
+                            layout = wibox.layout.fixed.horizontal,
                         },
-                        layout = wibox.layout.fixed.horizontal,
+                        left = 4, top = UI.pill_t, bottom = UI.pill_b,
+                        widget = wibox.container.margin,
                     },
                     id           = "background_role",
                     widget       = wibox.container.background,
@@ -1099,24 +1071,23 @@ awful.screen.connect_for_each_screen(function(s)
     -- Launcher button (Arch logo — distinctive: mauve fill, inverted glyph)
     local launcher_glyph = wibox.widget {
         {
-            markup = "<span font='" .. font(16) .. "' foreground='" .. C.base ..
+            markup = "<span font='" .. font(14) .. "' foreground='" .. C.base ..
                      "' weight='bold'>\u{f303}</span>",
             widget = wibox.widget.textbox,
             align  = "center",
             valign = "center",
         },
-        forced_width  = 28,
-        forced_height = 28,
+        forced_width = dpi(24),
         widget = wibox.container.background,
     }
     local launcher_bg = wibox.widget {
         {
             launcher_glyph,
-            left = 10, right = 10, top = 3, bottom = 3,
+            left = 10, right = 10, top = UI.pill_t, bottom = UI.pill_b,
             widget = wibox.container.margin,
         },
         bg     = C.mauve,
-        shape  = rounded(UI.radius_outer),
+        shape  = rounded(UI.radius_inner),
         widget = wibox.container.background,
     }
     -- Right-side separator to visually divide launcher from tags
@@ -1143,14 +1114,28 @@ awful.screen.connect_for_each_screen(function(s)
     launcher_bg:connect_signal("mouse::enter", function() launcher_bg.bg = C.pink end)
     launcher_bg:connect_signal("mouse::leave", function() launcher_bg.bg = C.mauve end)
 
-    -- Clock
+    -- Clock — same icon-cell/text anatomy as every other pill.
+    local clock_icon = wibox.widget {
+        {
+            markup = "<span foreground='" .. C.mauve .. "'>\u{f017}</span>",
+            widget = wibox.widget.textbox,
+            align  = "center",
+            valign = "center",
+        },
+        forced_width = UI.icon_w,
+        widget = wibox.container.background,
+    }
     local clock_txt = wibox.widget.textclock(
-        "<span foreground='" .. C.text .. "'>\u{f017}  %H:%M  </span>" ..
+        "<span foreground='" .. C.text .. "'>%H:%M  </span>" ..
         "<span foreground='" .. C.subtext1 .. "'>%a %d %b</span>", 60)
     local clock_box = wibox.widget {
         {
-            clock_txt,
-            left = 10, right = 10, top = 4, bottom = 4,
+            {
+                clock_icon,
+                { clock_txt, left = UI.icon_gap, widget = wibox.container.margin },
+                layout = wibox.layout.fixed.horizontal,
+            },
+            left = UI.pill_l, right = UI.pill_r, top = UI.pill_t, bottom = UI.pill_b,
             widget = wibox.container.margin,
         },
         bg     = C.surface0,
@@ -1158,14 +1143,19 @@ awful.screen.connect_for_each_screen(function(s)
         widget = wibox.container.background,
     }
 
-    -- Systray
+    -- Systray. Fixed base size so xembed icons (Brave etc.) render crisp on
+    -- the chip background instead of scaling to the bar height with a stale
+    -- background pixmap (the "black square" artifact). bg comes from the
+    -- theme so all arch-family themes stay in sync.
+    local systray_widget = wibox.widget.systray()
+    systray_widget:set_base_size(dpi(20))
     local tray = wibox.widget {
         {
-            wibox.widget.systray(),
-            left = 6, right = 6, top = 4, bottom = 4,
+            systray_widget,
+            left = 8, right = 8, top = UI.pill_t, bottom = UI.pill_b,
             widget = wibox.container.margin,
         },
-        bg     = C.surface0,
+        bg     = beautiful.bg_systray or C.surface0,
         shape  = rounded(UI.radius_inner),
         widget = wibox.container.background,
     }
