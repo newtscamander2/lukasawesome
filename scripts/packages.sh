@@ -9,7 +9,10 @@ pac=()   # official repo
 aur=()   # AUR (need yay)
 
 # --- Always: core tooling needed for the dotfiles themselves ---
-pac+=(git stow base-devel)
+# less is git's built-in default pager, but Arch dropped it from the 'base'
+# meta-package and nothing here depends on it, so 'git log'/'git branch' die
+# with "unable to execute pager 'less'" on a fresh install. Also the man pager.
+pac+=(git stow base-devel less)
 
 # --- Base desktop apps ---
 if enabled INSTALL_BASE; then
