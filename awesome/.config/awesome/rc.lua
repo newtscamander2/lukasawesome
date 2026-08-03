@@ -138,6 +138,24 @@ local C = {
     pink      = beautiful.cat_pink     or "#f5c2e7",
 }
 
+-- {{{ UI design tokens — the single source for geometry, radii and fonts.
+-- Two radius tiers only (matching picom's corner-radius): outer for large
+-- surfaces, inner for pills/chips. All wibar pills share one geometry.
+local dpi  = require("beautiful.xresources").apply_dpi
+local FONT = "FiraCode Nerd Font"
+local function font(size) return FONT .. " " .. size end
+local UI = {
+    radius_outer = 10,        -- wibar strip, tiles, popups, caption box
+    radius_inner = 6,         -- pills, launcher, sliders, progressbars
+    icon_w       = dpi(22),   -- icon cell width in every wibar pill
+    icon_gap     = dpi(8),    -- icon -> text gap inside pills
+    pill_l = dpi(12), pill_r = dpi(14), pill_t = dpi(4), pill_b = dpi(4),
+    tile_margin  = dpi(24),   -- inner margin of desktop tiles
+    tile_alpha   = "cc",      -- tile bg alpha suffix (~80%, frosted with blur)
+    tile_border  = dpi(1),
+}
+-- }}}
+
 -- This is used later as the default terminal and editor to run.
 terminal = "alacritty"
 filemanager = "dolphin"
@@ -184,7 +202,7 @@ local function stat_cell(glyph, glyph_color, initial)
             align  = "center",
             valign = "center",
         },
-        forced_width = 22,
+        forced_width = UI.icon_w,
         widget = wibox.container.background,
     }
     local body = wibox.widget {
@@ -197,13 +215,13 @@ local function stat_cell(glyph, glyph_color, initial)
             },
             layout = wibox.layout.fixed.horizontal,
         },
-        left = 12, right = 14, top = 4, bottom = 4,
+        left = UI.pill_l, right = UI.pill_r, top = UI.pill_t, bottom = UI.pill_b,
         widget = wibox.container.margin,
     }
     local box = wibox.widget {
         body,
         bg     = C.surface0,
-        shape  = rounded(6),
+        shape  = rounded(UI.radius_inner),
         widget = wibox.container.background,
     }
     return box, txt, icon
@@ -290,7 +308,7 @@ vol_popup_pct = wibox.widget {
 }
 
 vol_slider = wibox.widget {
-    bar_shape           = rounded(4),
+    bar_shape           = rounded(UI.radius_inner),
     bar_height          = 8,
     bar_color           = C.surface0,
     bar_active_color    = C.mauve,
@@ -333,7 +351,7 @@ end)
 
 local mute_btn_bg = wibox.container.background()
 mute_btn_bg.bg    = C.surface0
-mute_btn_bg.shape = rounded(6)
+mute_btn_bg.shape = rounded(UI.radius_inner)
 local mute_btn_lbl = wibox.widget {
     markup = "<span foreground='" .. C.mauve .. "' size='large'>\u{f75f}</span>",
     widget = wibox.widget.textbox,
@@ -374,7 +392,7 @@ local sink_btn_chev = wibox.widget {
 }
 local sink_btn_bg = wibox.container.background()
 sink_btn_bg.bg    = C.surface0
-sink_btn_bg.shape = rounded(6)
+sink_btn_bg.shape = rounded(UI.radius_inner)
 sink_btn_bg:set_widget(wibox.widget {
     {
         {
@@ -409,7 +427,7 @@ local vol_popup = wibox({
     visible      = false,
     bg           = C.mantle,
     fg           = C.text,
-    shape        = rounded(14),
+    shape        = rounded(UI.radius_outer),
     border_width = 2,
     border_color = C.mauve,
     type         = "notification",
@@ -481,7 +499,7 @@ local function make_sink_row(sink)
             widget = wibox.container.margin,
         },
         bg            = active and C.surface1 or C.surface0,
-        shape         = rounded(6),
+        shape         = rounded(UI.radius_inner),
         forced_height = 30,
         widget        = wibox.container.background,
     }
@@ -592,17 +610,17 @@ local function make_volume_widget()
             {
                 {
                     icon_tb,
-                    forced_width = 22,
+                    forced_width = UI.icon_w,
                     widget = wibox.container.background,
                 },
                 { text_tb, left = 8, widget = wibox.container.margin },
                 layout = wibox.layout.fixed.horizontal,
             },
-            left = 12, right = 14, top = 4, bottom = 4,
+            left = UI.pill_l, right = UI.pill_r, top = UI.pill_t, bottom = UI.pill_b,
             widget = wibox.container.margin,
         },
         bg     = C.surface0,
-        shape  = rounded(6),
+        shape  = rounded(UI.radius_inner),
         widget = wibox.container.background,
     }
     w:buttons(gears.table.join(
@@ -750,11 +768,11 @@ local function make_battery_widget()
                 { text, left = 6, widget = wibox.container.margin },
                 layout = wibox.layout.fixed.horizontal,
             },
-            left = 12, right = 14, top = 4, bottom = 4,
+            left = UI.pill_l, right = UI.pill_r, top = UI.pill_t, bottom = UI.pill_b,
             widget = wibox.container.margin,
         },
         bg     = C.surface0,
-        shape  = rounded(6),
+        shape  = rounded(UI.radius_inner),
         widget = wibox.container.background,
     }
     poll_battery()
@@ -1013,7 +1031,7 @@ awful.screen.connect_for_each_screen(function(s)
                     widget = wibox.container.margin,
                 },
                 id           = "background_role",
-                shape        = rounded(6),
+                shape        = rounded(UI.radius_inner),
                 widget       = wibox.container.background,
             },
             widget = wibox.container.background,
@@ -1051,7 +1069,7 @@ awful.screen.connect_for_each_screen(function(s)
                     },
                     id           = "background_role",
                     widget       = wibox.container.background,
-                    shape        = rounded(6),
+                    shape        = rounded(UI.radius_inner),
                 },
                 {
                     {
@@ -1060,7 +1078,7 @@ awful.screen.connect_for_each_screen(function(s)
                         forced_height = 2,
                         forced_width  = 26,
                         visible       = false,
-                        shape         = rounded(4),
+                        shape         = rounded(UI.radius_inner),
                         widget        = wibox.container.background,
                     },
                     halign = "center",
@@ -1081,7 +1099,7 @@ awful.screen.connect_for_each_screen(function(s)
     -- Launcher button (Arch logo — distinctive: mauve fill, inverted glyph)
     local launcher_glyph = wibox.widget {
         {
-            markup = "<span font='FiraCode Nerd Font 16' foreground='" .. C.base ..
+            markup = "<span font='" .. font(16) .. "' foreground='" .. C.base ..
                      "' weight='bold'>\u{f303}</span>",
             widget = wibox.widget.textbox,
             align  = "center",
@@ -1098,7 +1116,7 @@ awful.screen.connect_for_each_screen(function(s)
             widget = wibox.container.margin,
         },
         bg     = C.mauve,
-        shape  = rounded(8),
+        shape  = rounded(UI.radius_outer),
         widget = wibox.container.background,
     }
     -- Right-side separator to visually divide launcher from tags
@@ -1136,7 +1154,7 @@ awful.screen.connect_for_each_screen(function(s)
             widget = wibox.container.margin,
         },
         bg     = C.surface0,
-        shape  = rounded(6),
+        shape  = rounded(UI.radius_inner),
         widget = wibox.container.background,
     }
 
@@ -1148,7 +1166,7 @@ awful.screen.connect_for_each_screen(function(s)
             widget = wibox.container.margin,
         },
         bg     = C.surface0,
-        shape  = rounded(6),
+        shape  = rounded(UI.radius_inner),
         widget = wibox.container.background,
     }
 
@@ -1193,7 +1211,7 @@ awful.screen.connect_for_each_screen(function(s)
                 widget = wibox.container.margin,
             },
             bg     = C.mantle,
-            shape  = rounded(8),
+            shape  = rounded(UI.radius_outer),
             widget = wibox.container.background,
         },
         left = 8, right = 8, top = 4, bottom = 2,
@@ -1216,10 +1234,10 @@ awful.screen.connect_for_each_screen(function(s)
             ontop             = false,
             type              = "desktop",
             input_passthrough = true,
-            bg                = C.mantle .. "e6", -- translucent via aRGB (requires picom)
+            bg                = C.mantle .. UI.tile_alpha, -- translucent via aRGB (requires picom)
             fg                = C.text,
-            shape             = rounded(10),
-            border_width      = 2,
+            shape             = rounded(UI.radius_outer),
+            border_width      = UI.tile_border,
             border_color      = C.surface0,
         })
     end
@@ -1236,14 +1254,14 @@ awful.screen.connect_for_each_screen(function(s)
         return (s:gsub("[&<>]", { ["&"] = "&amp;", ["<"] = "&lt;", [">"] = "&gt;" }))
     end
     local hero_greeting = wibox.widget {
-        markup = "<span font='FiraCode Nerd Font 13' foreground='" .. C.mauve ..
+        markup = "<span font='" .. font(13) .. "' foreground='" .. C.mauve ..
                  "' style='italic'>\u{201c}" .. pango_escape(quote_text) .. "\u{201d}</span>",
         wrap   = "word",
         forced_width = 400,
         widget = wibox.widget.textbox,
     }
     local hero_greeting_sub = wibox.widget {
-        markup = "<span font='FiraCode Nerd Font 10' foreground='" .. C.overlay0 ..
+        markup = "<span font='" .. font(10) .. "' foreground='" .. C.overlay0 ..
                  "'>\u{2014} " .. pango_escape(quote_author) .. "</span>",
         widget = wibox.widget.textbox,
     }
@@ -1251,7 +1269,7 @@ awful.screen.connect_for_each_screen(function(s)
     local _ = display_name
 
     local hero_clock = wibox.widget.textclock(
-        "<span font='FiraCode Nerd Font 42' foreground='" .. C.text ..
+        "<span font='" .. font(42) .. "' foreground='" .. C.text ..
         "' weight='bold'>%H:%M</span>", 30)
 
     local hero_date = wibox.widget.textclock(
@@ -1323,7 +1341,7 @@ awful.screen.connect_for_each_screen(function(s)
             valign = "center",
             widget = wibox.container.place,
         },
-        margins = 22,
+        margins = UI.tile_margin,
         widget  = wibox.container.margin,
     }
 
@@ -1333,8 +1351,8 @@ awful.screen.connect_for_each_screen(function(s)
             value            = 0,
             forced_height    = 10,
             forced_width     = 140,
-            shape            = rounded(6),
-            bar_shape        = rounded(6),
+            shape            = rounded(UI.radius_inner),
+            bar_shape        = rounded(UI.radius_inner),
             background_color = C.surface0,
             color            = color,
             widget           = wibox.widget.progressbar,
@@ -1383,7 +1401,7 @@ awful.screen.connect_for_each_screen(function(s)
     local NEO_H = 380
     local arch_logo = wibox.widget {
         {
-            markup = "<span font='FiraCode Nerd Font 100' foreground='" .. C.mauve ..
+            markup = "<span font='" .. font(100) .. "' foreground='" .. C.mauve ..
                      "' weight='bold'>\u{f303}</span>",
             widget = wibox.widget.textbox,
             align  = "center",
@@ -1500,7 +1518,7 @@ awful.screen.connect_for_each_screen(function(s)
             valign = "center",
             widget = wibox.container.place,
         },
-        margins = 22,
+        margins = UI.tile_margin,
         widget  = wibox.container.margin,
     }
 
@@ -1508,7 +1526,7 @@ awful.screen.connect_for_each_screen(function(s)
     -- CLAUDE TILE — fixed, properly-spaced layout
     ---------------------------------------------------------------
     local cc_title = wibox.widget {
-        markup = "<span font='FiraCode Nerd Font 11' foreground='" .. C.mauve ..
+        markup = "<span font='" .. font(11) .. "' foreground='" .. C.mauve ..
                  "' weight='bold'>\u{f02d}  claude code</span>",
         widget = wibox.widget.textbox,
     }
@@ -1564,8 +1582,8 @@ awful.screen.connect_for_each_screen(function(s)
             value            = 0.02,
             forced_height    = SPARK_CELL_W,
             forced_width     = SPARK_H,
-            shape            = rounded(5),
-            bar_shape        = rounded(5),
+            shape            = rounded(UI.radius_inner),
+            bar_shape        = rounded(UI.radius_inner),
             background_color = C.surface0,
             color            = C.mauve,
             widget           = wibox.widget.progressbar,
@@ -1623,7 +1641,7 @@ awful.screen.connect_for_each_screen(function(s)
 
     -- Big "today" hero number inside the tile
     local cc_today_big = wibox.widget {
-        markup = "<span font='FiraCode Nerd Font 56' foreground='" .. C.text ..
+        markup = "<span font='" .. font(56) .. "' foreground='" .. C.text ..
                  "' weight='bold'>0</span>",
         widget = wibox.widget.textbox,
     }
@@ -1653,7 +1671,7 @@ awful.screen.connect_for_each_screen(function(s)
 
     subscribe_claude(function(st)
         cc_today_big:set_markup(
-            "<span font='FiraCode Nerd Font 56' foreground='" .. C.text ..
+            "<span font='" .. font(56) .. "' foreground='" .. C.text ..
             "' weight='bold'>" .. st.today .. "</span>")
 
         local peak = 0
@@ -1727,7 +1745,7 @@ awful.screen.connect_for_each_screen(function(s)
             valign = "top",
             widget = wibox.container.place,
         },
-        margins = 24,
+        margins = UI.tile_margin,
         widget  = wibox.container.margin,
     }
 
@@ -1738,7 +1756,7 @@ awful.screen.connect_for_each_screen(function(s)
     local GIT_H = 200
 
     local git_title = wibox.widget {
-        markup = "<span font='FiraCode Nerd Font 13' foreground='" .. C.mauve ..
+        markup = "<span font='" .. font(13) .. "' foreground='" .. C.mauve ..
                  "' weight='bold'>\u{e702}  Git connectivity</span>",
         widget = wibox.widget.textbox,
     }
@@ -1751,16 +1769,16 @@ awful.screen.connect_for_each_screen(function(s)
         widget = wibox.widget.textbox,
     }
     local git_agent = wibox.widget {
-        markup = "<span font='FiraCode Nerd Font 9' foreground='" .. C.overlay0 .. "'>agent: \u{2026}</span>",
+        markup = "<span font='" .. font(9) .. "' foreground='" .. C.overlay0 .. "'>agent: \u{2026}</span>",
         widget = wibox.widget.textbox,
     }
 
     local function git_row_markup(icon, name, ok)
         local color = ok and C.green or C.red
         local text  = ok and "connected" or "offline"
-        return "<span font='FiraCode Nerd Font 12' foreground='" .. C.text .. "'>" ..
+        return "<span font='" .. font(12) .. "' foreground='" .. C.text .. "'>" ..
                icon .. "  " .. name .. "</span>" ..
-               "<span font='FiraCode Nerd Font 12' foreground='" .. color .. "'>   \u{f111} " .. text .. "</span>"
+               "<span font='" .. font(12) .. "' foreground='" .. color .. "'>   \u{f111} " .. text .. "</span>"
     end
 
     -- One probe for both hosts + agent state; BatchMode so a locked agent
@@ -1773,10 +1791,10 @@ awful.screen.connect_for_each_screen(function(s)
         git_github:set_markup(git_row_markup("\u{f09b}", "GitHub", gh == "ok"))
         git_gitlab:set_markup(git_row_markup("\u{f296}", "GitLab", gl == "ok"))
         if keys == "0" then
-            git_agent:set_markup("<span font='FiraCode Nerd Font 9' foreground='" .. C.yellow ..
+            git_agent:set_markup("<span font='" .. font(9) .. "' foreground='" .. C.yellow ..
                 "'>\u{f023} agent locked \u{2014} run ssh-add</span>")
         else
-            git_agent:set_markup("<span font='FiraCode Nerd Font 9' foreground='" .. C.overlay0 ..
+            git_agent:set_markup("<span font='" .. font(9) .. "' foreground='" .. C.overlay0 ..
                 "'>\u{f084} agent: " .. keys .. " key" .. (keys == "1" and "" or "s") .. " loaded</span>")
         end
     end)
@@ -1795,7 +1813,7 @@ awful.screen.connect_for_each_screen(function(s)
             },
             halign = "left", valign = "top", widget = wibox.container.place,
         },
-        margins = 22, widget = wibox.container.margin,
+        margins = UI.tile_margin, widget = wibox.container.margin,
     }
 
     ---------------------------------------------------------------
@@ -2167,9 +2185,9 @@ do
             ontop             = false,
             type              = "desktop",
             input_passthrough = true,
-            bg                = C.mantle .. "b3",
+            bg                = C.mantle .. UI.tile_alpha,
             fg                = C.subtext1,
-            shape             = rounded(8),
+            shape             = rounded(UI.radius_outer),
         })
         cap_box:setup {
             cap_text,
@@ -2215,7 +2233,7 @@ echo "$cap"
                     end)
                     return
                 end
-                cap_text:set_markup("<span font='FiraCode Nerd Font 9'>\u{f03e}  " ..
+                cap_text:set_markup("<span font='" .. font(9) .. "'>\u{f03e}  " ..
                                     esc(cap) .. "</span>")
                 place_caption()
                 cap_box.visible = true
