@@ -10,7 +10,10 @@ USER_NAME="${SUDO_USER:-$USER}"
 case "$(cfg DISPLAY_MANAGER lightdm)" in
     lightdm)
         log "Setting up LightDM"
-        pac_install lightdm lightdm-gtk-greeter lightdm-gtk-greeter-settings
+        # accountsservice is a hard runtime dep, not a pacman dep: without it
+        # LightDM fails the org.freedesktop.Accounts user-list lookup, exits 1,
+        # and burns its restart limit — VT1 stays black with no greeter.
+        pac_install lightdm lightdm-gtk-greeter lightdm-gtk-greeter-settings accountsservice
         run sudo systemctl enable lightdm.service
         # LightDM can start before the GPU driver is ready (fast NVMe boots),
         # leaving a black screen on VT1 that a manual restart "fixes". Make it
@@ -76,7 +79,15 @@ Section \"InputClass\"
     Option \"Tapping\" \"on\"
     Option \"NaturalScrolling\" \"true\"
     Option \"ClickMethod\" \"clickfinger\"
+EndSection
 EOF"
+    # Fail loudly here rather than at the next boot, when the only symptom is a
+    # black screen and no way to read the logs from inside a graphical session.
+    if [ "$DRY_RUN" != "1" ] && ! xorg_conf_valid /etc/X11/xorg.conf.d/30-touchpad.conf; then
+        err "30-touchpad.conf is malformed (unbalanced Section/EndSection)."
+        err "Refusing to continue — Xorg would fail to start and LightDM would loop."
+        exit 1
+    fi
 fi
 
 ok "Services configured. Log out/in (or reboot) for group changes to take effect."

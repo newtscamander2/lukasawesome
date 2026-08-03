@@ -37,6 +37,26 @@ run_sh() {
     fi
 }
 
+# xorg_conf_valid FILE: true when every Section has a matching EndSection.
+# Xorg treats a truncated snippet as fatal ("no screens found"), so the display
+# server never starts, LightDM burns its restart limit and VT1 stays black.
+# Cheap structural check — no X server or root required.
+# Walks the file in order rather than counting keywords: a stray EndSection
+# before any Section, or a nested Section, balances out numerically but is
+# still rejected by Xorg. SubSection/EndSubSection are deliberately ignored —
+# they only ever appear inside a Section, so they cannot affect the balance.
+xorg_conf_valid() {
+    [ -f "$1" ] || return 1
+    awk '
+        { line = tolower($0); sub(/#.*/, "", line) }
+        line ~ /^[ \t]*section[ \t]+/     { if (depth > 0) { bad = 1; exit }
+                                            depth++; sections++; next }
+        line ~ /^[ \t]*endsection[ \t]*$/ { if (depth == 0) { bad = 1; exit }
+                                            depth--; next }
+        END { exit (bad || depth != 0 || sections == 0) ? 1 : 0 }
+    ' "$1"
+}
+
 # load_config: source install.conf if present (else rely on env / defaults).
 load_config() {
     if [ -f "$CONFIG_FILE" ]; then
