@@ -63,6 +63,27 @@ make apps        # VSCode settings + clone cv/goat into ~/projects
 make check-system # verify packages, services, audio and symlinks
 ```
 
+## Black screen instead of a login prompt
+
+If the machine boots to a black screen and `Ctrl+Alt+F1` shows nothing, switch
+to a console with `Ctrl+Alt+F2`, log in, and run:
+
+```
+cd ~/lukasawesome && make repair-display
+```
+
+It reinstalls anything missing that a graphical login needs (including
+`accountsservice`, which LightDM requires at runtime but pacman does not pull
+in), repairs or quarantines malformed `/etc/X11/xorg.conf.d` snippets, checks
+`rc.lua`, re-enables LightDM and restarts it. Every file it changes is backed
+up next to the original first, and it is safe to re-run. Prefix with `DRY_RUN=1`
+to see what it would do without touching anything.
+
+If LightDM still will not start, the script prints the tail of
+`/var/log/lightdm/lightdm.log` and `x-0.log` — the X server log is usually
+where the real error is, since one bad config snippet aborts all of X with
+`no screens found` and takes LightDM down with it.
+
 ## Syncing two machines (desktop + laptop)
 
 Both machines clone this repo and `make stow`, so the configs are symlinks into

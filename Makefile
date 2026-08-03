@@ -5,7 +5,7 @@ SHELL  := /bin/bash
 INSTALL := scripts/install.sh
 
 .DEFAULT_GOAL := help
-.PHONY: help configure plan install yay packages drivers services stow apps repos protondrive check-system
+.PHONY: help configure plan install yay packages drivers services stow apps repos protondrive check-system repair-display
 
 help: ## Show this help
 	@echo "lukasawesome bootstrap targets:"
@@ -47,3 +47,6 @@ protondrive: ## One-time Proton Drive login + enable the ~/ProtonDrive mount
 
 check-system: ## Verify packages, services, audio and symlinks are set up
 	@bash $(INSTALL) check-system
+
+repair-display: ## Fix a black screen / no greeter: repair LightDM + Awesome from a TTY
+	@bash $(INSTALL) repair-display

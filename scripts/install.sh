@@ -108,5 +108,6 @@ case "${1:-install}" in
     repos)     bash "$HERE/repos.sh" ;;
     protondrive) bash "$HERE/protondrive.sh" ;;
     check-system) bash "$HERE/check-system.sh" ;;
+    repair-display) bash "$HERE/repair-display.sh" ;;
     *)         err "Unknown command '$1'"; exit 1 ;;
 esac
