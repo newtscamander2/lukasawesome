@@ -664,6 +664,21 @@ end
 gears.timer { timeout = 2, autostart = true, call_now = true, callback = poll_cpu }
 gears.timer { timeout = 3, autostart = true, call_now = true, callback = poll_mem }
 
+-- Pacman updates — ONE checkupdates poller feeding every subscriber
+-- (wibar pill + neofetch tile line), instead of a watcher per widget
+-- per screen.
+local upd_subs = {}
+local function subscribe_updates(fn) table.insert(upd_subs, fn) end
+gears.timer {
+    timeout = 900, autostart = true, call_now = true,
+    callback = function()
+        awful.spawn.easy_async_with_shell("checkupdates 2>/dev/null | wc -l", function(out)
+            local n = tonumber((out or ""):match("%d+")) or 0
+            for _, fn in ipairs(upd_subs) do fn(n) end
+        end)
+    end,
+}
+
 -- {{{ Battery (laptop only — widget is skipped entirely when no battery)
 local BAT_PATH
 for _, name in ipairs({ "BAT0", "BAT1", "BATT" }) do
@@ -933,21 +948,17 @@ awful.screen.connect_for_each_screen(function(s)
         mem_txt:set_markup("<span foreground='" .. C.text .. "'>" .. pct .. "%</span>")
     end)
 
-    -- Pacman updates (checkupdates)
+    -- Pacman updates (shared checkupdates poller)
     local upd_box, upd_txt = stat_cell("\u{f019}", C.yellow, "0")
     upd_box.visible = false
-    awful.widget.watch(
-        [[sh -c "checkupdates 2>/dev/null | wc -l"]], 900,
-        function(_, stdout)
-            local n = tonumber((stdout or ""):match("%d+")) or 0
-            if n > 0 then
-                upd_txt:set_markup("<span foreground='" .. C.red .. "'>" .. n .. "</span>")
-                upd_box.visible = true
-            else
-                upd_box.visible = false
-            end
+    subscribe_updates(function(n)
+        if n > 0 then
+            upd_txt:set_markup("<span foreground='" .. C.red .. "'>" .. n .. "</span>")
+            upd_box.visible = true
+        else
+            upd_box.visible = false
         end
-    )
+    end)
     upd_box:buttons(gears.table.join(
         awful.button({}, 1, function()
             awful.spawn(terminal .. " -e sh -c 'sudo pacman -Syu; echo; echo Press Enter to close; read'")
@@ -1265,13 +1276,15 @@ awful.screen.connect_for_each_screen(function(s)
     local hero_date = wibox.widget.textclock(
         "<span foreground='" .. C.subtext1 .. "'>%A, %d %B %Y</span>", 3600)
 
-    -- Weather line (inline with date)
+    -- Weather line (inline with date). City is fixed — IP geolocation would
+    -- silently follow VPN exits; this desk lives in Aarhus.
+    local WEATHER_CITY = "Aarhus"
     local hero_weather = wibox.widget {
         markup = "<span foreground='" .. C.overlay0 .. "'>loading weather…</span>",
         widget = wibox.widget.textbox,
     }
     awful.widget.watch(
-        [[sh -c "curl -s --max-time 5 'wttr.in/?format=%t|%C' 2>/dev/null | head -c 80"]],
+        [[sh -c "curl -s --max-time 5 'wttr.in/]] .. WEATHER_CITY .. [[?format=%t|%C' 2>/dev/null | head -c 80"]],
         1800,
         function(_, stdout)
             local s_ = (stdout or ""):gsub("\n", ""):gsub("^%s+", ""):gsub("%s+$", "")
@@ -1285,7 +1298,8 @@ awful.screen.connect_for_each_screen(function(s)
                 hero_weather:set_markup(
                     "<span foreground='" .. C.yellow .. "'>\u{f185}</span>" ..
                     "<span foreground='" .. C.text .. "' weight='bold'>  " .. temp .. "</span>" ..
-                    "<span foreground='" .. C.subtext1 .. "'>  · " .. cond .. "</span>"
+                    "<span foreground='" .. C.subtext1 .. "'>  · " .. cond .. "</span>" ..
+                    "<span foreground='" .. C.overlay0 .. "'>  \u{f041} " .. WEATHER_CITY .. "</span>"
                 )
             else
                 hero_weather:set_markup("<span foreground='" .. C.text .. "'>" .. s_ .. "</span>")
@@ -1293,7 +1307,7 @@ awful.screen.connect_for_each_screen(function(s)
         end
     )
 
-    local HERO_W = 460
+    local HERO_W = 520 -- column-aligned with the neofetch tile below
     local hero_tile = make_tile(HERO_W, 270)
     hero_tile:setup {
         {
@@ -1340,7 +1354,7 @@ awful.screen.connect_for_each_screen(function(s)
             max_value        = 100,
             value            = 0,
             forced_height    = 10,
-            forced_width     = 140,
+            forced_width     = 200,
             shape            = rounded(UI.radius_inner),
             bar_shape        = rounded(UI.radius_inner),
             background_color = C.surface0,
@@ -1370,60 +1384,71 @@ awful.screen.connect_for_each_screen(function(s)
         markup = "<span foreground='" .. C.green .. "'>\u{f058}  system up to date</span>",
         widget = wibox.widget.textbox,
     }
-    awful.widget.watch(
-        [[sh -c "checkupdates 2>/dev/null | wc -l"]], 900,
-        function(_, stdout)
-            local n = tonumber((stdout or ""):match("%d+")) or 0
-            if n > 0 then
-                dash_upd:set_markup(
-                    "<span foreground='" .. C.yellow .. "'>\u{f019}  </span>" ..
-                    "<span foreground='" .. C.red .. "' weight='bold'>" .. n .. "</span>" ..
-                    "<span foreground='" .. C.subtext1 .. "'> updates available</span>")
-            else
-                dash_upd:set_markup(
-                    "<span foreground='" .. C.green .. "'>\u{f058}  system up to date</span>")
-            end
+    subscribe_updates(function(n)
+        if n > 0 then
+            dash_upd:set_markup(
+                "<span foreground='" .. C.yellow .. "'>\u{f019}  </span>" ..
+                "<span foreground='" .. C.red .. "' weight='bold'>" .. n .. "</span>" ..
+                "<span foreground='" .. C.subtext1 .. "'> updates available</span>")
+        else
+            dash_upd:set_markup(
+                "<span foreground='" .. C.green .. "'>\u{f058}  system up to date</span>")
         end
-    )
+    end)
 
     -- Neofetch-style tile (Arch logo + system info)
-    local NEO_W = 460
-    local NEO_H = 380
+    local NEO_W = 520
+    local NEO_H = 420
+    local NEO_LOGO_W = dpi(160)
+    -- key cell + value constraint keep the columns aligned and stop long
+    -- values (the CPU model) from blowing past the tile edge.
+    local NEO_KEY_W = dpi(78)
+    local NEO_VAL_W = NEO_W - 2 * 24 - NEO_LOGO_W - 20 - NEO_KEY_W - 10
     local arch_logo = wibox.widget {
         {
-            markup = "<span font='" .. font(100) .. "' foreground='" .. C.mauve ..
+            markup = "<span font='" .. font(110) .. "' foreground='" .. C.mauve ..
                      "' weight='bold'>\u{f303}</span>",
             widget = wibox.widget.textbox,
             align  = "center",
             valign = "center",
         },
-        forced_width  = 150,
-        forced_height = 150,
+        forced_width  = NEO_LOGO_W,
+        forced_height = NEO_LOGO_W,
         widget = wibox.container.background,
     }
+    -- Returns the row and its value textbox (for rows that update, e.g. uptime).
     local function info_row(key, val, key_color)
-        return wibox.widget {
+        local val_tb = wibox.widget {
+            markup    = "<span foreground='" .. C.text .. "'>" .. (val or "") .. "</span>",
+            widget    = wibox.widget.textbox,
+            ellipsize = "end",
+        }
+        local row = wibox.widget {
             {
-                markup = "<span foreground='" .. (key_color or C.mauve) .. "' weight='bold'>" ..
-                         key .. "</span>",
-                widget = wibox.widget.textbox,
+                {
+                    markup = "<span foreground='" .. (key_color or C.mauve) .. "' weight='bold'>" ..
+                             key .. "</span>",
+                    widget = wibox.widget.textbox,
+                },
+                forced_width = NEO_KEY_W,
+                widget = wibox.container.background,
             },
             {
                 {
-                    markup = "<span foreground='" .. C.text .. "'>" .. (val or "") .. "</span>",
-                    widget = wibox.widget.textbox,
+                    val_tb,
+                    width    = NEO_VAL_W,
+                    strategy = "max",
+                    widget   = wibox.container.constraint,
                 },
                 left = 10,
                 widget = wibox.container.margin,
             },
             layout = wibox.layout.fixed.horizontal,
         }
+        return row, val_tb
     end
 
-    local uptime_row_txt = wibox.widget {
-        markup = "<span foreground='" .. C.text .. "'>…</span>",
-        widget = wibox.widget.textbox,
-    }
+    local uptime_row, uptime_row_txt = info_row("uptime", "…")
     local function refresh_uptime()
         awful.spawn.easy_async("uptime -p", function(out)
             local s_ = (out or ""):gsub("\n", ""):gsub("^up ", "")
@@ -1433,15 +1458,6 @@ awful.screen.connect_for_each_screen(function(s)
     end
     refresh_uptime()
     gears.timer { timeout = 60, autostart = true, callback = refresh_uptime }
-
-    local uptime_row = wibox.widget {
-        {
-            markup = "<span foreground='" .. C.mauve .. "' weight='bold'>uptime</span>",
-            widget = wibox.widget.textbox,
-        },
-        { uptime_row_txt, left = 10, widget = wibox.container.margin },
-        layout = wibox.layout.fixed.horizontal,
-    }
 
     local divider = function()
         return wibox.widget {
@@ -1480,12 +1496,12 @@ awful.screen.connect_for_each_screen(function(s)
     local neo_info = wibox.widget {
         user_host_row,
         divider(),
-        info_row("os",       sys_info.os_name),
-        info_row("kernel",   sys_info.kernel),
-        info_row("wm",       sys_info.wm),
-        info_row("shell",    sys_info.shell),
-        info_row("cpu",      sys_info.cpu ~= "" and sys_info.cpu or "unknown"),
-        info_row("packages", sys_info.packages .. " (pacman)"),
+        (info_row("os",       sys_info.os_name)),
+        (info_row("kernel",   sys_info.kernel)),
+        (info_row("wm",       sys_info.wm)),
+        (info_row("shell",    sys_info.shell)),
+        (info_row("cpu",      sys_info.cpu ~= "" and sys_info.cpu or "unknown")),
+        (info_row("packages", sys_info.packages .. " (pacman)")),
         uptime_row,
         divider(),
         dash_row(dash_cpu_lbl, dash_cpu_bar),
@@ -1513,46 +1529,18 @@ awful.screen.connect_for_each_screen(function(s)
     }
 
     ---------------------------------------------------------------
-    -- CLAUDE TILE — fixed, properly-spaced layout
+    -- CLAUDE TILE — compact card: today's count + 7-day mini sparkline.
     ---------------------------------------------------------------
     local cc_title = wibox.widget {
         markup = "<span font='" .. font(11) .. "' foreground='" .. C.mauve ..
                  "' weight='bold'>\u{f02d}  claude code</span>",
         widget = wibox.widget.textbox,
     }
-    -- Simple "label: count" rows for rolling windows — no guessed limits.
-    local function count_row(label_text)
-        local lbl = wibox.widget {
-            markup = "<span foreground='" .. C.subtext1 .. "'>" .. label_text .. "</span>",
-            widget = wibox.widget.textbox,
-            valign = "center",
-        }
-        local val = wibox.widget {
-            markup = "<span foreground='" .. C.text .. "' weight='bold'>–</span>",
-            widget = wibox.widget.textbox,
-            valign = "center",
-            align  = "right",
-        }
-        local container = wibox.widget {
-            {
-                lbl,
-                val,
-                layout = wibox.layout.align.horizontal,
-            },
-            forced_height = 24,
-            widget        = wibox.container.background,
-        }
-        return container, val
-    end
 
-    local cc_5h_row,   cc_5h_val   = count_row("last 5 hours")
-    local cc_week_row, cc_week_val = count_row("last 7 days")
-
-    -- 7-day bars — tall vertical bars via rotated progressbars so they fill
-    -- the claude tile naturally.
-    local SPARK_CELL_W = 46
-    local SPARK_GAP    = 8
-    local SPARK_H      = 130
+    -- 7-day mini bars via rotated progressbars (fill bottom→top).
+    local SPARK_CELL_W = 18
+    local SPARK_GAP    = 6
+    local SPARK_H      = 80
     local sparkline_bars   = {}
     local sparkline_labels = {}
 
@@ -1600,13 +1588,27 @@ awful.screen.connect_for_each_screen(function(s)
         cc_days_row:add(lbl_cell)
     end
 
-    subscribe_claude(function(st)
-        cc_5h_val:set_markup(
-            "<span foreground='" .. C.text .. "' weight='bold'>" .. st.n5 .. "</span>")
-        cc_week_val:set_markup(
-            "<span foreground='" .. C.text .. "' weight='bold'>" .. st.n7 .. "</span>")
+    -- Today's count + footer
+    local cc_today_big = wibox.widget {
+        markup = "<span font='" .. font(34) .. "' foreground='" .. C.text ..
+                 "' weight='bold'>0</span>",
+        widget = wibox.widget.textbox,
+    }
+    local cc_today_sub = wibox.widget {
+        markup = "<span foreground='" .. C.subtext1 .. "'>messages today</span>",
+        widget = wibox.widget.textbox,
+    }
+    local cc_footer = wibox.widget {
+        markup = "<span font='" .. font(9) .. "' foreground='" .. C.overlay0 .. "'>peak – · week –</span>",
+        widget = wibox.widget.textbox,
+    }
 
-        -- Sparkline — set each bar's value as a fraction of the week's max.
+    subscribe_claude(function(st)
+        cc_today_big:set_markup(
+            "<span font='" .. font(34) .. "' foreground='" .. C.text ..
+            "' weight='bold'>" .. st.today .. "</span>")
+
+        -- Sparkline — each bar as a fraction of the week's max.
         local max_val = 1
         for _, c in ipairs(st.days) do if c > max_val then max_val = c end end
         for i, c in ipairs(st.days) do
@@ -1627,108 +1629,39 @@ awful.screen.connect_for_each_screen(function(s)
                 dow[day.wday] .. "</span>")
         end
 
-    end)
-
-    -- Big "today" hero number inside the tile
-    local cc_today_big = wibox.widget {
-        markup = "<span font='" .. font(56) .. "' foreground='" .. C.text ..
-                 "' weight='bold'>0</span>",
-        widget = wibox.widget.textbox,
-    }
-    local cc_today_sub = wibox.widget {
-        markup = "<span foreground='" .. C.subtext1 .. "'>messages today</span>",
-        widget = wibox.widget.textbox,
-    }
-
-    local cc_spark_title = wibox.widget {
-        markup = "<span foreground='" .. C.subtext1 .. "' weight='bold'>last 7 days</span>",
-        widget = wibox.widget.textbox,
-    }
-
-    -- Stat footer (peak day + 7-day total + daily avg)
-    local cc_footer_peak = wibox.widget {
-        markup = "<span foreground='" .. C.subtext1 .. "'>peak · --</span>",
-        widget = wibox.widget.textbox,
-    }
-    local cc_footer_total = wibox.widget {
-        markup = "<span foreground='" .. C.subtext1 .. "'>week · --</span>",
-        widget = wibox.widget.textbox,
-    }
-    local cc_footer_avg = wibox.widget {
-        markup = "<span foreground='" .. C.subtext1 .. "'>avg · --</span>",
-        widget = wibox.widget.textbox,
-    }
-
-    subscribe_claude(function(st)
-        cc_today_big:set_markup(
-            "<span font='" .. font(56) .. "' foreground='" .. C.text ..
-            "' weight='bold'>" .. st.today .. "</span>")
-
-        local peak = 0
-        for _, c in ipairs(st.days) do if c > peak then peak = c end end
-        local avg = math.floor(st.n7 / 7 + 0.5)
-
-        local function stat(label, val, color)
-            return "<span foreground='" .. C.overlay0 .. "'>" .. label .. "</span>" ..
-                   "  <span foreground='" .. (color or C.text) .. "' weight='bold'>" ..
-                   val .. "</span>"
-        end
-        cc_footer_peak:set_markup(stat("peak",  peak,   C.mauve))
-        cc_footer_total:set_markup(stat("week", st.n7,  C.blue))
-        cc_footer_avg:set_markup(stat("avg",   avg,    C.green))
+        cc_footer:set_markup(
+            "<span font='" .. font(9) .. "' foreground='" .. C.overlay0 .. "'>peak " ..
+            "</span><span font='" .. font(9) .. "' foreground='" .. C.mauve .. "' weight='bold'>" ..
+            max_val .. "</span><span font='" .. font(9) .. "' foreground='" .. C.overlay0 ..
+            "'> · week </span><span font='" .. font(9) .. "' foreground='" .. C.blue ..
+            "' weight='bold'>" .. st.n7 .. "</span>")
     end)
 
     local CC_W = 440
-    local CC_H = 664  -- spans hero + gap + neofetch
+    local CC_H = 200
     local cc_tile = make_tile(CC_W, CC_H)
-
-    local function section_divider(top_m, bot_m)
-        return wibox.widget {
-            {
-                bg = C.surface0, forced_height = 1,
-                widget = wibox.container.background,
-            },
-            top = top_m or 12, bottom = bot_m or 12,
-            widget = wibox.container.margin,
-        }
-    end
 
     cc_tile:setup {
         {
             {
-                -- Header
-                { cc_title,   forced_height = 24, widget = wibox.container.background },
-
-                -- Huge today count
-                { cc_today_big, top = 10, widget = wibox.container.margin },
-                { cc_today_sub, top = 2,  widget = wibox.container.margin },
-
-                section_divider(16, 14),
-
-                -- Rolling-window entry counts (local JSONL only)
-                cc_5h_row,
-                cc_week_row,
-
-                section_divider(18, 10),
-
-                -- Chart title
-                { cc_spark_title, forced_height = 20, widget = wibox.container.background },
-                -- Tall sparkline
-                { sparkline_row,  top = 6, widget = wibox.container.margin },
-                { cc_days_row,    top = 6, widget = wibox.container.margin },
-
-                section_divider(18, 10),
-
-                -- Stat footer (peak / week total / daily avg)
+                cc_title,
                 {
-                    cc_footer_peak,
-                    cc_footer_total,
-                    cc_footer_avg,
-                    spacing = 16,
-                    layout  = wibox.layout.flex.horizontal,
+                    -- Body: today number on the left, sparkline on the right.
+                    {
+                        cc_today_big,
+                        { cc_today_sub, top = 2, widget = wibox.container.margin },
+                        { cc_footer,    top = 6, widget = wibox.container.margin },
+                        layout = wibox.layout.fixed.vertical,
+                    },
+                    nil,
+                    {
+                        sparkline_row,
+                        { cc_days_row, top = 4, widget = wibox.container.margin },
+                        layout = wibox.layout.fixed.vertical,
+                    },
+                    layout = wibox.layout.align.horizontal,
                 },
-
-                spacing = 0,
+                spacing = 10,
                 layout  = wibox.layout.fixed.vertical,
             },
             halign = "left",
@@ -1740,99 +1673,22 @@ awful.screen.connect_for_each_screen(function(s)
     }
 
     ---------------------------------------------------------------
-    -- Tile 4: Git connectivity (SSH auth to GitHub / GitLab)
-    ---------------------------------------------------------------
-    local GIT_W = 320
-    local GIT_H = 200
-
-    local git_title = wibox.widget {
-        markup = "<span font='" .. font(13) .. "' foreground='" .. C.mauve ..
-                 "' weight='bold'>\u{e702}  Git connectivity</span>",
-        widget = wibox.widget.textbox,
-    }
-    local git_github = wibox.widget {
-        markup = "<span foreground='" .. C.overlay0 .. "'>\u{f09b}  GitHub    checking\u{2026}</span>",
-        widget = wibox.widget.textbox,
-    }
-    local git_gitlab = wibox.widget {
-        markup = "<span foreground='" .. C.overlay0 .. "'>\u{f296}  GitLab    checking\u{2026}</span>",
-        widget = wibox.widget.textbox,
-    }
-    local git_agent = wibox.widget {
-        markup = "<span font='" .. font(9) .. "' foreground='" .. C.overlay0 .. "'>agent: \u{2026}</span>",
-        widget = wibox.widget.textbox,
-    }
-
-    local function git_row_markup(icon, name, ok)
-        local color = ok and C.green or C.red
-        local text  = ok and "connected" or "offline"
-        return "<span font='" .. font(12) .. "' foreground='" .. C.text .. "'>" ..
-               icon .. "  " .. name .. "</span>" ..
-               "<span font='" .. font(12) .. "' foreground='" .. color .. "'>   \u{f111} " .. text .. "</span>"
-    end
-
-    -- One probe for both hosts + agent state; BatchMode so a locked agent
-    -- fails fast instead of prompting. Output: "<ok|err>|<ok|err>|<nkeys>"
-    local GIT_CHECK_CMD = [[sh -c 'export SSH_AUTH_SOCK="${XDG_RUNTIME_DIR}/ssh-agent.socket"; keys=$(ssh-add -l 2>/dev/null | grep -c ^256 || true); gh=err; ssh -o BatchMode=yes -o ConnectTimeout=5 -T git@github.com 2>&1 | grep -q "successfully authenticated" && gh=ok; gl=err; ssh -o BatchMode=yes -o ConnectTimeout=5 -T git@gitlab.com 2>&1 | grep -q "Welcome to GitLab" && gl=ok; echo "$gh|$gl|$keys"']]
-
-    awful.widget.watch(GIT_CHECK_CMD, 300, function(_, stdout)
-        local gh, gl, keys = (stdout or ""):match("(%a+)|(%a+)|(%d+)")
-        if not gh then return end
-        git_github:set_markup(git_row_markup("\u{f09b}", "GitHub", gh == "ok"))
-        git_gitlab:set_markup(git_row_markup("\u{f296}", "GitLab", gl == "ok"))
-        if keys == "0" then
-            git_agent:set_markup("<span font='" .. font(9) .. "' foreground='" .. C.yellow ..
-                "'>\u{f023} agent locked \u{2014} run ssh-add</span>")
-        else
-            git_agent:set_markup("<span font='" .. font(9) .. "' foreground='" .. C.overlay0 ..
-                "'>\u{f084} agent: " .. keys .. " key" .. (keys == "1" and "" or "s") .. " loaded</span>")
-        end
-    end)
-
-    local git_tile = make_tile(GIT_W, GIT_H)
-    git_tile:setup {
-        {
-            {
-                git_title,
-                { { bg = C.surface0, forced_height = 1, widget = wibox.container.background },
-                  top = 10, bottom = 10, widget = wibox.container.margin },
-                { git_github, top = 2,  widget = wibox.container.margin },
-                { git_gitlab, top = 10, widget = wibox.container.margin },
-                { git_agent,  top = 14, widget = wibox.container.margin },
-                layout = wibox.layout.fixed.vertical,
-            },
-            halign = "left", valign = "top", widget = wibox.container.place,
-        },
-        margins = UI.tile_margin, widget = wibox.container.margin,
-    }
-
-    ---------------------------------------------------------------
-    -- Tile placement — L-shaped cluster on the left side:
-    --   hero (top-left) ──  claude (right of both,
-    --   neo  (below hero) ─   spanning hero + neo height)
-    --   git  (right of claude, aligned with hero top)
+    -- Tile placement — left column (hero above neofetch), compact
+    -- claude card top-aligned to its right. Wallpaper gets the rest.
     ---------------------------------------------------------------
     local function place_tiles()
-        local g = s.geometry
-        local wibar_h = (s.mywibox and s.mywibox.height or 50) + 12
-        local m = 22
+        local wa  = s.workarea -- already excludes the wibar strut
+        local m   = 24
         local gap = 14
-        local top = g.y + wibar_h + 10
 
-        hero_tile.x = g.x + m
-        hero_tile.y = top
+        hero_tile.x = wa.x + m
+        hero_tile.y = wa.y + m
 
         neo_tile.x = hero_tile.x
         neo_tile.y = hero_tile.y + hero_tile.height + gap
 
-        -- Claude sits to the right of the hero+neo column, same top as hero.
-        local left_col_width = math.max(HERO_W, NEO_W)
-        cc_tile.x = hero_tile.x + left_col_width + gap
+        cc_tile.x = hero_tile.x + HERO_W + gap
         cc_tile.y = hero_tile.y
-
-        -- Git connectivity sits right of the Claude column, same top.
-        git_tile.x = cc_tile.x + CC_W + gap
-        git_tile.y = hero_tile.y
     end
     place_tiles()
     s:connect_signal("property::geometry", place_tiles)
