@@ -30,6 +30,15 @@ INSTALL_CLAUDE=yes            # claude-code (AUR)
 INSTALL_LVM_GUI=yes           # kvpm graphical LVM manager (AUR)
 INSTALL_OPTIONAL=no           # best-effort: proton drive, eurooffice (may need manual steps)
 
+# --- SSH identity (used by 'make repos') ---
+# SSH_KEY: leave blank to reuse the single key already in ~/.ssh, or to
+#   generate ~/.ssh/id_ed25519 when there is none. Set it explicitly when the
+#   machine has several keys, otherwise 'make repos' refuses to guess.
+# SSH_KEY_COMMENT: label written into the .pub file (forges show it as the key
+#   title). Defaults to your global git user.email.
+SSH_KEY=                      # e.g. ~/.ssh/id_gitlab_newtscamander
+SSH_KEY_COMMENT=              # e.g. you@example.com
+
 # --- Personal repos cloned into ~/projects ---
 CLONE_CV=yes                  # git@gitlab.com:newtscamander/cv.git
 CLONE_GOAT=yes                # git@gitlab.com:newtscamander/goat.git  (required by the nvim config)
