@@ -2223,7 +2223,15 @@ if [ -z "$f" ]; then
         "$HOME/.config/awesome/scripts/wallpaper-fetch-bands.sh" >/dev/null 2>&1 &
     exit 0
 fi
-feh --bg-fill "$dir/$f"
+# Post-process into a quiet backdrop (darken/desaturate/blur) so the photo
+# stops competing with the UI. Cached, ~10ms on a hit; any failure falls back
+# to the untouched original so the desktop always gets a wallpaper.
+img="$dir/$f"
+prep="$HOME/.config/awesome/scripts/wallpaper-prep.sh"
+if [ -x "$prep" ]; then
+    prepped=$("$prep" "$img" 2>/dev/null) && [ -n "$prepped" ] && img="$prepped"
+fi
+feh --bg-fill "$img"
 cap=$(awk -F"\t" -v k="$f" "\$1==k{print \$2; exit}" "$dir/.captions.tsv" 2>/dev/null)
 if [ -z "$cap" ]; then cap="${f%.*}"; cap="${cap//_/ }"; fi
 echo "$cap"
