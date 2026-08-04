@@ -121,7 +121,7 @@ for pkg_name in $(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash
         bash)      target="$HOME/.bashrc" ;;
         rclone)    target="$HOME/.config/systemd/user/protondrive.service" ;;
         clang-format) target="$HOME/.clang-format" ;;
-        cava)      target="$HOME/.config/cava/config" ;;
+        cava)      target="$HOME/.config/cava" ;;
         *)         target="" ;;
     esac
     [ -z "$target" ] && continue
