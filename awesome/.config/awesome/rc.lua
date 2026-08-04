@@ -1702,6 +1702,30 @@ globalkeys = gears.table.join(
               {description="show help", group="awesome"}),
 
     -- Hardware / media keys (volume via pactl to match the wibar widget)
+    awful.key({ modkey }, "Escape",
+              function()
+                  -- Lock to the lightdm greeter. Self-healing: start
+                  -- light-locker if installed-but-not-running, fall back to
+                  -- dm-tool, and surface the reason on screen when neither works.
+                  awful.spawn.easy_async_with_shell([[
+if command -v light-locker-command >/dev/null 2>&1; then
+    pgrep -x light-locker >/dev/null || { light-locker --lock-after-screensaver=5 --lock-on-suspend >/dev/null 2>&1 & sleep 0.5; }
+    light-locker-command -l 2>&1 && exit 0
+fi
+dm-tool lock 2>&1 && exit 0
+echo "No working screen locker: install light-locker (make packages) and make sure the session runs under lightdm."
+exit 1
+]], function(stdout, stderr, _, exit_code)
+                      if exit_code ~= 0 then
+                          naughty.notify({
+                              preset = naughty.config.presets.critical,
+                              title  = "Screen lock failed",
+                              text   = ((stdout or "") .. " " .. (stderr or "")):gsub("%s+$", ""),
+                          })
+                      end
+                  end)
+              end,
+              {description="lock screen (lightdm greeter)", group="awesome"}),
     awful.key({}, "XF86AudioRaiseVolume", function() awful.spawn("pactl set-sink-volume @DEFAULT_SINK@ +5%") end,
               {description="raise volume", group="media"}),
     awful.key({}, "XF86AudioLowerVolume", function() awful.spawn("pactl set-sink-volume @DEFAULT_SINK@ -5%") end,
@@ -2114,6 +2138,13 @@ awful.spawn.with_shell("pkill -x picom; picom --config " .. os.getenv("HOME") ..
 awful.spawn.with_shell("pgrep -x flameshot >/dev/null || flameshot &")
 -- NetworkManager tray applet (wifi picker; eduroam setup in docs/eduroam-au.md)
 awful.spawn.with_shell("pgrep -x nm-applet >/dev/null || nm-applet &")
+-- Screen lock: light-locker VT-switches to the lightdm greeter (the visible,
+-- themed lock screen) after 5 min idle and on suspend/lid close. The greeter
+-- path is safe again — the malformed Xorg snippet that black-screened it is
+-- fixed and validated at install time (services.sh + xorg_conf_valid).
+awful.spawn.with_shell(
+    "command -v light-locker >/dev/null && { xset s 300 5; " ..
+    "pgrep -x light-locker >/dev/null || light-locker --lock-after-screensaver=5 --lock-on-suspend & }")
 
 -- Apply dark GTK/system color scheme for other apps (Brave, GTK-based tools)
 awful.spawn.with_shell(
