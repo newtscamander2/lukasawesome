@@ -757,35 +757,6 @@ end
 -- }}}
 -- }}}
 
--- {{{ Claude Code usage — local JSONL entry counts only.
--- Source: ~/.claude/projects/**/*.jsonl (per scripts/claude-usage.py).
--- Counts entries where type=user or type=assistant. These are NOT a
--- substitute for Anthropic's rate-limit accounting; no API call is made.
-local claude_subs = {} -- { fn({ n5, n7, today, days[1..7] }) }
-local function subscribe_claude(fn) table.insert(claude_subs, fn) end
-
-local CLAUDE_CMD = "python3 " ..
-    os.getenv("HOME") .. "/.config/awesome/scripts/claude-usage.py"
-
-local function poll_claude()
-    awful.spawn.easy_async(CLAUDE_CMD, function(stdout)
-        local nums = {}
-        for tok in (stdout or ""):gmatch("(%S+)") do
-            nums[#nums + 1] = tonumber(tok) or 0
-        end
-        if #nums < 10 then return end
-        local state = {
-            n5    = nums[1],
-            n7    = nums[2],
-            today = nums[3],
-            days  = { nums[4], nums[5], nums[6], nums[7], nums[8], nums[9], nums[10] },
-        }
-        for _, fn in ipairs(claude_subs) do fn(state) end
-    end)
-end
-gears.timer { timeout = 180, autostart = true, call_now = true, callback = poll_claude }
--- }}}
-
 -- {{{ Random philosopher quote (English, rotates per awesome restart)
 math.randomseed(os.time())
 local quotes = {
@@ -1536,166 +1507,20 @@ awful.screen.connect_for_each_screen(function(s)
     }
 
     ---------------------------------------------------------------
-    -- CLAUDE TILE — compact card: today's count + 7-day mini sparkline.
-    ---------------------------------------------------------------
-    local cc_title = wibox.widget {
-        markup = "<span font='" .. font(11) .. "' foreground='" .. C.mauve ..
-                 "' weight='bold'>\u{f02d}  claude code</span>",
-        widget = wibox.widget.textbox,
-    }
-
-    -- 7-day mini bars via rotated progressbars (fill bottom→top).
-    local SPARK_CELL_W = 18
-    local SPARK_GAP    = 6
-    local SPARK_H      = 80
-    local sparkline_bars   = {}
-    local sparkline_labels = {}
-
-    local sparkline_row = wibox.widget {
-        layout  = wibox.layout.fixed.horizontal,
-        spacing = SPARK_GAP,
-    }
-    local cc_days_row = wibox.widget {
-        layout  = wibox.layout.fixed.horizontal,
-        spacing = SPARK_GAP,
-    }
-    for i = 1, 7 do
-        -- Horizontal progressbar that we rotate 90° counter-clockwise,
-        -- so visual width = forced_height and fill direction is bottom→top.
-        local base_bar = wibox.widget {
-            max_value        = 1,
-            value            = 0.02,
-            forced_height    = SPARK_CELL_W,
-            forced_width     = SPARK_H,
-            shape            = rounded(UI.radius_inner),
-            bar_shape        = rounded(UI.radius_inner),
-            background_color = C.surface0,
-            color            = C.mauve,
-            widget           = wibox.widget.progressbar,
-        }
-        local rotated = wibox.widget {
-            base_bar,
-            direction = "west",
-            widget    = wibox.container.rotate,
-        }
-        sparkline_bars[i] = base_bar
-        sparkline_row:add(rotated)
-
-        local lbl = wibox.widget {
-            markup = "<span foreground='" .. C.overlay0 .. "'>·</span>",
-            widget = wibox.widget.textbox,
-            align  = "center",
-        }
-        local lbl_cell = wibox.widget {
-            lbl,
-            forced_width = SPARK_CELL_W,
-            widget = wibox.container.background,
-        }
-        sparkline_labels[i] = lbl
-        cc_days_row:add(lbl_cell)
-    end
-
-    -- Today's count + footer
-    local cc_today_big = wibox.widget {
-        markup = "<span font='" .. font(34) .. "' foreground='" .. C.text ..
-                 "' weight='bold'>0</span>",
-        widget = wibox.widget.textbox,
-    }
-    local cc_today_sub = wibox.widget {
-        markup = "<span foreground='" .. C.subtext1 .. "'>messages today</span>",
-        widget = wibox.widget.textbox,
-    }
-    local cc_footer = wibox.widget {
-        markup = "<span font='" .. font(9) .. "' foreground='" .. C.overlay0 .. "'>peak – · week –</span>",
-        widget = wibox.widget.textbox,
-    }
-
-    subscribe_claude(function(st)
-        cc_today_big:set_markup(
-            "<span font='" .. font(34) .. "' foreground='" .. C.text ..
-            "' weight='bold'>" .. st.today .. "</span>")
-
-        -- Sparkline — each bar as a fraction of the week's max.
-        local max_val = 1
-        for _, c in ipairs(st.days) do if c > max_val then max_val = c end end
-        for i, c in ipairs(st.days) do
-            sparkline_bars[i].max_value = max_val
-            sparkline_bars[i].value     = c > 0 and c or 0
-            sparkline_bars[i].color     = (i == 7) and C.mauve or C.blue
-        end
-
-        -- Day-of-week labels aligned with bars
-        local now = os.time()
-        local dow = {"S","M","T","W","T","F","S"}
-        for i = 1, 7 do
-            local day = os.date("*t", now - (7 - i) * 86400)
-            local color = (i == 7) and C.mauve or C.overlay0
-            local weight = (i == 7) and "bold" or "normal"
-            sparkline_labels[i]:set_markup(
-                "<span foreground='" .. color .. "' weight='" .. weight .. "'>" ..
-                dow[day.wday] .. "</span>")
-        end
-
-        cc_footer:set_markup(
-            "<span font='" .. font(9) .. "' foreground='" .. C.overlay0 .. "'>peak " ..
-            "</span><span font='" .. font(9) .. "' foreground='" .. C.mauve .. "' weight='bold'>" ..
-            max_val .. "</span><span font='" .. font(9) .. "' foreground='" .. C.overlay0 ..
-            "'> · week </span><span font='" .. font(9) .. "' foreground='" .. C.blue ..
-            "' weight='bold'>" .. st.n7 .. "</span>")
-    end)
-
-    local CC_W = 440
-    local CC_H = 200
-    local cc_tile = make_tile(CC_W, CC_H)
-
-    cc_tile:setup {
-        {
-            {
-                cc_title,
-                {
-                    -- Body: today number on the left, sparkline on the right.
-                    {
-                        cc_today_big,
-                        { cc_today_sub, top = 2, widget = wibox.container.margin },
-                        { cc_footer,    top = 6, widget = wibox.container.margin },
-                        layout = wibox.layout.fixed.vertical,
-                    },
-                    nil,
-                    {
-                        sparkline_row,
-                        { cc_days_row, top = 4, widget = wibox.container.margin },
-                        layout = wibox.layout.fixed.vertical,
-                    },
-                    layout = wibox.layout.align.horizontal,
-                },
-                spacing = 10,
-                layout  = wibox.layout.fixed.vertical,
-            },
-            halign = "left",
-            valign = "top",
-            widget = wibox.container.place,
-        },
-        margins = UI.tile_margin,
-        widget  = wibox.container.margin,
-    }
-
-    ---------------------------------------------------------------
-    -- Tile placement — left column (hero above neofetch), compact
-    -- claude card top-aligned to its right. Wallpaper gets the rest.
+    -- Tile placement — single left column (hero above neofetch).
+    -- The rest of the screen is deliberate negative space: the
+    -- wallpaper subject and the cava bars get room to breathe.
     ---------------------------------------------------------------
     local function place_tiles()
         local wa  = s.workarea -- already excludes the wibar strut
         local m   = 24
-        local gap = 14
+        local gap = 16         -- echoes theme.useless_gap dpi(14)
 
         hero_tile.x = wa.x + m
         hero_tile.y = wa.y + m
 
         neo_tile.x = hero_tile.x
         neo_tile.y = hero_tile.y + hero_tile.height + gap
-
-        cc_tile.x = hero_tile.x + HERO_W + gap
-        cc_tile.y = hero_tile.y
     end
     place_tiles()
     s:connect_signal("property::geometry", place_tiles)
