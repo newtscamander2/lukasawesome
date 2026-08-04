@@ -1182,6 +1182,69 @@ awful.screen.connect_for_each_screen(function(s)
         widget = wibox.container.background,
     }
 
+    -- Calendar popup: click the clock for a month grid, scroll to page months.
+    -- Styled to match the volume popup (frosted, accent border, rounded).
+    local cal_popup = awful.widget.calendar_popup.month({
+        screen        = s,
+        start_sunday  = false,
+        week_numbers  = false,
+        long_weekdays = false,
+        style_month   = { border_width = 0, bg_color = "#00000000", padding = 10 },
+        style_header  = {
+            border_width = 0, bg_color = "#00000000",
+            fg_color = C.mauve,
+            markup = function(t) return "<b>" .. t .. "</b>" end,
+        },
+        style_weekday = {
+            border_width = 0, bg_color = "#00000000", fg_color = C.blue,
+            markup = function(t) return "<b>" .. t .. "</b>" end,
+        },
+        style_normal  = {
+            border_width = 0, bg_color = "#00000000", fg_color = C.text, padding = 5,
+        },
+        style_focus   = {
+            border_width = 0, bg_color = C.mauve, fg_color = C.base, padding = 5,
+            shape = rounded(UI.radius_inner),
+            markup = function(t) return "<b>" .. t .. "</b>" end,
+        },
+    })
+    cal_popup.bg           = C.mantle .. "e6"
+    cal_popup.fg           = C.text
+    cal_popup.shape        = rounded(UI.radius_outer)
+    cal_popup.border_width = 2
+    cal_popup.border_color = C.mauve
+    cal_popup.ontop        = true
+
+    local cal_timer = gears.timer {
+        timeout = 6, single_shot = true,
+        callback = function() cal_popup.visible = false end,
+    }
+    local function cal_place()
+        awful.placement.top_right(cal_popup,
+            { parent = awful.screen.focused(), margins = { top = 56, right = 20 } })
+    end
+    local function cal_toggle()
+        if cal_popup.visible then
+            cal_popup.visible = false
+            cal_timer:stop()
+        else
+            cal_popup:call_calendar(0)   -- always open on the current month
+            cal_popup.visible = true
+            cal_place()
+            cal_timer:again()
+        end
+    end
+    cal_popup:connect_signal("mouse::enter", function() cal_timer:stop() end)
+    cal_popup:connect_signal("mouse::leave", function() cal_timer:again() end)
+
+    clock_box:buttons(gears.table.join(
+        awful.button({}, 1, cal_toggle),
+        awful.button({}, 4, function() cal_popup:call_calendar(-1); cal_place() end),
+        awful.button({}, 5, function() cal_popup:call_calendar(1);  cal_place() end)
+    ))
+    clock_box:connect_signal("mouse::enter", function() clock_box.bg = C.surface1 end)
+    clock_box:connect_signal("mouse::leave", function() clock_box.bg = C.surface0 end)
+
     -- Systray. Fixed base size so xembed icons (Brave etc.) render crisp on
     -- the chip background instead of scaling to the bar height with a stale
     -- background pixmap (the "black square" artifact). bg comes from the
