@@ -1693,6 +1693,129 @@ awful.screen.connect_for_each_screen(function(s)
     place_tiles()
     s:connect_signal("property::geometry", place_tiles)
 
+    ---------------------------------------------------------------
+    -- Music visualizer — cava bars along the bottom edge of the
+    -- wallpaper. Resource-frugal: the cava process only runs while
+    -- audio is actually playing AND the desktop is visible (no
+    -- maximized/fullscreen client on the selected tag).
+    ---------------------------------------------------------------
+    if s == screen.primary then
+        local CAVA_H    = 90
+        local CAVA_BARS = 50   -- must match cava/.config/cava/config
+
+        local cava_values = {}
+        local cava_widget = wibox.widget.base.make_widget()
+        function cava_widget:fit(_, w, h) return w, h end
+        function cava_widget:draw(_, cr, w, h)
+            local gap = 4
+            local bw  = (w - (CAVA_BARS - 1) * gap) / CAVA_BARS
+            cr:set_source(gears.color(C.mauve .. "b3"))
+            for i = 1, CAVA_BARS do
+                local v  = (cava_values[i] or 0) / 100
+                local bh = math.max(2, v * (h - 4))
+                cr:save()
+                cr:translate((i - 1) * (bw + gap), h - bh)
+                gears.shape.rounded_rect(cr, bw, bh, math.min(3, bw / 2))
+                cr:restore()
+            end
+            cr:fill()
+        end
+
+        local cava_box = wibox({
+            screen            = s,
+            width             = s.geometry.width - 2 * 24,
+            height            = CAVA_H,
+            x                 = s.geometry.x + 24,
+            y                 = s.geometry.y + s.geometry.height - CAVA_H - 8,
+            visible           = false,
+            ontop             = false,
+            type              = "desktop",
+            input_passthrough = true,
+            bg                = "#00000000",
+        })
+        cava_box:setup { cava_widget, layout = wibox.layout.flex.horizontal }
+        local function place_cava()
+            cava_box.width = s.geometry.width - 2 * 24
+            cava_box.x     = s.geometry.x + 24
+            cava_box.y     = s.geometry.y + s.geometry.height - CAVA_H - 8
+        end
+        s:connect_signal("property::geometry", place_cava)
+
+        -- Process lifecycle: track OUR pid (never pkill blindly — the same
+        -- self-match trap as the wallpaper fetch guard).
+        local cava_pid = nil
+        local audio_playing = false
+
+        local function desktop_visible()
+            local t = s.selected_tag
+            if not t then return false end
+            for _, c in ipairs(t:clients()) do
+                if not c.minimized and (c.maximized or c.fullscreen) then
+                    return false
+                end
+            end
+            return true
+        end
+
+        local function stop_cava()
+            if cava_pid then awesome.kill(cava_pid, 15) end
+            cava_pid = nil
+            cava_box.visible = false
+        end
+
+        local function update_cava_state()
+            local want = audio_playing and desktop_visible()
+            if want and not cava_pid and awful.spawn then
+                local pid = awful.spawn.with_line_callback("cava", {
+                    stdout = function(line)
+                        local i = 1
+                        for v in line:gmatch("%d+") do
+                            cava_values[i] = tonumber(v)
+                            i = i + 1
+                        end
+                        cava_widget:emit_signal("widget::redraw_needed")
+                    end,
+                    exit = function()
+                        cava_pid = nil
+                        cava_box.visible = false
+                    end,
+                })
+                if type(pid) == "number" then
+                    cava_pid = pid
+                    cava_box.visible = true
+                end
+            elseif not want then
+                stop_cava()
+            end
+        end
+
+        -- Audio state: one cheap pactl poll per 5 s (only uncorked streams count).
+        if awful.spawn and gears.filesystem.file_readable(
+               os.getenv("HOME") .. "/.config/cava/config") then
+            gears.timer {
+                timeout = 5, autostart = true, call_now = true,
+                callback = function()
+                    awful.spawn.easy_async_with_shell(
+                        "pactl list sink-inputs 2>/dev/null | grep -c 'Corked: no'",
+                        function(out)
+                            audio_playing = (tonumber((out or ""):match("%d+")) or 0) > 0
+                            update_cava_state()
+                        end)
+                end,
+            }
+            -- Desktop visibility is event-driven — no polling needed.
+            tag.connect_signal("property::selected", function(t)
+                if t.screen == s then update_cava_state() end
+            end)
+            for _, sig in ipairs({ "property::maximized", "property::fullscreen",
+                                   "property::minimized", "manage", "unmanage" }) do
+                client.connect_signal(sig, update_cava_state)
+            end
+            -- Never leak the process across restarts.
+            awesome.connect_signal("exit", stop_cava)
+        end
+    end
+
 end)
 -- }}}
 
