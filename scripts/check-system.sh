@@ -68,15 +68,15 @@ fi
 log "Desktop extras"
 check_pkg cava
 check_pkg xclip
-check_pkg kvantum
-check_pkg qt6ct
-if grep -q '^QT_QPA_PLATFORMTHEME=' /etc/environment 2>/dev/null; then
-    pass "QT_QPA_PLATFORMTHEME set in /etc/environment"
+check_pkg breeze
+check_pkg plasma-integration
+if grep -q '^QT_QPA_PLATFORMTHEME=kde$' /etc/environment 2>/dev/null; then
+    pass "QT_QPA_PLATFORMTHEME=kde set in /etc/environment"
 else
-    miss "QT_QPA_PLATFORMTHEME not in /etc/environment (make apps, then re-login)"
+    miss "QT_QPA_PLATFORMTHEME=kde not in /etc/environment (make apps, then re-login)"
 fi
 # Optional -git theme packages: note, never fail — everything degrades.
-for d in /usr/share/icons/candy-icons /usr/share/Kvantum/Sweet /usr/share/themes/Sweet-Dark; do
+for d in /usr/share/icons/candy-icons /usr/share/icons/Sweet-cursors /usr/share/themes/Sweet-Dark; do
     [ -d "$d" ] && pass "$(basename "$d") present" || note "$(basename "$d") missing (falls back)"
 done
 if have kreadconfig6; then
@@ -138,7 +138,7 @@ for pkg_name in $(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash
         rclone)    target="$HOME/.config/systemd/user/protondrive.service" ;;
         clang-format) target="$HOME/.clang-format" ;;
         cava)      target="$HOME/.config/cava" ;;
-        qt)        target="$HOME/.config/qt6ct" ;;
+        qt)        target="$HOME/.local/share/color-schemes/Dr460nized.colors" ;;
         *)         target="" ;;
     esac
     [ -z "$target" ] && continue

@@ -33,33 +33,41 @@ if enabled INSTALL_BROWSER; then
 fi
 
 # --- Qt apps (Dolphin, KeePassXC…): platform theme + colours + icons ---
-# Without QT_QPA_PLATFORMTHEME nothing Qt reads qt5ct/qt6ct at all, so Dolphin
-# renders stock light Breeze no matter what is configured. /etc/environment is
-# the right home for it: pam_env applies it at every login (lightdm AND a bare
-# startx), so awesome and everything it spawns inherit it. A file under
-# ~/.config/environment.d would only reach systemd *user* services, i.e. not a
-# rofi-launched Dolphin. Requires one logout/login to take effect.
+# Without QT_QPA_PLATFORMTHEME=kde, KF6 apps never load the KDE platform theme
+# and so never read kdeglobals — Dolphin renders stock light Breeze no matter
+# what colours are configured (verified the hard way: with qt5ct the icon theme
+# applied but the palette did not).
+# /etc/environment is the right home for the variable: pam_env applies it at
+# every login (lightdm AND a bare startx), so awesome and everything it spawns
+# inherit it. A file under ~/.config/environment.d would only reach systemd
+# *user* services, i.e. not a rofi-launched Dolphin. Needs one logout/login.
 if enabled INSTALL_BASE; then
-    if grep -q '^QT_QPA_PLATFORMTHEME=' /etc/environment 2>/dev/null; then
-        ok "QT_QPA_PLATFORMTHEME already set in /etc/environment."
+    if grep -q '^QT_QPA_PLATFORMTHEME=kde$' /etc/environment 2>/dev/null; then
+        ok "QT_QPA_PLATFORMTHEME=kde already set in /etc/environment."
     else
-        log "Setting QT_QPA_PLATFORMTHEME=qt5ct in /etc/environment (login-wide)"
-        run_sh "echo 'QT_QPA_PLATFORMTHEME=qt5ct' | sudo tee -a /etc/environment >/dev/null"
+        log "Setting QT_QPA_PLATFORMTHEME=kde in /etc/environment (login-wide)"
+        # Rewrite any other value rather than appending a second one.
+        run_sh "sudo sed -i '/^QT_QPA_PLATFORMTHEME=/d' /etc/environment && \
+                echo 'QT_QPA_PLATFORMTHEME=kde' | sudo tee -a /etc/environment >/dev/null"
     fi
 
-    # Dolphin reads colours from kdeglobals [Colors:*] and icons from [Icons]
-    # regardless of the platform theme, so those keys have to exist or the file
-    # view stays light. kdeglobals is live user state (KDE apps rewrite it), so
-    # it is deliberately NOT stowed: back it up once, then merge/set keys.
+    # With the KDE platform theme active, Dolphin takes its colours from
+    # kdeglobals [Colors:*] and its icons from [Icons]. kdeglobals is live user
+    # state (KDE apps rewrite it), so it is deliberately NOT stowed: back it up
+    # once, then merge the scheme in and set the individual keys.
     kde="$HOME/.config/kdeglobals"
     if [ ! -f "$kde" ]; then
         run_sh "mkdir -p '$HOME/.config' && touch '$kde'"
     fi
     run cp -n "$kde" "$kde.pre-theme" 2>/dev/null || true
 
-    scheme="/usr/share/color-schemes/Sweet.colors"
+    # The Dr460nized KDE colour scheme ships in this repo (stowed to
+    # ~/.local/share/color-schemes). Merging its [Colors:*] into kdeglobals is
+    # what actually recolours Dolphin — the ColorScheme key alone is only a
+    # label that KDE's own settings app would act on.
+    scheme="$HOME/.local/share/color-schemes/Dr460nized.colors"
     if [ -r "$scheme" ] && [ "$DRY_RUN" != "1" ]; then
-        log "Merging Sweet colour scheme into kdeglobals"
+        log "Merging the Dr460nized colour scheme into kdeglobals"
         python3 - "$scheme" "$kde" <<'PY'
 import configparser, sys
 src_path, dst_path = sys.argv[1], sys.argv[2]
@@ -79,16 +87,18 @@ with open(dst_path, "w") as fh:
     dst.write(fh, space_around_delimiters=False)
 PY
     elif [ ! -r "$scheme" ]; then
-        warn "Sweet.colors not found (kvantum-theme-sweet-git missing) — skipping colour merge."
+        warn "Dr460nized.colors not found — run 'make stow' first, then re-run 'make apps'."
     fi
 
     if command -v kwriteconfig6 >/dev/null 2>&1; then
         icon_theme="Papirus-Dark"
         [ -d /usr/share/icons/candy-icons ] && icon_theme="candy-icons"
-        log "Setting kdeglobals: style=kvantum, icons=$icon_theme"
-        run kwriteconfig6 --file kdeglobals --group KDE     --key widgetStyle kvantum
+        log "Setting kdeglobals: style=Breeze, icons=$icon_theme"
+        # Breeze honours the KDE colour scheme completely; there is no Sweet
+        # Kvantum theme in the AUR, so Kvantum would add nothing here.
+        run kwriteconfig6 --file kdeglobals --group KDE     --key widgetStyle Breeze
         run kwriteconfig6 --file kdeglobals --group Icons   --key Theme "$icon_theme"
-        [ -r "$scheme" ] && run kwriteconfig6 --file kdeglobals --group General --key ColorScheme Sweet
+        [ -r "$scheme" ] && run kwriteconfig6 --file kdeglobals --group General --key ColorScheme Dr460nized
     else
         warn "kwriteconfig6 missing — install kconfig or set kdeglobals by hand."
     fi

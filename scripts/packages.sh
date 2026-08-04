@@ -46,12 +46,14 @@ if enabled INSTALL_BASE; then
         ufw                            # firewall (public / uni networks)
         reflector                      # keep pacman mirrors fast
         rclone fuse3                   # Proton Drive mount (~/ProtonDrive)
-        # Qt theming so Dolphin/KeePassXC match the WM instead of rendering
-        # stock light Breeze. kvantum draws the widgets, qt5ct/qt6ct are the
-        # platform themes that hand Qt the style + icon set (QT_QPA_PLATFORMTHEME
-        # is set in /etc/environment by apps.sh).
-        kvantum kvantum-qt5
-        qt5ct qt6ct
+        # Qt/KDE theming so Dolphin & friends match the WM. The KDE platform
+        # theme (plasma-integration) is the load-bearing piece: without it KF6
+        # apps ignore kdeglobals entirely and render stock light Breeze, no
+        # matter what qt5ct/Kvantum are told. QT_QPA_PLATFORMTHEME=kde is set
+        # in /etc/environment by apps.sh.
+        breeze                         # Qt widget style (icons already via breeze-icons)
+        plasma-integration             # KDE platform theme for Qt6 apps (Dolphin)
+        plasma5-integration            # ...and for any remaining Qt5 apps
         papirus-icon-theme             # icon fallback when candy-icons is unavailable
     )
     aur+=(neofetch)                    # dropped from official repos -> AUR
@@ -132,15 +134,14 @@ if [ "${#aur[@]}" -gt 0 ]; then
 fi
 
 # --- Dr460nized look: -git theme packages, best-effort ---
-# These are git builds that occasionally break, and everything degrades
-# gracefully: without candy-icons the GTK/Qt writers fall back to
-# Papirus-Dark, without the Kvantum theme Kvantum uses its own dark default.
-# kvantum-theme-sweet-git is a split package of pkgbase sweet-kde-git (which
-# also ships /usr/share/color-schemes/Sweet.colors, used by apps.sh).
-# candy-icons-git is a large clone — expect minutes, not seconds.
+# Git builds that occasionally break, and everything degrades gracefully:
+# without candy-icons the GTK/Qt writers fall back to Papirus-Dark, without
+# Sweet-cursors the cursor block is skipped. candy-icons-git is a large clone —
+# expect minutes, not seconds. (There is no Sweet Kvantum theme in the AUR;
+# the Qt side is Breeze + the Dr460nized KDE colour scheme instead.)
 if enabled INSTALL_BASE; then
     log "Theme packages (best-effort)"
-    aur_install_optional kvantum-theme-sweet-git candy-icons-git sweet-cursors-git
+    aur_install_optional candy-icons-git sweet-cursors-git
 fi
 
 # --- Best-effort / niche (no dependable package) ---
