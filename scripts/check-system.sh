@@ -58,7 +58,17 @@ if svc_enabled lightdm.service; then
     [ -d /usr/share/xsessions ] && [ -n "$(ls -A /usr/share/xsessions 2>/dev/null)" ] \
         && pass "xsessions present ($(ls /usr/share/xsessions | tr '\n' ' '))" \
         || miss "no sessions in /usr/share/xsessions — greeter will have nothing to launch"
+    # Screen lock (Super+Escape / 5 min idle) locks to the lightdm greeter.
+    check_pkg light-locker
+    [ -f /etc/lightdm/lightdm-gtk-greeter.conf ] \
+        && pass "greeter config deployed" \
+        || note "greeter config not deployed yet (make services)"
 fi
+
+log "Desktop extras"
+check_pkg cava
+check_pkg xclip
+if enabled INSTALL_VPN; then check_pkg proton-vpn-gtk-app; fi
 
 log "Xorg config snippets"
 # One truncated snippet aborts the whole X server, so validate every file, not
