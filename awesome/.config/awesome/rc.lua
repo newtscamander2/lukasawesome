@@ -1628,23 +1628,31 @@ awful.screen.connect_for_each_screen(function(s)
         layout  = wibox.layout.fixed.vertical,
     }
 
-    local dash_tile = make_tile(TILE_W, 690)
+    -- align.vertical takes exactly three children (top/middle/bottom): the
+    -- content goes in one fixed.vertical child, the visualizer sits in the
+    -- bottom slot. Passing more than three silently drops the extras and
+    -- stretches whatever lands in the middle.
+    local TILE_H_BASE = 470
+    local dash_tile   = make_tile(TILE_W, TILE_H_BASE)
     dash_tile:setup {
         {
-            hero_block,
             {
+                hero_block,
                 {
-                    bg = C.surface0, forced_height = 1,
-                    widget = wibox.container.background,
+                    {
+                        bg = C.surface0, forced_height = 1,
+                        widget = wibox.container.background,
+                    },
+                    top = 14, bottom = 14,
+                    widget = wibox.container.margin,
                 },
-                top = 14, bottom = 14,
-                widget = wibox.container.margin,
-            },
-            {
-                { arch_logo, widget = wibox.container.place, valign = "top" },
-                { neo_info,  widget = wibox.container.place, valign = "top" },
-                spacing = 18,
-                layout  = wibox.layout.fixed.horizontal,
+                {
+                    { arch_logo, widget = wibox.container.place, valign = "top" },
+                    { neo_info,  widget = wibox.container.place, valign = "top" },
+                    spacing = 18,
+                    layout  = wibox.layout.fixed.horizontal,
+                },
+                layout = wibox.layout.fixed.vertical,
             },
             nil,
             cava_strip,
@@ -1653,6 +1661,12 @@ awful.screen.connect_for_each_screen(function(s)
         margins = UI.tile_margin,
         widget  = wibox.container.margin,
     }
+    -- The tile grows only while the visualizer is showing, so there is no
+    -- reserved empty band when nothing is playing.
+    local function set_cava_visible(v)
+        cava_strip.visible = v
+        dash_tile.height   = TILE_H_BASE + (v and (CAVA_STRIP_H + 9) or 0)
+    end
 
     ---------------------------------------------------------------
     -- Tile placement — one dashboard tile, top-left. The rest of the
@@ -1694,7 +1708,7 @@ awful.screen.connect_for_each_screen(function(s)
         local function stop_cava()
             if cava_pid then awesome.kill(cava_pid, 15) end
             cava_pid = nil
-            cava_strip.visible = false
+            set_cava_visible(false)
             for i = 1, CAVA_BARS do cava_values[i] = 0 end
         end
 
@@ -1717,12 +1731,12 @@ awful.screen.connect_for_each_screen(function(s)
                     end,
                     exit = function()
                         cava_pid = nil
-                        cava_strip.visible = false
+                        set_cava_visible(false)
                     end,
                 })
                 if type(pid) == "number" then
                     cava_pid = pid
-                    cava_strip.visible = true
+                    set_cava_visible(true)
                 elseif not cava_error_shown then
                     -- with_line_callback returns an error STRING when the
                     -- binary is missing. Say so once instead of retrying
@@ -2170,9 +2184,11 @@ do
             align  = "right",
             widget = wibox.widget.textbox,
         }
+        -- Width is recomputed per caption below; a fixed 640px box left a wide
+        -- empty bar next to short captions.
         local cap_box = wibox({
             screen            = screen.primary,
-            width             = 640,
+            width             = 320,
             height            = 30,
             visible           = false,
             ontop             = false,
@@ -2228,6 +2244,9 @@ echo "$cap"
                 end
                 cap_text:set_markup("<span font='" .. font(9) .. "'>\u{f03e}  " ..
                                     esc(cap) .. "</span>")
+                -- FiraCode is monospace (~6.7px/glyph at size 9): size the box
+                -- to the caption instead of leaving a wide empty bar.
+                cap_box.width = math.min(1100, 64 + math.floor(#cap * 6.7))
                 place_caption()
                 cap_box.visible = true
             end)
