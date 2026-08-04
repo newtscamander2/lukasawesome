@@ -1886,6 +1886,12 @@ exit 1
             local next_theme = order[(idx % #order) + 1]
             local w = io.open(path, "w")
             w:write(next_theme); w:close()
+            -- Terminal palette follows the WM theme. Alacritty live-reloads on
+            -- config change, so open terminals recolour without a restart.
+            local home  = os.getenv("HOME")
+            local aterm = (next_theme == "dr460nized") and "dr460nized" or "mocha"
+            os.execute(("cp %s/.config/alacritty/themes/%s.toml %s/.config/alacritty/theme.toml 2>/dev/null")
+                :format(home, aterm, home))
             awesome.restart()
         end,
         {description = "cycle theme (dr460nized/arch/ubuntu/windows7/win11)", group = "awesome"}),

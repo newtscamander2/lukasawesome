@@ -1,0 +1,34 @@
+# Dr460nized / Dracula — matches the awesome dr460nized theme.
+[colors.primary]
+background = "#1b1b28"
+foreground = "#f8f8f2"
+dim_foreground = "#6272a4"
+bright_foreground = "#ffffff"
+
+[colors.cursor]
+text = "#1b1b28"
+cursor = "#ff79c6"
+
+[colors.selection]
+text = "#f8f8f2"
+background = "#44475a"
+
+[colors.normal]
+black   = "#21222c"
+red     = "#ff5555"
+green   = "#50fa7b"
+yellow  = "#f1fa8c"
+blue    = "#bd93f9"
+magenta = "#ff79c6"
+cyan    = "#8be9fd"
+white   = "#f8f8f2"
+
+[colors.bright]
+black   = "#6272a4"
+red     = "#ff6e6e"
+green   = "#69ff94"
+yellow  = "#ffffa5"
+blue    = "#d6acff"
+magenta = "#ff92df"
+cyan    = "#a4ffff"
+white   = "#ffffff"
