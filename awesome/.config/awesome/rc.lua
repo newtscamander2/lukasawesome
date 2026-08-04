@@ -1826,7 +1826,7 @@ exit 1
               {description = "view next", group = "tag"}),
     -- Directional hjkl: h=left, j=down, k=up, l=right in every combination.
     --   Super             -> FOCUS the neighbour
-    --   Super+AltGr(Mod5) -> MOVE the window there
+    --   Super+Alt(Mod1)   -> MOVE the window there
     --   Super+Control     -> RESIZE it
     awful.key({ modkey }, "h", function () awful.client.focus.global_bydirection("left")  end,
               {description = "focus window left/down/up/right (hjkl)", group = "client"}),
@@ -1834,11 +1834,11 @@ exit 1
     awful.key({ modkey }, "k", function () awful.client.focus.global_bydirection("up")    end),
     awful.key({ modkey }, "l", function () awful.client.focus.global_bydirection("right") end),
 
-    awful.key({ modkey, "Mod5" }, "h", function () awful.client.swap.global_bydirection("left")  end,
-              {description = "move window left/down/up/right (AltGr+hjkl)", group = "client"}),
-    awful.key({ modkey, "Mod5" }, "j", function () awful.client.swap.global_bydirection("down")  end),
-    awful.key({ modkey, "Mod5" }, "k", function () awful.client.swap.global_bydirection("up")    end),
-    awful.key({ modkey, "Mod5" }, "l", function () awful.client.swap.global_bydirection("right") end),
+    awful.key({ modkey, "Mod1" }, "h", function () awful.client.swap.global_bydirection("left")  end,
+              {description = "move window left/down/up/right (Alt+hjkl)", group = "client"}),
+    awful.key({ modkey, "Mod1" }, "j", function () awful.client.swap.global_bydirection("down")  end),
+    awful.key({ modkey, "Mod1" }, "k", function () awful.client.swap.global_bydirection("up")    end),
+    awful.key({ modkey, "Mod1" }, "l", function () awful.client.swap.global_bydirection("right") end),
 
     awful.key({ modkey, "Shift" }, "n", function () awful.screen.focus_relative( 1) end,
               {description = "focus the next screen", group = "screen"}),
