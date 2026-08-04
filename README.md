@@ -112,9 +112,11 @@ packages; `make stow` symlinks each into `$HOME`:
 
 ## AwesomeWM themes
 
-Four themes cycle with **Super+Shift+T**: `arch` (default, Catppuccin Mocha),
-`ubuntu` (Yaru), `windows7` (Aero), and `win11`. The active one is stored in
-`~/.config/awesome/active_theme`.
+Five themes cycle with **Super+Shift+T**: `dr460nized` (default, Garuda-inspired
+Dracula neon — hot pink on near-black), `arch` (Catppuccin Mocha), `ubuntu`
+(Yaru), `windows7` (Aero), and `win11`. The active one is stored in
+`~/.config/awesome/active_theme`; the terminal palette follows it (see
+`alacritty/.config/alacritty/themes/`).
 
 - **Super+F1** shows all keybindings, including Neovim and Claude Code cheatsheets.
 - Volume / brightness / media hardware keys (`XF86*`) are bound (pactl, brightnessctl, playerctl).

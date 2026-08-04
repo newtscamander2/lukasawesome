@@ -1,6 +1,6 @@
--- Theme dispatcher: arch-family themes (arch/ubuntu/windows7) share this
--- config and only swap palette; win11 has its own bespoke layout.
-local ARCH_FAMILY = { arch = true, ubuntu = true, windows7 = true }
+-- Theme dispatcher: arch-family themes (dr460nized/arch/ubuntu/windows7) share
+-- this config and only swap palette; win11 has its own bespoke layout.
+local ARCH_FAMILY = { dr460nized = true, arch = true, ubuntu = true, windows7 = true }
 do
     local path = os.getenv("HOME") .. "/.config/awesome/active_theme"
     local f = io.open(path, "r")
@@ -131,6 +131,7 @@ local C = {
     mauve     = beautiful.cat_mauve    or "#cba6f7",
     blue      = beautiful.cat_blue     or "#89b4fa",
     sky       = beautiful.cat_sky      or "#89dceb",
+    teal      = beautiful.cat_teal     or "#94e2d5",
     green     = beautiful.cat_green    or "#a6e3a1",
     yellow    = beautiful.cat_yellow   or "#f9e2af",
     peach     = beautiful.cat_peach    or "#fab387",
@@ -151,7 +152,7 @@ local UI = {
     icon_gap     = dpi(8),    -- icon -> text gap inside pills
     pill_l = dpi(12), pill_r = dpi(14), pill_t = dpi(4), pill_b = dpi(4),
     tile_margin  = dpi(24),   -- inner margin of desktop tiles
-    tile_alpha   = "cc",      -- tile bg alpha suffix (~80%, frosted with blur)
+    tile_alpha   = "aa",      -- tile bg alpha suffix (~67%, frosted with blur)
     tile_border  = dpi(1),
 }
 -- }}}
@@ -427,7 +428,7 @@ local vol_popup = wibox({
     height       = 174,
     ontop        = true,
     visible      = false,
-    bg           = C.mantle,
+    bg           = C.mantle .. "e6", -- shaped wibox -> picom blurs behind it
     fg           = C.text,
     shape        = rounded(UI.radius_outer),
     border_width = 2,
@@ -1080,21 +1081,25 @@ awful.screen.connect_for_each_screen(function(s)
     }
 
     -- Launcher button (Arch logo — distinctive: mauve fill, inverted glyph)
+    -- No bold: it distorts the Arch glyph. The cell needs an explicit height
+    -- too — without one the textbox line box decides, and the glyph (which has
+    -- a lot of top bearing) rides high in the pill.
     local launcher_glyph = wibox.widget {
         {
-            markup = "<span font='" .. font(14) .. "' foreground='" .. C.base ..
-                     "' weight='bold'>\u{f303}</span>",
+            markup = "<span font='" .. font(13) .. "' foreground='" .. C.base ..
+                     "'>\u{f303}</span>",
             widget = wibox.widget.textbox,
             align  = "center",
             valign = "center",
         },
-        forced_width = dpi(24),
+        forced_width  = dpi(28),
+        forced_height = dpi(28),
         widget = wibox.container.background,
     }
     local launcher_bg = wibox.widget {
         {
             launcher_glyph,
-            left = 10, right = 10, top = UI.pill_t, bottom = UI.pill_b,
+            left = 9, right = 9, top = UI.pill_t, bottom = UI.pill_b,
             widget = wibox.container.margin,
         },
         bg     = C.mauve,
@@ -1211,7 +1216,9 @@ awful.screen.connect_for_each_screen(function(s)
                 left = 10, right = 10, top = 4, bottom = 4,
                 widget = wibox.container.margin,
             },
-            bg     = C.mantle,
+            -- Glassy floating strip (blur is excluded for dock windows, so the
+            -- alpha alone carries the frosted look over dark wallpapers).
+            bg     = C.crust .. "d9",
             shape  = rounded(UI.radius_outer),
             widget = wibox.container.background,
         },
@@ -1239,7 +1246,7 @@ awful.screen.connect_for_each_screen(function(s)
             fg                = C.text,
             shape             = rounded(UI.radius_outer),
             border_width      = UI.tile_border,
-            border_color      = C.surface0,
+            border_color      = C.mauve .. "66", -- neon edge, pairs with picom's glow
         })
     end
 
@@ -1927,7 +1934,7 @@ exit 1
               {description = "quit awesome", group = "awesome"}),
     awful.key({ modkey, "Shift" }, "t",
         function()
-            local order = { "arch", "ubuntu", "windows7", "win11" }
+            local order = { "dr460nized", "arch", "ubuntu", "windows7", "win11" }
             local path = os.getenv("HOME") .. "/.config/awesome/active_theme"
             local f = io.open(path, "r")
             local curr = (f and f:read("*l")) or "arch"
@@ -1941,7 +1948,7 @@ exit 1
             w:write(next_theme); w:close()
             awesome.restart()
         end,
-        {description = "cycle theme (arch/ubuntu/windows7/win11)", group = "awesome"}),
+        {description = "cycle theme (dr460nized/arch/ubuntu/windows7/win11)", group = "awesome"}),
 
     awful.key({ modkey,           }, "l",     function () awful.tag.incmwfact( 0.05)          end,
               {description = "increase master width factor", group = "layout"}),

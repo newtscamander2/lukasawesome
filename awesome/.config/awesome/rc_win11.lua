@@ -491,7 +491,7 @@ globalkeys = gears.table.join(
               {description = "quit awesome", group = "awesome"}),
     awful.key({ modkey, "Shift" }, "t",
         function()
-            local order = { "arch", "ubuntu", "windows7", "win11" }
+            local order = { "dr460nized", "arch", "ubuntu", "windows7", "win11" }
             local path = os.getenv("HOME") .. "/.config/awesome/active_theme"
             local f = io.open(path, "r")
             local curr = (f and f:read("*l")) or "arch"
@@ -505,7 +505,7 @@ globalkeys = gears.table.join(
             w:write(next_theme); w:close()
             awesome.restart()
         end,
-        {description = "cycle theme (arch/ubuntu/windows7/win11)", group = "awesome"}),
+        {description = "cycle theme (dr460nized/arch/ubuntu/windows7/win11)", group = "awesome"}),
 
     awful.key({ modkey,           }, "l",     function () awful.tag.incmwfact( 0.05) end,
               {description = "increase master width factor", group = "layout"}),
