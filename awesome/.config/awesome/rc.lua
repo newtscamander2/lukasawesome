@@ -1692,6 +1692,7 @@ awful.screen.connect_for_each_screen(function(s)
         -- self-match trap as the wallpaper fetch guard).
         local cava_pid = nil
         local audio_playing = false
+        local cava_error_shown = false -- notify once per session, not per retry
 
         local function desktop_visible()
             local t = s.selected_tag
@@ -1730,6 +1731,17 @@ awful.screen.connect_for_each_screen(function(s)
                 if type(pid) == "number" then
                     cava_pid = pid
                     cava_box.visible = true
+                elseif not cava_error_shown then
+                    -- with_line_callback returns an error STRING when the
+                    -- binary is missing. Say so once instead of retrying
+                    -- invisibly every 5 s forever.
+                    cava_error_shown = true
+                    naughty.notify({
+                        preset = naughty.config.presets.critical,
+                        title  = "Music visualizer unavailable",
+                        text   = tostring(pid) ..
+                                 "\nInstall it with: make packages",
+                    })
                 end
             elseif not want then
                 stop_cava()
@@ -1818,6 +1830,8 @@ exit 1
               {description="fake Windows Update overlay", group="fun"}),
     awful.key({ modkey, "Shift" }, "b", function() require("win_pranks").bsod() end,
               {description="fake blue screen of death", group="fun"}),
+    awful.key({ modkey, "Shift" }, "w", function() require("win_pranks").wannacry() end,
+              {description="fake WannaCry ransom screen", group="fun"}),
 
     awful.key({ modkey,           }, "Left",   awful.tag.viewprev,
               {description = "view previous", group = "tag"}),

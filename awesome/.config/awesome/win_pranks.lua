@@ -1,6 +1,8 @@
 -- Fake Windows screens (pranks). Dismiss any of them with Escape.
---   M.update()  -- "Working on updates" screen
---   M.bsod()    -- blue screen of death (does NOT crash anything)
+--   M.update()    -- "Working on updates" screen
+--   M.bsod()      -- blue screen of death (does NOT crash anything)
+--   M.wannacry()  -- ransom-note lookalike (encrypts NOTHING; it is a wibox)
+-- Every one of these is a picture: no filesystem, network or persistence.
 local awful = require("awful")
 local wibox = require("wibox")
 local gears = require("gears")
@@ -108,6 +110,77 @@ function M.bsod()
     timer = gears.timer { timeout = 0.8, autostart = true, callback = function()
         pct = math.min(100, pct + 1)
         pct_tb:set_markup(fmt(pct))
+    end }
+end
+
+-- Ransom-note lookalike. Draws a red overlay with two ticking countdowns —
+-- and does absolutely nothing else. No file is read, written or touched.
+function M.wannacry()
+    local t_pay  = os.time() + 3 * 86400
+    local t_lost = os.time() + 7 * 86400
+
+    local function countdown(deadline)
+        local left = math.max(0, deadline - os.time())
+        return string.format("%02d:%02d:%02d:%02d",
+            math.floor(left / 86400),
+            math.floor(left % 86400 / 3600),
+            math.floor(left % 3600 / 60),
+            left % 60)
+    end
+    local function big(t)  return "<span font='Noto Sans Bold 26' foreground='#ffffff'>" .. t .. "</span>" end
+    local function lbl(t)  return "<span font='Noto Sans 13' foreground='#ffd6d6'>" .. t .. "</span>" end
+    local function date(t) return "<span font='Noto Sans 12' foreground='#ffffff'>" ..
+                                  os.date("%d/%m/%Y %H:%M:%S", t) .. "</span>" end
+
+    local pay_tb  = tb(big(countdown(t_pay)))
+    local lost_tb = tb(big(countdown(t_lost)))
+
+    local function panel(title, deadline, value_tb)
+        return wibox.widget {
+            tb(lbl(title)),
+            { tb(date(deadline)), top = 2, widget = wibox.container.margin },
+            { value_tb,           top = 6, widget = wibox.container.margin },
+            layout = wibox.layout.fixed.vertical,
+        }
+    end
+
+    local block = wibox.widget {
+        tb("<span font='FiraCode Nerd Font 74' foreground='#ffffff'>\u{f023}</span>", "center"),
+        tb("<span font='Noto Sans Bold 32' foreground='#ffffff'>Ooops, your files have been encrypted!</span>", "center"),
+        {
+            {
+                panel("Payment will be raised on", t_pay,  pay_tb),
+                panel("Your files will be lost on", t_lost, lost_tb),
+                spacing = 60,
+                layout  = wibox.layout.fixed.horizontal,
+            },
+            top = 10, bottom = 10,
+            widget = wibox.container.margin,
+        },
+        tb("<span font='Noto Sans 13' foreground='#ffffff'>" ..
+           "What happened to my computer?  Nothing at all — this is a prank overlay.\n" ..
+           "Can I recover my files?  They were never touched. Press Escape.</span>"),
+        tb("<span font='Noto Sans Bold 14' foreground='#f7931a'>Send $300 worth of bitcoin to this address:</span>  " ..
+           "<span font='FiraCode Nerd Font 14' foreground='#ffffff'>1PRANKnotREALbTCaDDressXXXXXXXXXX</span>"),
+        spacing = 20,
+        layout  = wibox.layout.fixed.vertical,
+    }
+
+    local content = wibox.widget {
+        nil,
+        {
+            { block, left = 140, right = 140, widget = wibox.container.margin },
+            layout = wibox.layout.fixed.horizontal,
+        },
+        nil,
+        expand = "outside",
+        layout = wibox.layout.align.vertical,
+    }
+
+    open("#a30f0f", content)   -- WannaCry red
+    timer = gears.timer { timeout = 1, autostart = true, callback = function()
+        pay_tb:set_markup(big(countdown(t_pay)))
+        lost_tb:set_markup(big(countdown(t_lost)))
     end }
 end
 

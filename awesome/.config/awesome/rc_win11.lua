@@ -445,6 +445,8 @@ globalkeys = gears.table.join(
               {description="fake Windows Update overlay", group="fun"}),
     awful.key({ modkey, "Shift" }, "b", function() require("win_pranks").bsod() end,
               {description="fake blue screen of death", group="fun"}),
+    awful.key({ modkey, "Shift" }, "w", function() require("win_pranks").wannacry() end,
+              {description="fake WannaCry ransom screen", group="fun"}),
 
     awful.key({ modkey,           }, "Left",   awful.tag.viewprev,
               {description = "view previous", group = "tag"}),
