@@ -42,7 +42,7 @@ questionnaire() {
 GPU=$gpu
 LAPTOP=$laptop
 DISPLAY_MANAGER=$dm
-STOW_PACKAGES="$(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash rclone clang-format cava qt")"
+STOW_PACKAGES="$(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash rclone clang-format cava qt applications")"
 THEMES="$(cfg THEMES "dr460nized arch ubuntu windows7 win11")"
 INSTALL_BASE=$base
 INSTALL_DEV=$dev

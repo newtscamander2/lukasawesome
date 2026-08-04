@@ -47,52 +47,9 @@ hk_widget.default_widget = hk_widget.new({
 -- flood the F1 popup and push the real groups off-page. Our own "Nvim" sections
 -- below replace the built-in VIM one.
 
--- Informational cheatsheets shown in the super+F1 popup: these are not real
--- AwesomeWM bindings, just reminders for tools used inside the terminal.
-require("awful.hotkeys_popup.widget").add_hotkeys({
-    -- Single reference of every Space (leader) operation in Neovim. The rest
-    -- (Ctrl splits, Copilot, VimTeX, folds…) is discoverable via which-key
-    -- inside nvim, so it's intentionally not duplicated here.
-    ["Nvim (Space leader)"] = {{
-        modifiers = { "Space" },
-        keys = {
-            e       = "file explorer (toggle tree)",
-            f       = "find files",
-            ["/"]   = "live grep across files",
-            b       = "list open buffers",
-            fh      = "help tags",
-            fd      = "list diagnostics (warnings/errors)",
-            d       = "show diagnostic on current line",
-            ["1-9"] = "jump to buffer N",
-            m       = "toggle minimap",
-            w       = "write (save)",
-            q       = "quit",
-            x       = "write and quit",
-            H       = "clear search highlight",
-            rn      = "LSP rename symbol",
-            ca      = "LSP code action",
-            gc      = "git commits (repo history)",
-            gf      = "git file history",
-            gs      = "git status",
-            ga      = "git stage hunk",
-            gp      = "git preview hunk",
-            gb      = "git blame line",
-        },
-    }},
-    ["claude code"] = {{
-        modifiers = {},
-        keys = {
-            ["claude"]    = "start Claude Code in current dir",
-            ["/"]         = "slash commands (skills)",
-            ["@"]         = "reference a file",
-            ["! cmd"]     = "run a shell command in-session",
-            ["Shift-Tab"] = "cycle permission mode (plan/auto)",
-            ["Esc Esc"]   = "edit previous message",
-            ["/clear"]    = "clear conversation context",
-            ["/resume"]   = "resume a previous session",
-        },
-    }},
-})
+-- The F1 popup lists real AwesomeWM bindings only: no Neovim or Claude Code
+-- cheatsheets (both are discoverable in the tools themselves), and no
+-- media/brightness keys (they are printed on the keyboard).
 
 -- {{{ Error handling
 if awesome.startup_errors then
@@ -258,6 +215,15 @@ local _user_interacting = false
 -- every poll, so it needs these names in scope before they are built.
 local mute_btn_bg, mute_btn_lbl
 
+-- Only one wibar popup may be open at a time. Each popup registers a closer
+-- here and calls close_other_popups(its_own_tag) before showing itself.
+local popup_closers = {}
+function close_other_popups(except)
+    for tag, fn in pairs(popup_closers) do
+        if tag ~= except then fn() end
+    end
+end
+
 local function render_volume()
     local glyph = vol_glyph(vol_state.vol, vol_state.muted)
     local color = vol_state.muted and C.red or C.mauve
@@ -280,14 +246,14 @@ local function render_volume()
     end
     if vol_popup_icon then
         vol_popup_icon:set_markup(
-            "<span font='" .. font(24) .. "' foreground='" .. color .. "'>" ..
+            "<span font='" .. font(20) .. "' foreground='" .. color .. "'>" ..
             glyph .. "</span>")
     end
     -- Mute button reflects state. This runs on every poll, so the state must
     -- live here rather than in the widget definitions.
     if mute_btn_lbl then
         mute_btn_lbl:set_markup(
-            "<span font='" .. font(13) .. "' foreground='" ..
+            "<span font='" .. font(12) .. "' foreground='" ..
             (vol_state.muted and C.red or C.mauve) .. "'>" ..
             (vol_state.muted and "\u{f026}" or "\u{f028}") .. "</span>")
     end
@@ -322,7 +288,7 @@ local VOL_ROW_H        = dpi(32)
 local VOL_ROW_STRIDE   = VOL_ROW_H + 4 -- row height + sink_rows spacing
 
 vol_popup_icon = wibox.widget {
-    markup = "<span font='" .. font(24) .. "' foreground='" .. C.mauve .. "'>\u{f028}</span>",
+    markup = "<span font='" .. font(20) .. "' foreground='" .. C.mauve .. "'>\u{f028}</span>",
     widget = wibox.widget.textbox,
     align  = "center", valign = "center",
 }
@@ -386,7 +352,7 @@ mute_btn_bg = wibox.container.background()
 mute_btn_bg.bg    = C.surface0
 mute_btn_bg.shape = rounded(UI.radius_inner)
 mute_btn_lbl = wibox.widget {
-    markup = "<span font='" .. font(13) .. "' foreground='" .. C.mauve .. "'>\u{f028}</span>",
+    markup = "<span font='" .. font(12) .. "' foreground='" .. C.mauve .. "'>\u{f028}</span>",
     widget = wibox.widget.textbox,
     align  = "center", valign = "center",
 }
@@ -489,7 +455,8 @@ vol_popup:setup {
             {
                 {
                     vol_popup_icon,
-                    forced_width = dpi(40),
+                    forced_width  = dpi(44),
+                    forced_height = dpi(44),
                     widget = wibox.container.background,
                 },
                 {
@@ -625,7 +592,10 @@ vol_popup:connect_signal("mouse::leave", function()
     refresh_volume()
 end)
 
+popup_closers.volume = function() vol_popup.visible = false end
+
 local function vol_popup_show(anchor_widget)
+    close_other_popups("volume")
     local scr = awful.screen.focused()
     vol_popup.screen = scr
     -- Position: top-right under the wibar
@@ -900,6 +870,37 @@ _cpu_model = _cpu_model:gsub("%s*CPU%s*@.*$", ""):gsub("%s*@.*$", "")
 _cpu_model = _cpu_model:gsub("%s+%- .*$", ""):gsub("^%s+", ""):gsub("%s+$", "")
 _cpu_model = _cpu_model:gsub("%s+", " ")
 
+-- GPU model from lspci (blocking, once at load — same as the other probes).
+local function read_gpu()
+    local p = io.popen("lspci -mm 2>/dev/null | grep -iE 'vga|3d controller' | head -1")
+    if not p then return "" end
+    local line = p:read("*l") or ""; p:close()
+    -- lspci -mm quotes the fields: slot "class" "vendor" "device" ...
+    local fields = {}
+    for f in line:gmatch('"([^"]*)"') do fields[#fields + 1] = f end
+    local vendor, device = fields[2] or "", fields[3] or ""
+    vendor = vendor:gsub("Advanced Micro Devices.*", "AMD")
+                   :gsub("NVIDIA Corporation", "NVIDIA")
+                   :gsub("Intel Corporation", "Intel")
+    -- Prefer the marketing name inside brackets: "Navi 33 [Radeon RX 7600 …]"
+    local pretty = device:match("%[([^%]]+)%]") or device
+    pretty = pretty:gsub("%s*/%s*.*$", "")          -- drop "/7600 XT/7600M…" tails
+                   :gsub("%s*%(rev.*$", "")
+                   :gsub("^%s+", ""):gsub("%s+$", "")
+    if pretty == "" then return "" end
+    return (vendor ~= "" and (vendor .. " ") or "") .. pretty
+end
+
+local function read_mem_total()
+    local f = io.open("/proc/meminfo", "r")
+    if not f then return "" end
+    for l in f:lines() do
+        local kb = l:match("^MemTotal:%s*(%d+)")
+        if kb then f:close(); return string.format("%.1f GiB", tonumber(kb) / 1048576) end
+    end
+    f:close(); return ""
+end
+
 local sys_info = {
     user_host = (os.getenv("USER") or "user") .. "@" .. hostname(),
     os_name   = read_os_pretty(),
@@ -913,6 +914,8 @@ local sys_info = {
     wm        = "AwesomeWM",
     packages  = count_pacman_packages(),
     cpu       = _cpu_model,
+    gpu       = read_gpu(),
+    mem       = read_mem_total(),
 }
 -- }}}
 
@@ -1019,10 +1022,13 @@ awful.screen.connect_for_each_screen(function(s)
                             align  = "center",
                             valign = "center",
                         },
-                        forced_width = 24,
+                        -- Square glyph cell: without an explicit height the
+                        -- taller nerd-font glyphs push past the pill edge.
+                        forced_width  = dpi(26),
+                        forced_height = dpi(26),
                         widget = wibox.container.background,
                     },
-                    left = 12, right = 12, top = 5, bottom = 5,
+                    left = 9, right = 9, top = UI.pill_t, bottom = UI.pill_b,
                     widget = wibox.container.margin,
                 },
                 id           = "background_role",
@@ -1196,16 +1202,19 @@ awful.screen.connect_for_each_screen(function(s)
             markup = function(t) return "<b>" .. t .. "</b>" end,
         },
         style_weekday = {
-            border_width = 0, bg_color = "#00000000", fg_color = C.blue,
-            markup = function(t) return "<b>" .. t .. "</b>" end,
+            border_width = 0, bg_color = "#00000000", fg_color = C.blue, padding = 6,
+            markup = function(t) return "<b>" .. string.format("%2s", t) .. "</b>" end,
         },
         style_normal  = {
-            border_width = 0, bg_color = "#00000000", fg_color = C.text, padding = 5,
+            border_width = 0, bg_color = "#00000000", fg_color = C.text, padding = 6,
+            -- Cells auto-size to their text, so "1" and "11" produced ragged
+            -- columns. Padding to a fixed width in a monospace font fixes it.
+            markup = function(t) return string.format("%2s", t) end,
         },
         style_focus   = {
-            border_width = 0, bg_color = C.mauve, fg_color = C.base, padding = 5,
+            border_width = 0, bg_color = C.mauve, fg_color = C.base, padding = 6,
             shape = rounded(UI.radius_inner),
-            markup = function(t) return "<b>" .. t .. "</b>" end,
+            markup = function(t) return "<b>" .. string.format("%2s", t) .. "</b>" end,
         },
     })
     cal_popup.bg           = C.mantle .. "e6"
@@ -1223,11 +1232,16 @@ awful.screen.connect_for_each_screen(function(s)
         awful.placement.top_right(cal_popup,
             { parent = awful.screen.focused(), margins = { top = 56, right = 20 } })
     end
+    popup_closers.calendar = function()
+        cal_popup.visible = false
+        cal_timer:stop()
+    end
     local function cal_toggle()
         if cal_popup.visible then
             cal_popup.visible = false
             cal_timer:stop()
         else
+            close_other_popups("calendar")
             cal_popup:call_calendar(0)   -- always open on the current month
             cal_popup.visible = true
             cal_place()
@@ -1400,46 +1414,15 @@ awful.screen.connect_for_each_screen(function(s)
         end
     )
 
-    local HERO_W = 520 -- column-aligned with the neofetch tile below
-    local hero_tile = make_tile(HERO_W, 270)
-    hero_tile:setup {
-        {
-            {
-                -- Greeting block
-                {
-                    hero_greeting,
-                    { hero_greeting_sub, top = 2, widget = wibox.container.margin },
-                    spacing = 0,
-                    layout  = wibox.layout.fixed.vertical,
-                },
-                -- Divider
-                {
-                    {
-                        bg = C.surface0,
-                        forced_height = 1,
-                        widget = wibox.container.background,
-                    },
-                    top = 10, bottom = 10,
-                    widget = wibox.container.margin,
-                },
-                -- Time
-                hero_clock,
-                -- Date + weather
-                {
-                    { hero_date,    top = 6, widget = wibox.container.margin },
-                    { hero_weather, top = 2, widget = wibox.container.margin },
-                    spacing = 0,
-                    layout  = wibox.layout.fixed.vertical,
-                },
-                spacing = 0,
-                layout  = wibox.layout.fixed.vertical,
-            },
-            halign = "left",
-            valign = "center",
-            widget = wibox.container.place,
-        },
-        margins = UI.tile_margin,
-        widget  = wibox.container.margin,
+    -- Hero block: quote / clock / date / weather. Top half of the single
+    -- dashboard tile assembled further down.
+    local hero_block = wibox.widget {
+        hero_greeting,
+        { hero_greeting_sub, top = 2, widget = wibox.container.margin },
+        { hero_clock,        top = 8, widget = wibox.container.margin },
+        { hero_date,         top = 4, widget = wibox.container.margin },
+        { hero_weather,      top = 2, widget = wibox.container.margin },
+        layout = wibox.layout.fixed.vertical,
     }
 
     local function bar_widget(color)
@@ -1490,17 +1473,19 @@ awful.screen.connect_for_each_screen(function(s)
     end)
 
     -- Neofetch-style tile (Arch logo + system info)
-    local NEO_W = 520
-    local NEO_H = 420
-    local NEO_LOGO_W = dpi(160)
+    local TILE_W = 560
+    local NEO_W = TILE_W
+    -- The glyph needs a box comfortably larger than its point size or the
+    -- Arch logo's ascender gets clipped (font 110 in a 160px box did).
+    local NEO_LOGO_W = dpi(150)
     -- key cell + value constraint keep the columns aligned and stop long
     -- values (the CPU model) from blowing past the tile edge.
     local NEO_KEY_W = dpi(78)
     local NEO_VAL_W = NEO_W - 2 * 24 - NEO_LOGO_W - 20 - NEO_KEY_W - 10
     local arch_logo = wibox.widget {
         {
-            markup = "<span font='" .. font(110) .. "' foreground='" .. C.mauve ..
-                     "' weight='bold'>\u{f303}</span>",
+            markup = "<span font='" .. font(88) .. "' foreground='" .. C.mauve ..
+                     "'>\u{f303}</span>",
             widget = wibox.widget.textbox,
             align  = "center",
             valign = "center",
@@ -1594,6 +1579,8 @@ awful.screen.connect_for_each_screen(function(s)
         (info_row("wm",       sys_info.wm)),
         (info_row("shell",    sys_info.shell)),
         (info_row("cpu",      sys_info.cpu ~= "" and sys_info.cpu or "unknown")),
+        (info_row("gpu",      sys_info.gpu ~= "" and sys_info.gpu or "unknown")),
+        (info_row("memory",   sys_info.mem)),
         (info_row("packages", sys_info.packages .. " (pacman)")),
         uptime_row,
         divider(),
@@ -1604,90 +1591,89 @@ awful.screen.connect_for_each_screen(function(s)
         layout  = wibox.layout.fixed.vertical,
     }
 
-    local neo_tile = make_tile(NEO_W, NEO_H)
-    neo_tile:setup {
+    -- One dashboard tile: hero block on top, system info below, and the music
+    -- visualizer as its bottom strip (only visible while audio is playing).
+    local CAVA_BARS   = 44   -- must match cava/.config/cava/config
+    local CAVA_STRIP_H = 54
+    local cava_values  = {}  -- smoothed values, 0..100
+    local cava_widget  = wibox.widget.base.make_widget()
+    cava_widget.forced_height = CAVA_STRIP_H
+    function cava_widget:fit(_, w, h) return w, h end
+    function cava_widget:draw(_, cr, w, h)
+        local gap = 3
+        local bw  = (w - (CAVA_BARS - 1) * gap) / CAVA_BARS
+        if bw <= 0 then return end
+        cr:set_source(gears.color(C.mauve .. "cc"))
+        for i = 1, CAVA_BARS do
+            local v  = (cava_values[i] or 0) / 100
+            local bh = math.max(2, v * (h - 2))
+            cr:save()
+            cr:translate((i - 1) * (bw + gap), h - bh)
+            gears.shape.rounded_rect(cr, bw, bh, math.min(2, bw / 2))
+            cr:restore()
+        end
+        cr:fill()
+    end
+    local cava_strip = wibox.widget {
         {
+            {
+                bg = C.surface0, forced_height = 1,
+                widget = wibox.container.background,
+            },
+            bottom = 8,
+            widget = wibox.container.margin,
+        },
+        cava_widget,
+        visible = false,
+        layout  = wibox.layout.fixed.vertical,
+    }
+
+    local dash_tile = make_tile(TILE_W, 690)
+    dash_tile:setup {
+        {
+            hero_block,
+            {
+                {
+                    bg = C.surface0, forced_height = 1,
+                    widget = wibox.container.background,
+                },
+                top = 14, bottom = 14,
+                widget = wibox.container.margin,
+            },
             {
                 { arch_logo, widget = wibox.container.place, valign = "top" },
                 { neo_info,  widget = wibox.container.place, valign = "top" },
-                spacing = 20,
+                spacing = 18,
                 layout  = wibox.layout.fixed.horizontal,
             },
-            halign = "left",
-            valign = "center",
-            widget = wibox.container.place,
+            nil,
+            cava_strip,
+            layout = wibox.layout.align.vertical,
         },
         margins = UI.tile_margin,
         widget  = wibox.container.margin,
     }
 
     ---------------------------------------------------------------
-    -- Tile placement — single left column (hero above neofetch).
-    -- The rest of the screen is deliberate negative space: the
-    -- wallpaper subject and the cava bars get room to breathe.
+    -- Tile placement — one dashboard tile, top-left. The rest of the
+    -- screen is deliberate negative space for the wallpaper.
     ---------------------------------------------------------------
     local function place_tiles()
-        local wa  = s.workarea -- already excludes the wibar strut
-        local m   = 24
-        local gap = 16         -- echoes theme.useless_gap dpi(14)
-
-        hero_tile.x = wa.x + m
-        hero_tile.y = wa.y + m
-
-        neo_tile.x = hero_tile.x
-        neo_tile.y = hero_tile.y + hero_tile.height + gap
+        local wa = s.workarea -- already excludes the wibar strut
+        local m  = 24
+        dash_tile.x = wa.x + m
+        dash_tile.y = wa.y + m
     end
     place_tiles()
     s:connect_signal("property::geometry", place_tiles)
 
     ---------------------------------------------------------------
-    -- Music visualizer — cava bars along the bottom edge of the
-    -- wallpaper. Resource-frugal: the cava process only runs while
-    -- audio is actually playing AND the desktop is visible (no
-    -- maximized/fullscreen client on the selected tag).
+    -- Music visualizer — drives the cava strip inside the dashboard
+    -- tile. Resource-frugal: the cava process only runs while audio
+    -- is actually playing AND the desktop is visible (no maximized
+    -- or fullscreen client on the selected tag).
     ---------------------------------------------------------------
     if s == screen.primary then
-        local CAVA_H    = 90
-        local CAVA_BARS = 50   -- must match cava/.config/cava/config
-
-        local cava_values = {}
-        local cava_widget = wibox.widget.base.make_widget()
-        function cava_widget:fit(_, w, h) return w, h end
-        function cava_widget:draw(_, cr, w, h)
-            local gap = 4
-            local bw  = (w - (CAVA_BARS - 1) * gap) / CAVA_BARS
-            cr:set_source(gears.color(C.mauve .. "b3"))
-            for i = 1, CAVA_BARS do
-                local v  = (cava_values[i] or 0) / 100
-                local bh = math.max(2, v * (h - 4))
-                cr:save()
-                cr:translate((i - 1) * (bw + gap), h - bh)
-                gears.shape.rounded_rect(cr, bw, bh, math.min(3, bw / 2))
-                cr:restore()
-            end
-            cr:fill()
-        end
-
-        local cava_box = wibox({
-            screen            = s,
-            width             = s.geometry.width - 2 * 24,
-            height            = CAVA_H,
-            x                 = s.geometry.x + 24,
-            y                 = s.geometry.y + s.geometry.height - CAVA_H - 8,
-            visible           = false,
-            ontop             = false,
-            type              = "desktop",
-            input_passthrough = true,
-            bg                = "#00000000",
-        })
-        cava_box:setup { cava_widget, layout = wibox.layout.flex.horizontal }
-        local function place_cava()
-            cava_box.width = s.geometry.width - 2 * 24
-            cava_box.x     = s.geometry.x + 24
-            cava_box.y     = s.geometry.y + s.geometry.height - CAVA_H - 8
-        end
-        s:connect_signal("property::geometry", place_cava)
-
         -- Process lifecycle: track OUR pid (never pkill blindly — the same
         -- self-match trap as the wallpaper fetch guard).
         local cava_pid = nil
@@ -1708,7 +1694,8 @@ awful.screen.connect_for_each_screen(function(s)
         local function stop_cava()
             if cava_pid then awesome.kill(cava_pid, 15) end
             cava_pid = nil
-            cava_box.visible = false
+            cava_strip.visible = false
+            for i = 1, CAVA_BARS do cava_values[i] = 0 end
         end
 
         local function update_cava_state()
@@ -1716,21 +1703,26 @@ awful.screen.connect_for_each_screen(function(s)
             if want and not cava_pid and awful.spawn then
                 local pid = awful.spawn.with_line_callback("cava", {
                     stdout = function(line)
+                        -- Exponential smoothing: raw cava frames jitter hard at
+                        -- 20fps, which read as "shaky". Rise fast, fall slow.
                         local i = 1
                         for v in line:gmatch("%d+") do
-                            cava_values[i] = tonumber(v)
+                            local target = tonumber(v) or 0
+                            local prev   = cava_values[i] or 0
+                            local a      = (target > prev) and 0.55 or 0.22
+                            cava_values[i] = prev + (target - prev) * a
                             i = i + 1
                         end
                         cava_widget:emit_signal("widget::redraw_needed")
                     end,
                     exit = function()
                         cava_pid = nil
-                        cava_box.visible = false
+                        cava_strip.visible = false
                     end,
                 })
                 if type(pid) == "number" then
                     cava_pid = pid
-                    cava_box.visible = true
+                    cava_strip.visible = true
                 elseif not cava_error_shown then
                     -- with_line_callback returns an error STRING when the
                     -- binary is missing. Say so once instead of retrying
@@ -1808,57 +1800,48 @@ exit 1
                   end)
               end,
               {description="lock screen (lightdm greeter)", group="awesome"}),
-    awful.key({}, "XF86AudioRaiseVolume", function() awful.spawn("pactl set-sink-volume @DEFAULT_SINK@ +5%") end,
-              {description="raise volume", group="media"}),
-    awful.key({}, "XF86AudioLowerVolume", function() awful.spawn("pactl set-sink-volume @DEFAULT_SINK@ -5%") end,
-              {description="lower volume", group="media"}),
-    awful.key({}, "XF86AudioMute", function() awful.spawn("pactl set-sink-mute @DEFAULT_SINK@ toggle") end,
-              {description="mute toggle", group="media"}),
-    awful.key({}, "XF86MonBrightnessUp", function() awful.spawn("brightnessctl set 5%+") end,
-              {description="brightness up", group="media"}),
-    awful.key({}, "XF86MonBrightnessDown", function() awful.spawn("brightnessctl set 5%-") end,
-              {description="brightness down", group="media"}),
-    awful.key({}, "XF86AudioPlay", function() awful.spawn("playerctl play-pause") end,
-              {description="play / pause", group="media"}),
-    awful.key({}, "XF86AudioNext", function() awful.spawn("playerctl next") end,
-              {description="next track", group="media"}),
-    awful.key({}, "XF86AudioPrev", function() awful.spawn("playerctl previous") end,
-              {description="previous track", group="media"}),
+    awful.key({}, "XF86AudioRaiseVolume", function() awful.spawn("pactl set-sink-volume @DEFAULT_SINK@ +5%") end),
+    awful.key({}, "XF86AudioLowerVolume", function() awful.spawn("pactl set-sink-volume @DEFAULT_SINK@ -5%") end),
+    awful.key({}, "XF86AudioMute", function() awful.spawn("pactl set-sink-mute @DEFAULT_SINK@ toggle") end),
+    awful.key({}, "XF86MonBrightnessUp", function() awful.spawn("brightnessctl set 5%+") end),
+    awful.key({}, "XF86MonBrightnessDown", function() awful.spawn("brightnessctl set 5%-") end),
+    awful.key({}, "XF86AudioPlay", function() awful.spawn("playerctl play-pause") end),
+    awful.key({}, "XF86AudioNext", function() awful.spawn("playerctl next") end),
+    awful.key({}, "XF86AudioPrev", function() awful.spawn("playerctl previous") end),
 
     -- Fake Windows screens (pranks); Escape dismisses them.
-    awful.key({ modkey, "Shift" }, "u", function() require("win_pranks").update() end,
+    awful.key({ modkey, "Shift" }, "u", function() local p = require("win_pranks")
+                  if p.is_open() then p.close() else p.update() end end,
               {description="fake Windows Update overlay", group="fun"}),
-    awful.key({ modkey, "Shift" }, "b", function() require("win_pranks").bsod() end,
+    awful.key({ modkey, "Shift" }, "b", function() local p = require("win_pranks")
+                  if p.is_open() then p.close() else p.bsod() end end,
               {description="fake blue screen of death", group="fun"}),
-    awful.key({ modkey, "Shift" }, "w", function() require("win_pranks").wannacry() end,
+    awful.key({ modkey, "Shift" }, "w", function() local p = require("win_pranks")
+                  if p.is_open() then p.close() else p.wannacry() end end,
               {description="fake WannaCry ransom screen", group="fun"}),
 
     awful.key({ modkey,           }, "Left",   awful.tag.viewprev,
               {description = "view previous", group = "tag"}),
     awful.key({ modkey,           }, "Right",  awful.tag.viewnext,
               {description = "view next", group = "tag"}),
-    awful.key({ modkey,           }, "j",
-        function ()
-            awful.client.focus.byidx( 1)
-        end,
-        {description = "focus next by index", group = "client"}
-    ),
-    awful.key({ modkey,           }, "k",
-        function ()
-            awful.client.focus.byidx(-1)
-        end,
-        {description = "focus previous by index", group = "client"}
-    ),
+    -- Directional hjkl: h=left, j=down, k=up, l=right in every combination.
+    --   Super            -> MOVE the window
+    --   Super+Control    -> RESIZE it
+    --   Super+AltGr(Mod5)-> FOCUS the neighbour
+    awful.key({ modkey }, "h", function () awful.client.swap.global_bydirection("left")  end,
+              {description = "move window left/down/up/right (hjkl)", group = "client"}),
+    awful.key({ modkey }, "j", function () awful.client.swap.global_bydirection("down")  end),
+    awful.key({ modkey }, "k", function () awful.client.swap.global_bydirection("up")    end),
+    awful.key({ modkey }, "l", function () awful.client.swap.global_bydirection("right") end),
 
-    -- Layout manipulation
-    awful.key({ modkey, "Shift"   }, "j", function () awful.client.swap.byidx(  1)    end,
-              {description = "swap with next client by index", group = "client"}),
-    awful.key({ modkey, "Shift"   }, "k", function () awful.client.swap.byidx( -1)    end,
-              {description = "swap with previous client by index", group = "client"}),
-    awful.key({ modkey, "Control" }, "j", function () awful.screen.focus_relative( 1) end,
+    awful.key({ modkey, "Mod5" }, "h", function () awful.client.focus.global_bydirection("left")  end,
+              {description = "focus window left/down/up/right (hjkl)", group = "client"}),
+    awful.key({ modkey, "Mod5" }, "j", function () awful.client.focus.global_bydirection("down")  end),
+    awful.key({ modkey, "Mod5" }, "k", function () awful.client.focus.global_bydirection("up")    end),
+    awful.key({ modkey, "Mod5" }, "l", function () awful.client.focus.global_bydirection("right") end),
+
+    awful.key({ modkey, "Shift" }, "n", function () awful.screen.focus_relative( 1) end,
               {description = "focus the next screen", group = "screen"}),
-    awful.key({ modkey, "Control" }, "k", function () awful.screen.focus_relative(-1) end,
-              {description = "focus the previous screen", group = "screen"}),
     awful.key({ modkey,           }, "u", awful.client.urgent.jumpto,
               {description = "jump to urgent client", group = "client"}),
     awful.key({ modkey,           }, "Tab",
@@ -1910,18 +1893,21 @@ exit 1
         end,
         {description = "cycle theme (dr460nized/arch/ubuntu/windows7/win11)", group = "awesome"}),
 
-    awful.key({ modkey,           }, "l",     function () awful.tag.incmwfact( 0.05)          end,
-              {description = "increase master width factor", group = "layout"}),
-    awful.key({ modkey,           }, "h",     function () awful.tag.incmwfact(-0.05)          end,
-              {description = "decrease master width factor", group = "layout"}),
-    awful.key({ modkey, "Shift"   }, "h",     function () awful.tag.incnmaster( 1, nil, true) end,
-              {description = "increase the number of master clients", group = "layout"}),
-    awful.key({ modkey, "Shift"   }, "l",     function () awful.tag.incnmaster(-1, nil, true) end,
-              {description = "decrease the number of master clients", group = "layout"}),
-    awful.key({ modkey, "Control" }, "h",     function () awful.tag.incncol( 1, nil, true)    end,
-              {description = "increase the number of columns", group = "layout"}),
-    awful.key({ modkey, "Control" }, "l",     function () awful.tag.incncol(-1, nil, true)    end,
-              {description = "decrease the number of columns", group = "layout"}),
+    -- RESIZE: same hjkl directions, held with Control.
+    -- h/l move the master split; j/k grow/shrink the focused client's row.
+    awful.key({ modkey, "Control" }, "h", function () awful.tag.incmwfact(-0.05) end,
+              {description = "resize window (Ctrl+hjkl)", group = "layout"}),
+    awful.key({ modkey, "Control" }, "l", function () awful.tag.incmwfact( 0.05) end),
+    awful.key({ modkey, "Control" }, "j", function ()
+                  if client.focus then awful.client.incwfact(-0.10, client.focus) end
+              end),
+    awful.key({ modkey, "Control" }, "k", function ()
+                  if client.focus then awful.client.incwfact( 0.10, client.focus) end
+              end),
+    awful.key({ modkey, "Shift"   }, "period", function () awful.tag.incnmaster( 1, nil, true) end,
+              {description = "more master clients", group = "layout"}),
+    awful.key({ modkey, "Shift"   }, "comma", function () awful.tag.incnmaster(-1, nil, true) end,
+              {description = "fewer master clients", group = "layout"}),
     awful.key({ modkey,           }, "space", function () awful.layout.inc( 1)                end,
               {description = "select next", group = "layout"}),
     awful.key({ modkey, "Shift"   }, "space", function () awful.layout.inc(-1)                end,
@@ -1941,7 +1927,10 @@ exit 1
 
     -- Prompt
     awful.key({ modkey },            "r",     function () awful.spawn(rofi_arch) end,
-              {description = "open Rofi", group = "launcher"})
+              {description = "open Rofi (apps + \"Power…\" entry)", group = "launcher"}),
+    awful.key({ modkey },            "p",
+        function () awful.spawn(os.getenv("HOME") .. "/.config/awesome/scripts/power-menu.sh") end,
+              {description = "power menu (lock/logout/suspend/reboot/off)", group = "launcher"})
 )
 
 clientkeys = gears.table.join(
@@ -2006,7 +1995,7 @@ for i = 1, 9 do
                            tag:view_only()
                         end
                   end,
-                  {description = "view tag #"..i, group = "tag"}),
+                  i == 1 and {description = "view tag #1-9", group = "tag"} or nil),
         -- Toggle tag display.
         awful.key({ modkey, "Control" }, "#" .. i + 9,
                   function ()
@@ -2016,7 +2005,7 @@ for i = 1, 9 do
                          awful.tag.viewtoggle(tag)
                       end
                   end,
-                  {description = "toggle tag #" .. i, group = "tag"}),
+                  i == 1 and {description = "toggle tag #1-9 into view", group = "tag"} or nil),
         -- Move client to tag.
         awful.key({ modkey, "Shift" }, "#" .. i + 9,
                   function ()
@@ -2027,7 +2016,7 @@ for i = 1, 9 do
                           end
                      end
                   end,
-                  {description = "move focused client to tag #"..i, group = "tag"}),
+                  i == 1 and {description = "move window to tag #1-9", group = "tag"} or nil),
         -- Toggle tag on focused client.
         awful.key({ modkey, "Control", "Shift" }, "#" .. i + 9,
                   function ()
@@ -2038,7 +2027,7 @@ for i = 1, 9 do
                           end
                       end
                   end,
-                  {description = "toggle focused client on tag #" .. i, group = "tag"})
+                  i == 1 and {description = "also show window on tag #1-9", group = "tag"} or nil)
     )
 end
 

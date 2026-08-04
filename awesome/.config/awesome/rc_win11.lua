@@ -441,11 +441,14 @@ globalkeys = gears.table.join(
               {description="previous track", group="media"}),
 
     -- Fake Windows screens (pranks); Escape dismisses them.
-    awful.key({ modkey, "Shift" }, "u", function() require("win_pranks").update() end,
+    awful.key({ modkey, "Shift" }, "u", function() local p = require("win_pranks")
+                  if p.is_open() then p.close() else p.update() end end,
               {description="fake Windows Update overlay", group="fun"}),
-    awful.key({ modkey, "Shift" }, "b", function() require("win_pranks").bsod() end,
+    awful.key({ modkey, "Shift" }, "b", function() local p = require("win_pranks")
+                  if p.is_open() then p.close() else p.bsod() end end,
               {description="fake blue screen of death", group="fun"}),
-    awful.key({ modkey, "Shift" }, "w", function() require("win_pranks").wannacry() end,
+    awful.key({ modkey, "Shift" }, "w", function() local p = require("win_pranks")
+                  if p.is_open() then p.close() else p.wannacry() end end,
               {description="fake WannaCry ransom screen", group="fun"}),
 
     awful.key({ modkey,           }, "Left",   awful.tag.viewprev,

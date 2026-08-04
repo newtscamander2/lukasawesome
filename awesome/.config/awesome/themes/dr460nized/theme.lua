@@ -60,11 +60,13 @@ theme.border_focus  = theme.cat_mauve
 theme.border_marked = theme.cat_peach
 
 -- Taglist
+-- Selected tag = solid neon pill; occupied = raised chip with a pink glyph so
+-- "has windows" reads at a glance; empty = barely-there ghost chip.
 theme.taglist_bg_focus     = theme.cat_mauve
 theme.taglist_fg_focus     = theme.cat_base
 theme.taglist_bg_occupied  = theme.cat_surface0
-theme.taglist_fg_occupied  = theme.cat_text
-theme.taglist_bg_empty     = theme.cat_mantle
+theme.taglist_fg_occupied  = theme.cat_mauve
+theme.taglist_bg_empty     = theme.cat_base .. "66"
 theme.taglist_fg_empty     = theme.cat_overlay0
 theme.taglist_bg_urgent    = theme.cat_red
 theme.taglist_fg_urgent    = theme.cat_base

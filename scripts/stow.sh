@@ -23,7 +23,7 @@ backup_conflicts() {
     done < <(find "$pkg" -type f -print0)
 }
 
-for pkg in $(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash rclone clang-format cava qt"); do
+for pkg in $(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash rclone clang-format cava qt applications"); do
     if [ -d "$pkg" ]; then
         log "Stowing '$pkg' -> \$HOME"
         backup_conflicts "$pkg"

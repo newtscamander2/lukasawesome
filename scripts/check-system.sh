@@ -133,7 +133,7 @@ if enabled INSTALL_DEV; then
 fi
 
 log "Dotfiles symlinks"
-for pkg_name in $(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash rclone clang-format cava qt"); do
+for pkg_name in $(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash rclone clang-format cava qt applications"); do
     case "$pkg_name" in
         awesome)   target="$HOME/.config/awesome" ;;
         nvim)      target="$HOME/.config/nvim" ;;
@@ -145,6 +145,7 @@ for pkg_name in $(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash
         clang-format) target="$HOME/.clang-format" ;;
         cava)      target="$HOME/.config/cava" ;;
         qt)        target="$HOME/.local/share/color-schemes/Dr460nized.colors" ;;
+        applications) target="$HOME/.local/share/applications/awesome-power.desktop" ;;
         *)         target="" ;;
     esac
     [ -z "$target" ] && continue
