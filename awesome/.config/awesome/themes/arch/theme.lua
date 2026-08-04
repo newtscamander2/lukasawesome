@@ -48,7 +48,7 @@ theme.fg_focus      = theme.cat_mauve
 theme.fg_urgent     = theme.cat_base
 theme.fg_minimize   = theme.cat_overlay0
 
-theme.useless_gap   = dpi(6)
+theme.useless_gap   = dpi(10)
 theme.border_width  = dpi(2)
 -- Focused window gets a wider border so the active window is easy to spot
 theme.border_width_focus = dpi(4)
@@ -103,6 +103,7 @@ theme.notification_border_width = dpi(2)
 theme.notification_border_color = theme.cat_mauve
 theme.notification_margin       = dpi(12)
 theme.notification_font         = "FiraCode Nerd Font 10"
+theme.notification_shape        = function(cr, w, h) require("gears.shape").rounded_rect(cr, w, h, dpi(10)) end
 
 -- Menu
 theme.menu_submenu_icon = themes_path .. "default/submenu.png"

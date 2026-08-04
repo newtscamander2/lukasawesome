@@ -19,6 +19,10 @@ case "$(cfg DISPLAY_MANAGER lightdm)" in
         # leaving a black screen on VT1 that a manual restart "fixes". Make it
         # wait until logind marks the seat graphical.
         run sudo sed -i 's/^#logind-check-graphical=.*/logind-check-graphical=true/' /etc/lightdm/lightdm.conf
+        # Catppuccin greeter config (background, font, clock) — same deploy
+        # pattern as the Brave policy in apps.sh.
+        run sudo install -Dm644 "$DOTFILES_DIR/lightdm/lightdm-gtk-greeter.conf" \
+            /etc/lightdm/lightdm-gtk-greeter.conf
         ;;
     sddm)
         log "Setting up SDDM"

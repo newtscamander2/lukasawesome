@@ -33,7 +33,7 @@ window {
     padding:          0;
     border:           2px;
     border-color:     @accent;
-    border-radius:    14px;
+    border-radius:    10px;
     background-color: @bg;
     children:         [ mainbox ];
 }

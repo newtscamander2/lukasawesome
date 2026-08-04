@@ -971,7 +971,7 @@ awful.screen.connect_for_each_screen(function(s)
             layout             = awful.layout.suit.tile,
             master_fill_policy = "expand",
             gap_single_client  = true,
-            gap                = 10,
+            -- gap comes from theme.useless_gap — one source of truth
             screen             = s,
             selected           = (i == 1),
         })
@@ -2272,8 +2272,14 @@ awful.spawn.with_shell(
 -- Apply dark GTK/system color scheme for other apps (Brave, GTK-based tools)
 awful.spawn.with_shell(
     "mkdir -p ~/.config/gtk-3.0 ~/.config/gtk-4.0 && " ..
-    "printf '[Settings]\\ngtk-theme-name=Adwaita-dark\\ngtk-application-prefer-dark-theme=1\\n' " ..
+    "printf '[Settings]\\ngtk-theme-name=Adwaita-dark\\ngtk-application-prefer-dark-theme=1\\ngtk-cursor-theme-name=catppuccin-mocha-mauve-cursors\\n' " ..
     "| tee ~/.config/gtk-3.0/settings.ini ~/.config/gtk-4.0/settings.ini >/dev/null; " ..
     "gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' 2>/dev/null; " ..
     "gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark' 2>/dev/null; true"
 )
+-- Matching cursor theme (catppuccin-cursors-mocha, AUR) — guarded so a
+-- machine without the package keeps the default cursor silently.
+awful.spawn.with_shell(
+    "[ -d /usr/share/icons/catppuccin-mocha-mauve-cursors ] && { " ..
+    "echo 'Xcursor.theme: catppuccin-mocha-mauve-cursors' | xrdb -merge; " ..
+    "gsettings set org.gnome.desktop.interface cursor-theme 'catppuccin-mocha-mauve-cursors' 2>/dev/null; true; }")
