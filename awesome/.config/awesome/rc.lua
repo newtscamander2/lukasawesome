@@ -254,6 +254,10 @@ local _updating_slider_programmatically = false
 -- When true, don't overwrite the slider from polls — let the user drive.
 local _user_interacting = false
 
+-- Forward declarations: render_volume() below restyles the mute button on
+-- every poll, so it needs these names in scope before they are built.
+local mute_btn_bg, mute_btn_lbl
+
 local function render_volume()
     local glyph = vol_glyph(vol_state.vol, vol_state.muted)
     local color = vol_state.muted and C.red or C.mauve
@@ -271,12 +275,24 @@ local function render_volume()
     end
     if vol_popup_pct then
         vol_popup_pct:set_markup(
-            "<span foreground='" .. C.text .. "' size='large' weight='bold'>" ..
-            label .. "</span>")
+            "<span font='" .. font(15) .. "' foreground='" .. C.text ..
+            "' weight='bold'>" .. label .. "</span>")
     end
     if vol_popup_icon then
         vol_popup_icon:set_markup(
-            "<span size='xx-large' foreground='" .. color .. "'>" .. glyph .. "</span>")
+            "<span font='" .. font(24) .. "' foreground='" .. color .. "'>" ..
+            glyph .. "</span>")
+    end
+    -- Mute button reflects state. This runs on every poll, so the state must
+    -- live here rather than in the widget definitions.
+    if mute_btn_lbl then
+        mute_btn_lbl:set_markup(
+            "<span font='" .. font(13) .. "' foreground='" ..
+            (vol_state.muted and C.red or C.mauve) .. "'>" ..
+            (vol_state.muted and "\u{f026}" or "\u{f028}") .. "</span>")
+    end
+    if mute_btn_bg and not mute_btn_bg._hovered then
+        mute_btn_bg.bg = vol_state.muted and (C.red .. "26") or C.surface0
     end
 end
 
@@ -299,31 +315,44 @@ gears.timer {
 }
 
 -- {{ Volume popup (interactive slider)
+local VOL_POPUP_W      = 360
+local VOL_POPUP_BASE_H = 184 -- height with the device dropdown collapsed
+local VOL_POPUP_PAD    = 16
+local VOL_ROW_H        = dpi(32)
+local VOL_ROW_STRIDE   = VOL_ROW_H + 4 -- row height + sink_rows spacing
+
 vol_popup_icon = wibox.widget {
-    markup = "<span size='xx-large' foreground='" .. C.mauve .. "'>\u{f028}</span>",
+    markup = "<span font='" .. font(24) .. "' foreground='" .. C.mauve .. "'>\u{f028}</span>",
     widget = wibox.widget.textbox,
     align  = "center", valign = "center",
 }
 vol_popup_pct = wibox.widget {
-    markup = "<span foreground='" .. C.text .. "' size='large' weight='bold'>--%</span>",
+    markup = "<span font='" .. font(15) .. "' foreground='" .. C.text .. "' weight='bold'>--%</span>",
     widget = wibox.widget.textbox,
-    align  = "center", valign = "center",
+    valign = "center",
+}
+-- Current output device, shown under the percentage.
+local vol_popup_dev = wibox.widget {
+    markup    = "<span font='" .. font(9) .. "' foreground='" .. C.subtext1 .. "'>…</span>",
+    widget    = wibox.widget.textbox,
+    valign    = "center",
+    ellipsize = "end",
 }
 
 vol_slider = wibox.widget {
     bar_shape           = rounded(UI.radius_inner),
-    bar_height          = 8,
+    bar_height          = 10,
     bar_color           = C.surface0,
     bar_active_color    = C.mauve,
-    handle_color        = C.mauve,
+    handle_color        = C.text,
     handle_shape        = gears.shape.circle,
-    handle_width        = 16,
+    handle_width        = 18,
     handle_border_width = 2,
-    handle_border_color = C.base,
+    handle_border_color = C.mauve,
     value               = 0,
     maximum             = 100,
-    forced_width        = 260,
-    forced_height       = 28,
+    forced_width        = VOL_POPUP_W - 2 * VOL_POPUP_PAD,
+    forced_height       = 24,
     widget              = wibox.widget.slider,
 }
 
@@ -352,18 +381,21 @@ vol_slider:connect_signal("property::value", function(self)
     end)
 end)
 
-local mute_btn_bg = wibox.container.background()
+-- Square 36x36 mute button (assignment, not declaration — see forward decl).
+mute_btn_bg = wibox.container.background()
 mute_btn_bg.bg    = C.surface0
 mute_btn_bg.shape = rounded(UI.radius_inner)
-local mute_btn_lbl = wibox.widget {
-    markup = "<span foreground='" .. C.mauve .. "' size='large'>\u{f026}</span>",
+mute_btn_lbl = wibox.widget {
+    markup = "<span font='" .. font(13) .. "' foreground='" .. C.mauve .. "'>\u{f028}</span>",
     widget = wibox.widget.textbox,
     align  = "center", valign = "center",
 }
 mute_btn_bg:set_widget(wibox.widget {
     mute_btn_lbl,
-    left = 12, right = 12, top = 6, bottom = 6,
-    widget = wibox.container.margin,
+    width    = dpi(36),
+    height   = dpi(36),
+    strategy = "exact",
+    widget   = wibox.container.constraint,
 })
 mute_btn_bg:buttons(gears.table.join(
     awful.button({}, 1, function()
@@ -372,6 +404,14 @@ mute_btn_bg:buttons(gears.table.join(
         end)
     end)
 ))
+mute_btn_bg:connect_signal("mouse::enter", function()
+    mute_btn_bg._hovered = true
+    mute_btn_bg.bg = vol_state.muted and (C.red .. "40") or C.surface1
+end)
+mute_btn_bg:connect_signal("mouse::leave", function()
+    mute_btn_bg._hovered = false
+    render_volume()
+end)
 
 -- {{ Output device selector (dropdown inside the volume popup)
 local sink_state = { list = {}, default = nil }
@@ -382,10 +422,9 @@ local refresh_sinks -- forward declaration; defined below vol_popup
 local SINK_QUERY = [[sh -c 'pactl get-default-sink; pactl list sinks | sed -n "s/^\tName: //p;s/^\tDescription: //p"']]
 
 local sink_btn_lbl = wibox.widget {
-    markup    = "<span foreground='" .. C.text .. "'>…</span>",
-    widget    = wibox.widget.textbox,
-    valign    = "center",
-    ellipsize = "end",
+    markup = "<span foreground='" .. C.subtext1 .. "'>Output device</span>",
+    widget = wibox.widget.textbox,
+    valign = "center",
 }
 local sink_btn_chev = wibox.widget {
     markup = "<span foreground='" .. C.overlay0 .. "'>\u{f078}</span>",
@@ -399,11 +438,19 @@ sink_btn_bg.shape = rounded(UI.radius_inner)
 sink_btn_bg:set_widget(wibox.widget {
     {
         {
-            markup = "<span foreground='" .. C.mauve .. "'>\u{f025}</span>",
-            widget = wibox.widget.textbox,
-            valign = "center",
+            {
+                markup = "<span foreground='" .. C.mauve .. "'>\u{f025}</span>",
+                widget = wibox.widget.textbox,
+                valign = "center",
+            },
+            {
+                sink_btn_lbl,
+                left = 8, right = 8,
+                widget = wibox.container.margin,
+            },
+            layout = wibox.layout.fixed.horizontal,
         },
-        { sink_btn_lbl, left = 8, right = 8, widget = wibox.container.margin },
+        nil,
         sink_btn_chev,
         layout = wibox.layout.align.horizontal,
     },
@@ -424,8 +471,8 @@ local sink_rows = wibox.widget {
 -- }}
 
 local vol_popup = wibox({
-    width        = 340,
-    height       = 174,
+    width        = VOL_POPUP_W,
+    height       = VOL_POPUP_BASE_H,
     ontop        = true,
     visible      = false,
     bg           = C.mantle .. "e6", -- shaped wibox -> picom blurs behind it
@@ -438,49 +485,54 @@ local vol_popup = wibox({
 vol_popup:setup {
     {
         {
+            -- Header: big icon, then percent over the device name, mute right.
             {
-                { vol_popup_icon, widget = wibox.container.place, halign = "center" },
-                { vol_popup_pct,  widget = wibox.container.place, halign = "center" },
-                spacing = 12,
-                layout  = wibox.layout.fixed.horizontal,
+                {
+                    vol_popup_icon,
+                    forced_width = dpi(40),
+                    widget = wibox.container.background,
+                },
+                {
+                    {
+                        vol_popup_pct,
+                        {
+                            vol_popup_dev,
+                            width    = dpi(190),
+                            strategy = "max",
+                            widget   = wibox.container.constraint,
+                        },
+                        layout = wibox.layout.fixed.vertical,
+                    },
+                    left = 12,
+                    widget = wibox.container.margin,
+                },
+                layout = wibox.layout.fixed.horizontal,
             },
-            halign = "center",
-            widget = wibox.container.place,
+            nil,
+            mute_btn_bg,
+            layout = wibox.layout.align.horizontal,
         },
+        vol_slider,
         {
-            { vol_slider, widget = wibox.container.place, halign = "center" },
-            top = 8,
-            widget = wibox.container.margin,
+            bg            = C.surface0,
+            forced_height = 1,
+            widget        = wibox.container.background,
         },
-        {
-            { mute_btn_bg, widget = wibox.container.place, halign = "center" },
-            top = 8,
-            widget = wibox.container.margin,
-        },
-        {
-            sink_btn_bg,
-            top = 8,
-            widget = wibox.container.margin,
-        },
-        {
-            sink_rows,
-            top = 6,
-            widget = wibox.container.margin,
-        },
-        spacing = 4,
+        sink_btn_bg,
+        sink_rows,
+        spacing = 12,
         layout  = wibox.layout.fixed.vertical,
     },
-    left = 20, right = 20, top = 14, bottom = 14,
-    widget = wibox.container.margin,
+    margins = VOL_POPUP_PAD,
+    widget  = wibox.container.margin,
 }
 
 -- {{ Output device selector logic (needs vol_popup to exist)
-local VOL_POPUP_BASE_H = 174 -- height with the device dropdown collapsed
 
 local function vol_popup_resize()
     local extra = 0
     if sink_dropdown_open and #sink_state.list > 0 then
-        extra = 4 + #sink_state.list * 34
+        extra = #sink_state.list * VOL_ROW_STRIDE
     end
     vol_popup.height = VOL_POPUP_BASE_H + extra
 end
@@ -501,14 +553,14 @@ local function make_sink_row(sink)
             left = 12, right = 12,
             widget = wibox.container.margin,
         },
-        bg            = active and C.surface1 or C.surface0,
+        bg            = active and (C.mauve .. "33") or C.surface0,
         shape         = rounded(UI.radius_inner),
-        forced_height = 30,
+        forced_height = VOL_ROW_H,
         widget        = wibox.container.background,
     }
     row:connect_signal("mouse::enter", function() row.bg = C.surface1 end)
     row:connect_signal("mouse::leave", function()
-        row.bg = active and C.surface1 or C.surface0
+        row.bg = active and (C.mauve .. "33") or C.surface0
     end)
     row:buttons(gears.table.join(
         awful.button({}, 1, function()
@@ -541,8 +593,8 @@ refresh_sinks = function()
         for _, s in ipairs(sink_state.list) do
             if s.name == sink_state.default then cur_desc = s.desc end
         end
-        sink_btn_lbl:set_markup("<span foreground='" .. C.text .. "'>" ..
-            gears.string.xml_escape(cur_desc) .. "</span>")
+        vol_popup_dev:set_markup("<span font='" .. font(9) .. "' foreground='" ..
+            C.subtext1 .. "'>" .. gears.string.xml_escape(cur_desc) .. "</span>")
         sink_btn_chev:set_markup("<span foreground='" .. C.overlay0 .. "'>" ..
             (sink_dropdown_open and "\u{f077}" or "\u{f078}") .. "</span>")
         sink_rows:reset()
