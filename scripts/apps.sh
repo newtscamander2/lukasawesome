@@ -32,6 +32,68 @@ if enabled INSTALL_BROWSER; then
         /etc/brave/policies/managed/lukasawesome.json
 fi
 
+# --- Qt apps (Dolphin, KeePassXC…): platform theme + colours + icons ---
+# Without QT_QPA_PLATFORMTHEME nothing Qt reads qt5ct/qt6ct at all, so Dolphin
+# renders stock light Breeze no matter what is configured. /etc/environment is
+# the right home for it: pam_env applies it at every login (lightdm AND a bare
+# startx), so awesome and everything it spawns inherit it. A file under
+# ~/.config/environment.d would only reach systemd *user* services, i.e. not a
+# rofi-launched Dolphin. Requires one logout/login to take effect.
+if enabled INSTALL_BASE; then
+    if grep -q '^QT_QPA_PLATFORMTHEME=' /etc/environment 2>/dev/null; then
+        ok "QT_QPA_PLATFORMTHEME already set in /etc/environment."
+    else
+        log "Setting QT_QPA_PLATFORMTHEME=qt5ct in /etc/environment (login-wide)"
+        run_sh "echo 'QT_QPA_PLATFORMTHEME=qt5ct' | sudo tee -a /etc/environment >/dev/null"
+    fi
+
+    # Dolphin reads colours from kdeglobals [Colors:*] and icons from [Icons]
+    # regardless of the platform theme, so those keys have to exist or the file
+    # view stays light. kdeglobals is live user state (KDE apps rewrite it), so
+    # it is deliberately NOT stowed: back it up once, then merge/set keys.
+    kde="$HOME/.config/kdeglobals"
+    if [ ! -f "$kde" ]; then
+        run_sh "mkdir -p '$HOME/.config' && touch '$kde'"
+    fi
+    run cp -n "$kde" "$kde.pre-theme" 2>/dev/null || true
+
+    scheme="/usr/share/color-schemes/Sweet.colors"
+    if [ -r "$scheme" ] && [ "$DRY_RUN" != "1" ]; then
+        log "Merging Sweet colour scheme into kdeglobals"
+        python3 - "$scheme" "$kde" <<'PY'
+import configparser, sys
+src_path, dst_path = sys.argv[1], sys.argv[2]
+def load(p):
+    c = configparser.RawConfigParser(strict=False)
+    c.optionxform = str
+    c.read(p)
+    return c
+src, dst = load(src_path), load(dst_path)
+for sec in src.sections():
+    if sec.startswith("Colors:") or sec == "WM":
+        if not dst.has_section(sec):
+            dst.add_section(sec)
+        for k, v in src.items(sec):
+            dst.set(sec, k, v)
+with open(dst_path, "w") as fh:
+    dst.write(fh, space_around_delimiters=False)
+PY
+    elif [ ! -r "$scheme" ]; then
+        warn "Sweet.colors not found (kvantum-theme-sweet-git missing) — skipping colour merge."
+    fi
+
+    if command -v kwriteconfig6 >/dev/null 2>&1; then
+        icon_theme="Papirus-Dark"
+        [ -d /usr/share/icons/candy-icons ] && icon_theme="candy-icons"
+        log "Setting kdeglobals: style=kvantum, icons=$icon_theme"
+        run kwriteconfig6 --file kdeglobals --group KDE     --key widgetStyle kvantum
+        run kwriteconfig6 --file kdeglobals --group Icons   --key Theme "$icon_theme"
+        [ -r "$scheme" ] && run kwriteconfig6 --file kdeglobals --group General --key ColorScheme Sweet
+    else
+        warn "kwriteconfig6 missing — install kconfig or set kdeglobals by hand."
+    fi
+fi
+
 # --- Neovim: bootstrap lazy.nvim + install plugins from the lockfile ---
 # Owning this here means `make install` leaves a fully working editor: a
 # partial/interrupted first clone of lazy.nvim otherwise blocks every later

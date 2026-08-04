@@ -2236,17 +2236,38 @@ awful.spawn.with_shell(
     "command -v light-locker >/dev/null && { xset s 300 5; " ..
     "pgrep -x light-locker >/dev/null || light-locker --lock-after-screensaver=5 --lock-on-suspend & }")
 
--- Apply dark GTK/system color scheme for other apps (Brave, GTK-based tools)
-awful.spawn.with_shell(
-    "mkdir -p ~/.config/gtk-3.0 ~/.config/gtk-4.0 && " ..
-    "printf '[Settings]\\ngtk-theme-name=Adwaita-dark\\ngtk-application-prefer-dark-theme=1\\ngtk-cursor-theme-name=catppuccin-mocha-mauve-cursors\\n' " ..
-    "| tee ~/.config/gtk-3.0/settings.ini ~/.config/gtk-4.0/settings.ini >/dev/null; " ..
-    "gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' 2>/dev/null; " ..
-    "gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark' 2>/dev/null; true"
-)
--- Matching cursor theme (catppuccin-cursors-mocha, AUR) — guarded so a
--- machine without the package keeps the default cursor silently.
-awful.spawn.with_shell(
-    "[ -d /usr/share/icons/catppuccin-mocha-mauve-cursors ] && { " ..
-    "echo 'Xcursor.theme: catppuccin-mocha-mauve-cursors' | xrdb -merge; " ..
-    "gsettings set org.gnome.desktop.interface cursor-theme 'catppuccin-mocha-mauve-cursors' 2>/dev/null; true; }")
+-- GTK / icon / cursor theme for non-awesome apps (Brave, GTK tools, Qt via
+-- the icon name). This runs on every start and overwrites settings.ini, so it
+-- has to follow ACTIVE_THEME or it would drag the desktop back to Mocha.
+-- Every value is applied only if it is actually installed.
+do
+    local looks = {
+        dr460nized = { gtk = "Sweet-Dark",   icon = "candy-icons",
+                       cursor = "Sweet-cursors" },
+        default    = { gtk = "Adwaita-dark", icon = "Papirus-Dark",
+                       cursor = "catppuccin-mocha-mauve-cursors" },
+    }
+    local look = looks[ACTIVE_THEME] or looks.default
+    awful.spawn.with_shell(([[
+gtk=%s; icon=%s; cursor=%s
+[ -d "/usr/share/themes/$gtk" ] || gtk=Adwaita-dark
+[ -d "/usr/share/icons/$icon" ] || icon=Papirus-Dark
+[ -d "/usr/share/icons/$icon" ] || icon=Adwaita
+mkdir -p ~/.config/gtk-3.0 ~/.config/gtk-4.0
+{
+  printf '[Settings]\n'
+  printf 'gtk-theme-name=%%s\n' "$gtk"
+  printf 'gtk-icon-theme-name=%%s\n' "$icon"
+  printf 'gtk-application-prefer-dark-theme=1\n'
+  [ -d "/usr/share/icons/$cursor" ] && printf 'gtk-cursor-theme-name=%%s\n' "$cursor"
+} | tee ~/.config/gtk-3.0/settings.ini ~/.config/gtk-4.0/settings.ini >/dev/null
+gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' 2>/dev/null
+gsettings set org.gnome.desktop.interface gtk-theme "$gtk" 2>/dev/null
+gsettings set org.gnome.desktop.interface icon-theme "$icon" 2>/dev/null
+if [ -d "/usr/share/icons/$cursor" ]; then
+    echo "Xcursor.theme: $cursor" | xrdb -merge
+    gsettings set org.gnome.desktop.interface cursor-theme "$cursor" 2>/dev/null
+fi
+true
+]]):format(look.gtk, look.icon, look.cursor))
+end

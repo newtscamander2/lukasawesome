@@ -68,6 +68,22 @@ fi
 log "Desktop extras"
 check_pkg cava
 check_pkg xclip
+check_pkg kvantum
+check_pkg qt6ct
+if grep -q '^QT_QPA_PLATFORMTHEME=' /etc/environment 2>/dev/null; then
+    pass "QT_QPA_PLATFORMTHEME set in /etc/environment"
+else
+    miss "QT_QPA_PLATFORMTHEME not in /etc/environment (make apps, then re-login)"
+fi
+# Optional -git theme packages: note, never fail — everything degrades.
+for d in /usr/share/icons/candy-icons /usr/share/Kvantum/Sweet /usr/share/themes/Sweet-Dark; do
+    [ -d "$d" ] && pass "$(basename "$d") present" || note "$(basename "$d") missing (falls back)"
+done
+if have kreadconfig6; then
+    kde_icons="$(kreadconfig6 --file kdeglobals --group Icons --key Theme 2>/dev/null)"
+    [ -n "$kde_icons" ] && pass "kdeglobals icon theme: $kde_icons" \
+        || note "kdeglobals has no icon theme yet (make apps)"
+fi
 if enabled INSTALL_VPN; then check_pkg proton-vpn-gtk-app; fi
 
 log "Xorg config snippets"
@@ -111,7 +127,7 @@ if enabled INSTALL_DEV; then
 fi
 
 log "Dotfiles symlinks"
-for pkg_name in $(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash rclone clang-format cava"); do
+for pkg_name in $(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash rclone clang-format cava qt"); do
     case "$pkg_name" in
         awesome)   target="$HOME/.config/awesome" ;;
         nvim)      target="$HOME/.config/nvim" ;;
@@ -122,6 +138,7 @@ for pkg_name in $(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash
         rclone)    target="$HOME/.config/systemd/user/protondrive.service" ;;
         clang-format) target="$HOME/.clang-format" ;;
         cava)      target="$HOME/.config/cava" ;;
+        qt)        target="$HOME/.config/qt6ct" ;;
         *)         target="" ;;
     esac
     [ -z "$target" ] && continue

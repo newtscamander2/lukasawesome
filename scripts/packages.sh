@@ -46,9 +46,17 @@ if enabled INSTALL_BASE; then
         ufw                            # firewall (public / uni networks)
         reflector                      # keep pacman mirrors fast
         rclone fuse3                   # Proton Drive mount (~/ProtonDrive)
+        # Qt theming so Dolphin/KeePassXC match the WM instead of rendering
+        # stock light Breeze. kvantum draws the widgets, qt5ct/qt6ct are the
+        # platform themes that hand Qt the style + icon set (QT_QPA_PLATFORMTHEME
+        # is set in /etc/environment by apps.sh).
+        kvantum kvantum-qt5
+        qt5ct qt6ct
+        papirus-icon-theme             # icon fallback when candy-icons is unavailable
     )
     aur+=(neofetch)                    # dropped from official repos -> AUR
-    aur+=(catppuccin-cursors-mocha)    # matching cursor theme (rc.lua GTK/xrdb writer)
+    aur+=(catppuccin-cursors-mocha)    # cursor theme for the arch (Mocha) theme
+    aur+=(sweet-gtk-theme-dark)        # GTK side of the Dr460nized look
 fi
 
 # --- Laptop-only essentials ---
@@ -121,6 +129,18 @@ pac_install "${pac[@]}"
 if [ "${#aur[@]}" -gt 0 ]; then
     log "AUR packages (${#aur[@]}): ${aur[*]}"
     aur_install "${aur[@]}"
+fi
+
+# --- Dr460nized look: -git theme packages, best-effort ---
+# These are git builds that occasionally break, and everything degrades
+# gracefully: without candy-icons the GTK/Qt writers fall back to
+# Papirus-Dark, without the Kvantum theme Kvantum uses its own dark default.
+# kvantum-theme-sweet-git is a split package of pkgbase sweet-kde-git (which
+# also ships /usr/share/color-schemes/Sweet.colors, used by apps.sh).
+# candy-icons-git is a large clone — expect minutes, not seconds.
+if enabled INSTALL_BASE; then
+    log "Theme packages (best-effort)"
+    aur_install_optional kvantum-theme-sweet-git candy-icons-git sweet-cursors-git
 fi
 
 # --- Best-effort / niche (no dependable package) ---
