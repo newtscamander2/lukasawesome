@@ -1770,6 +1770,59 @@ awful.screen.connect_for_each_screen(function(s)
 end)
 -- }}}
 
+-- {{{ Directional window navigation
+-- awesome's built-in focus.bydirection only compares the top-left edge of
+-- windows and ignores columns, so from a full-height master "up" matches
+-- nothing (it is already the topmost window) while "down" jumps sideways into
+-- the stack. This walks the actual neighbours instead: a candidate must
+-- overlap on the perpendicular axis (same column for up/down, same row for
+-- left/right) and lie beyond the current edge; nearest wins.
+local function neighbour(dir)
+    local cur = client.focus
+    if not cur then return nil end
+    local vertical = (dir == "up" or dir == "down")
+    local a = cur:geometry()
+    local best, best_d
+    for _, c in ipairs(awful.client.visible(cur.screen)) do
+        if c ~= cur and not c.minimized then
+            local b = c:geometry()
+            local overlaps, delta
+            if vertical then
+                overlaps = (b.x < a.x + a.width) and (b.x + b.width > a.x)
+                delta    = (dir == "up") and (a.y - b.y) or (b.y - a.y)
+            else
+                overlaps = (b.y < a.y + a.height) and (b.y + b.height > a.y)
+                delta    = (dir == "left") and (a.x - b.x) or (b.x - a.x)
+            end
+            if overlaps and delta > 0 and (not best_d or delta < best_d) then
+                best, best_d = c, delta
+            end
+        end
+    end
+    return best
+end
+
+local function focus_dir(dir)
+    local target = neighbour(dir)
+    if target then
+        target:emit_signal("request::activate", "focus_dir", { raise = false })
+    elseif dir == "up" or dir == "down" then
+        -- Nothing in this column (e.g. the full-height master): walk the client
+        -- list so j/k are never dead keys.
+        awful.client.focus.byidx(dir == "down" and 1 or -1)
+    end
+end
+
+local function move_dir(dir)
+    local target = neighbour(dir)
+    if target then
+        client.focus:swap(target)
+    elseif dir == "up" or dir == "down" then
+        awful.client.swap.byidx(dir == "down" and 1 or -1)
+    end
+end
+-- }}}
+
 -- {{{ Key bindings
 globalkeys = gears.table.join(
     awful.key({ modkey,           }, "F1",      hotkeys_popup.show_help,
@@ -1828,17 +1881,17 @@ exit 1
     --   Super             -> FOCUS the neighbour
     --   Super+Alt(Mod1)   -> MOVE the window there
     --   Super+Control     -> RESIZE it
-    awful.key({ modkey }, "h", function () awful.client.focus.global_bydirection("left")  end,
+    awful.key({ modkey }, "h", function () focus_dir("left")  end,
               {description = "focus window left/down/up/right (hjkl)", group = "client"}),
-    awful.key({ modkey }, "j", function () awful.client.focus.global_bydirection("down")  end),
-    awful.key({ modkey }, "k", function () awful.client.focus.global_bydirection("up")    end),
-    awful.key({ modkey }, "l", function () awful.client.focus.global_bydirection("right") end),
+    awful.key({ modkey }, "j", function () focus_dir("down")  end),
+    awful.key({ modkey }, "k", function () focus_dir("up")    end),
+    awful.key({ modkey }, "l", function () focus_dir("right") end),
 
-    awful.key({ modkey, "Mod1" }, "h", function () awful.client.swap.global_bydirection("left")  end,
+    awful.key({ modkey, "Mod1" }, "h", function () move_dir("left")  end,
               {description = "move window left/down/up/right (Alt+hjkl)", group = "client"}),
-    awful.key({ modkey, "Mod1" }, "j", function () awful.client.swap.global_bydirection("down")  end),
-    awful.key({ modkey, "Mod1" }, "k", function () awful.client.swap.global_bydirection("up")    end),
-    awful.key({ modkey, "Mod1" }, "l", function () awful.client.swap.global_bydirection("right") end),
+    awful.key({ modkey, "Mod1" }, "j", function () move_dir("down")  end),
+    awful.key({ modkey, "Mod1" }, "k", function () move_dir("up")    end),
+    awful.key({ modkey, "Mod1" }, "l", function () move_dir("right") end),
 
     awful.key({ modkey, "Shift" }, "n", function () awful.screen.focus_relative( 1) end,
               {description = "focus the next screen", group = "screen"}),
