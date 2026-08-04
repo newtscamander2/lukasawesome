@@ -27,6 +27,7 @@ if enabled INSTALL_BASE; then
         xdotool xorg-xrandr            # window/display helpers
         xorg-xset                      # rc.lua sets keyboard repeat rate (xset r rate)
         jq                             # wallpaper-fetch-bands.sh parses Commons API JSON
+        imagemagick                    # wallpaper-prep.sh post-processes wallpapers with 'magick'
         ttf-firacode-nerd noto-fonts noto-fonts-emoji
         neovim                         # the editor itself (config is stowed from nvim/)
         tree-sitter-cli                # nvim-treesitter compiles grammars with this
@@ -39,7 +40,7 @@ if enabled INSTALL_BASE; then
         pipewire pipewire-pulse wireplumber pavucontrol  # audio (volume widget uses pactl)
         cava                           # audio visualizer (bottom-edge wave in rc.lua)
         bluez bluez-utils blueman      # bluetooth
-        playerctl                      # media-key control (play/pause/next)
+        playerctl                      # media-key control (play/pause/next) + rc.lua "now playing" panel
         light-locker                   # lock to lightdm greeter (Super+Escape + 5 min idle, rc.lua)
         xclip                          # X clipboard CLI: nvim unnamedplus provider + clipboard plumbing
         amd-ucode                      # AMD CPU microcode (harmless if Intel)

@@ -68,6 +68,12 @@ fi
 log "Desktop extras"
 check_pkg cava
 check_pkg xclip
+check_pkg playerctl
+# wallpaper-prep.sh shells out to 'magick', not 'convert': ImageMagick 7 renamed
+# the entry point, so check the binary too — a v6 leftover satisfies the package
+# check but leaves the script falling back to unprocessed wallpapers.
+check_pkg imagemagick
+check_cmd magick
 check_pkg breeze
 check_pkg plasma-integration
 if grep -q '^QT_QPA_PLATFORMTHEME=kde$' /etc/environment 2>/dev/null; then
@@ -85,6 +91,40 @@ if have kreadconfig6; then
         || note "kdeglobals has no icon theme yet (make apps)"
 fi
 if enabled INSTALL_VPN; then check_pkg proton-vpn-gtk-app; fi
+
+log "Wallpaper pipeline"
+# wallpaper-prep.sh is stowed with the awesome package and post-processes the
+# raw band images before feh sets them. It is new in the rice upgrade, so a
+# missing file only means "not stowed yet" — not breakage.
+wp_prep="$HOME/.config/awesome/scripts/wallpaper-prep.sh"
+if [ ! -e "$wp_prep" ]; then
+    note "wallpaper-prep.sh not deployed yet ($wp_prep — make stow)"
+elif [ ! -x "$wp_prep" ]; then
+    # Stow keeps the repo file's mode, so a non-executable link means the repo
+    # copy lost +x, and rc.lua's awful.spawn of it fails silently at login.
+    miss "wallpaper-prep.sh present but not executable ($wp_prep)"
+else
+    pass "wallpaper-prep.sh present and executable"
+fi
+# Source images for the rotation (and thus for the prep cache). rc.lua kicks off
+# wallpaper-fetch-bands.sh when the folder is empty, so empty is not breakage.
+wp_src="$HOME/Media/wallpapers/bands"
+wp_count=$(find "$wp_src" -maxdepth 1 -type f ! -name '.*' 2>/dev/null | wc -l)
+if [ "$wp_count" -gt 0 ]; then
+    pass "wallpaper source populated ($wp_count images in ~/Media/wallpapers/bands)"
+else
+    note "no wallpapers in ~/Media/wallpapers/bands yet (fetched on first login)"
+fi
+# Prep cache, filled lazily on the first rotation and keyed by source+mtime+
+# resolution+pipeline version, so an absent or empty dir is normal on a fresh
+# machine and never a failure. Deliberately counts files instead of looking for
+# specific names — the key scheme is the prep script's business, not ours.
+wp_cache="${XDG_CACHE_HOME:-$HOME/.cache}/lukasawesome/wallpapers"
+if [ -d "$wp_cache" ]; then
+    note "wallpaper prep cache: $(find "$wp_cache" -maxdepth 1 -type f 2>/dev/null | wc -l) cached image(s) in $wp_cache"
+else
+    note "wallpaper prep cache not created yet (populated on first wallpaper rotation)"
+fi
 
 log "Xorg config snippets"
 # One truncated snippet aborts the whole X server, so validate every file, not
