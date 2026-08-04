@@ -102,7 +102,13 @@ else
 fi
 
 log "GPU / microcode (GPU=$(cfg GPU amd))"
-check_pkg amd-ucode
+# Microcode follows the actual CPU, not the GPU flag — this box is an Intel CPU
+# with an AMD GPU, and the old hardcoded amd-ucode check failed forever on it.
+case "$(grep -m1 '^vendor_id' /proc/cpuinfo | awk '{print $3}')" in
+    GenuineIntel) check_pkg intel-ucode ;;
+    AuthenticAMD) check_pkg amd-ucode ;;
+    *)            note "unknown CPU vendor — skipping microcode check" ;;
+esac
 case "$(cfg GPU amd)" in
     amd)   check_pkg vulkan-radeon ;;
     intel) check_pkg vulkan-intel ;;
