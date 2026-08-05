@@ -2431,6 +2431,9 @@ exit 1
     -- Prompt
     awful.key({ modkey },            "r",     function () awful.spawn(rofi_arch) end,
               {description = "open Rofi (apps + \"Power…\" entry)", group = "launcher"}),
+    awful.key({ modkey, "Shift" },   "v",
+        function () awful.spawn(os.getenv("HOME") .. "/.config/awesome/scripts/clipboard-menu.sh") end,
+              {description = "clipboard history", group = "launcher"}),
     awful.key({ modkey },            "p",
         function () awful.spawn(os.getenv("HOME") .. "/.config/awesome/scripts/power-menu.sh") end,
               {description = "power menu (lock/logout/suspend/reboot/off)", group = "launcher"})
@@ -2740,6 +2743,10 @@ awful.spawn.with_shell("pkill -x picom; picom --config " .. os.getenv("HOME") ..
 awful.spawn.with_shell("pgrep -x flameshot >/dev/null || flameshot &")
 -- NetworkManager tray applet (wifi picker; eduroam setup in docs/eduroam-au.md)
 awful.spawn.with_shell("pgrep -x nm-applet >/dev/null || nm-applet &")
+-- Clipboard history daemon (Super+Shift+V opens the picker). It only records
+-- while running, so a dead daemon means an empty list forever.
+awful.spawn.with_shell(
+    "command -v greenclip >/dev/null && { pgrep -x greenclip >/dev/null || greenclip daemon & }")
 -- Screen lock: light-locker VT-switches to the lightdm greeter (the visible,
 -- themed lock screen) after 5 min idle and on suspend/lid close. The greeter
 -- path is safe again — the malformed Xorg snippet that black-screened it is
