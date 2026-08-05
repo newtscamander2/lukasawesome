@@ -64,7 +64,7 @@ theme.cat_surface_hi = "#33354a"  -- surface0 lifted: top stop of "raised chip" 
 -- windows7 themes (which do not define them) keep working unchanged.
 ---------------------------------------------------------------
 theme.font           = "FiraCode Nerd Font 10"                  -- base: unchanged on purpose
-theme.font_display   = "FiraCode Nerd Font Propo Light 30"      -- hero clock / one big number per tile
+theme.font_display   = "FiraCode Nerd Font Propo Light 52"      -- hero clock: the one statement element
 theme.font_h1        = "FiraCode Nerd Font Propo Light 20"      -- tile titles, greeting line
 theme.font_h2        = "FiraCode Nerd Font Propo Medium 13"     -- section heads inside a tile
 theme.font_body      = "FiraCode Nerd Font 10"                  -- prose, menus, notifications (== theme.font)

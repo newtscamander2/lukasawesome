@@ -1577,9 +1577,11 @@ awful.screen.connect_for_each_screen(function(s)
     -- display_name kept for potential reuse elsewhere.
     local _ = display_name
 
+    -- The one statement element. No weight= override: the font description
+    -- already carries Light, and fighting it makes pango synthesise a face.
     local hero_clock = wibox.widget.textclock(
-        "<span font='" .. font(42) .. "' foreground='" .. C.text ..
-        "' weight='bold'>%H:%M</span>", 30)
+        "<span font='" .. (beautiful.font_display or font(48)) ..
+        "' foreground='" .. C.text .. "'>%H:%M</span>", 30)
 
     local hero_date = wibox.widget.textclock(
         "<span foreground='" .. C.subtext1 .. "'>%A, %d %B %Y</span>", 3600)
@@ -1643,17 +1645,21 @@ awful.screen.connect_for_each_screen(function(s)
     -- CPU/RAM bars + updates (merged into neofetch tile below)
     local dash_cpu_bar = bar_widget(C.peach)
     local dash_cpu_lbl = wibox.widget {
-        markup = "<span foreground='" .. C.subtext1 .. "'>CPU</span>",
+        markup = (beautiful.micro_markup and beautiful.micro_markup("cpu", C.subtext1))
+            or "<span foreground='" .. C.subtext1 .. "'>CPU</span>",
         widget = wibox.widget.textbox,
         valign = "center",
+        wrap = "none", ellipsize = "none",
     }
     subscribe_cpu(function(pct) dash_cpu_bar:set_value(pct) end)
 
     local dash_mem_bar = bar_widget(C.green)
     local dash_mem_lbl = wibox.widget {
-        markup = "<span foreground='" .. C.subtext1 .. "'>RAM</span>",
+        markup = (beautiful.micro_markup and beautiful.micro_markup("ram", C.subtext1))
+            or "<span foreground='" .. C.subtext1 .. "'>RAM</span>",
         widget = wibox.widget.textbox,
         valign = "center",
+        wrap = "none", ellipsize = "none",
     }
     subscribe_mem(function(pct) dash_mem_bar:set_value(pct) end)
 
@@ -1702,12 +1708,16 @@ awful.screen.connect_for_each_screen(function(s)
             widget    = wibox.widget.textbox,
             ellipsize = "end",
         }
+        local micro = beautiful.micro_markup
         local row = wibox.widget {
             {
                 {
-                    markup = "<span foreground='" .. (key_color or C.mauve) .. "' weight='bold'>" ..
-                             key .. "</span>",
+                    markup = micro and micro(key, key_color or C.mauve)
+                        or ("<span foreground='" .. (key_color or C.mauve) ..
+                            "' weight='bold'>" .. key .. "</span>"),
                     widget = wibox.widget.textbox,
+                    wrap   = "none",
+                    ellipsize = "none",
                 },
                 forced_width = NEO_KEY_W,
                 widget = wibox.container.background,
@@ -1764,10 +1774,13 @@ awful.screen.connect_for_each_screen(function(s)
     end
 
     local user_host_row = wibox.widget {
-        markup = "<span foreground='" .. C.peach .. "' weight='bold'>" ..
+        markup = "<span font='" .. (beautiful.font_h2 or font(13)) ..
+            "' foreground='" .. C.peach .. "'>" ..
             (sys_info.user_host:match("^([^@]+)") or "user") ..
-            "</span><span foreground='" .. C.overlay0 .. "'>@</span>" ..
-            "<span foreground='" .. C.blue .. "' weight='bold'>" ..
+            "</span><span font='" .. (beautiful.font_h2 or font(13)) ..
+            "' foreground='" .. C.overlay0 .. "'>@</span>" ..
+            "<span font='" .. (beautiful.font_h2 or font(13)) ..
+            "' foreground='" .. C.blue .. "'>" ..
             (sys_info.user_host:match("@(.+)$") or "host") .. "</span>",
         widget = wibox.widget.textbox,
     }
@@ -1797,7 +1810,7 @@ awful.screen.connect_for_each_screen(function(s)
     -- whenever audio started, which broke its alignment with the caption.
     -- 470 clipped the last info rows once gpu/memory were added: the content
     -- is ~560 tall (hero 200 + divider 29 + 9 info rows + 2 bars + updates).
-    local TILE_H    = 566
+    local TILE_H    = 588
     local dash_tile = make_tile(TILE_W, TILE_H)
     dash_tile:setup {
         {
