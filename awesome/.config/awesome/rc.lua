@@ -111,7 +111,20 @@ local UI = {
     tile_margin  = dpi(24),   -- inner margin of desktop tiles
     tile_alpha   = "aa",      -- tile bg alpha suffix (~67%, frosted with blur)
     tile_border  = dpi(1),
+    -- Wibar chips. The bar is 54 tall: 4+4 outer margin, 3+3 inner, leaving a
+    -- 40px content row = chip_h 28 + chip_air 6 above and below. The air is
+    -- what gives the focused tag's glow rings somewhere to live.
+    chip_h    = dpi(28),
+    chip_air  = dpi(6),
+    seg_l = dpi(10), seg_r = dpi(10),  -- segment padding inside a grouped chip
+    group_gap = dpi(12),               -- gap BETWEEN groups (vs 6 within one)
+    div_inset = dpi(7),                -- segment hairline inset -> 14px rule
 }
+
+-- Desktop composition: one gutter governs every desktop element, so the three
+-- anchors (dash top-left, media bottom-right, caption bottom-left) stay on
+-- shared rails at any resolution.
+local DESK = { gutter = dpi(24) }
 -- }}}
 
 -- This is used later as the default terminal and editor to run.
@@ -186,6 +199,46 @@ local function stat_cell(glyph, glyph_color, initial)
     }
     return box, txt, icon_tb
 end
+
+-- {{{ Grouped wibar chips
+-- Seven identical chips in a row read as a wall. Grouping them into three
+-- segmented chips (system / session / time) with hairline dividers inside and
+-- a wider gap between groups gives the eye a parse tree. Demoting a stat_cell
+-- to a segment mutates the SAME widget the caller already bound buttons and
+-- text handles to, so every existing behaviour survives untouched.
+local function segment(box)
+    box:set_bg(nil)      -- the group chip owns the surface now
+    box:set_shape(nil)
+    local body = box:get_children()[1]
+    body:set_left(UI.seg_l)
+    body:set_right(UI.seg_r)
+    return box
+end
+
+local function seg_divider()
+    return wibox.widget {
+        {
+            forced_width = 1,
+            bg           = C.surface1,
+            widget       = wibox.container.background,
+        },
+        top = UI.div_inset, bottom = UI.div_inset,
+        widget = wibox.container.margin,
+    }
+end
+
+-- shape_clip keeps a segment's hover highlight from poking out past the
+-- group's rounded corner.
+local function group_chip(row)
+    return wibox.widget {
+        row,
+        bg         = C.surface0,
+        shape      = rounded(UI.radius_inner),
+        shape_clip = true,
+        widget     = wibox.container.background,
+    }
+end
+-- }}}
 -- }}}
 
 -- {{{ Volume control — wibar widget + interactive popup slider
@@ -202,6 +255,9 @@ local vol_state = { vol = 0, muted = false }
 
 -- Wibar widget (one instance; will be created per-screen via factory below)
 local vol_subscribers = {} -- list of { icon_tb, text_tb } to update
+-- Generic listeners (the media panel shows volume when nothing is playing).
+local vol_extra_subs = {}
+function subscribe_volume(fn) table.insert(vol_extra_subs, fn) end
 
 -- Guard against feedback loop: when render_volume programmatically sets the
 -- slider, we must not treat that as a user-initiated change (which would
@@ -234,6 +290,7 @@ local function render_volume()
         sub.text_tb:set_markup(
             "<span foreground='" .. C.text .. "'>" .. label .. "</span>")
     end
+    for _, fn in ipairs(vol_extra_subs) do fn(vol_state.vol, vol_state.muted) end
     if vol_slider and not _user_interacting then
         _updating_slider_programmatically = true
         vol_slider:set_value(vol_state.vol)
@@ -599,7 +656,7 @@ local function vol_popup_show(anchor_widget)
     local scr = awful.screen.focused()
     vol_popup.screen = scr
     -- Position: top-right under the wibar
-    awful.placement.top_right(vol_popup, { parent = scr, margins = { top = 56, right = 20 } })
+    awful.placement.top_right(vol_popup, { parent = scr, margins = { top = 60, right = 20 } })
     vol_popup.visible = true
     render_volume()
     -- Re-scan outputs on every open so hotplugged devices show up
@@ -975,15 +1032,19 @@ awful.screen.connect_for_each_screen(function(s)
         mem_txt:set_markup("<span foreground='" .. C.text .. "'>" .. pct .. "%</span>")
     end)
 
-    -- Pacman updates (shared checkupdates poller)
+    -- Pacman updates (shared checkupdates poller). upd_seg is forward-declared
+    -- because the poller closure below captures it, but the segment itself can
+    -- only be built once the grouping helpers run further down.
+    local upd_seg
     local upd_box, upd_txt = stat_cell("\u{f019}", C.yellow, "0")
-    upd_box.visible = false
     subscribe_updates(function(n)
         if n > 0 then
             upd_txt:set_markup("<span foreground='" .. C.red .. "'>" .. n .. "</span>")
-            upd_box.visible = true
+            -- toggle the segment: it carries its own leading divider, so hiding
+            -- it removes the rule too and leaves no orphan hairline
+            if upd_seg then upd_seg.visible = true end
         else
-            upd_box.visible = false
+            if upd_seg then upd_seg.visible = false end
         end
     end)
     upd_box:buttons(gears.table.join(
@@ -1006,45 +1067,121 @@ awful.screen.connect_for_each_screen(function(s)
 
     s.mypromptbox = awful.widget.prompt()
 
-    -- Taglist: glyph pills (wide enough for nerd-font icons)
+    -- Taglist. Per tag, a 56x40 stack inside the 40px content row:
+    --   glow_1/2/3  concentric accent rings; each radius steps down in lockstep
+    --               with its inset so every outline stays parallel to the pill,
+    --               which is what makes three flat rects read as one soft bloom.
+    --               Composited alpha ramps 8 -> 25 -> 51 -> 100%.
+    --   pill        background_role; awesome drives its bg/fg/shape from the
+    --               theme, so the shape MUST come from the theme/style table —
+    --               awful.widget.common overwrites background_role.shape on
+    --               every list update, which silently kills a template shape.
+    --   occupied    2px tick at the pill's bottom edge = "this tag has windows".
+    -- The empty rings cost no space (background:fit returns 0,0 without a child
+    -- and stack:fit takes the max), so switching tags never shifts the layout.
+    local function tag_state(self, t)
+        local sel = t.selected
+        for _, id in ipairs({ "glow_1", "glow_2", "glow_3" }) do
+            self:get_children_by_id(id)[1].visible = sel
+        end
+        -- Hidden while selected: the glow already says "you are here", and a
+        -- tick on a solid accent pill is just noise.
+        self:get_children_by_id("occupied")[1].visible = (#t:clients() > 0) and not sel
+    end
+
     s.mytaglist = awful.widget.taglist {
         screen  = s,
         filter  = awful.widget.taglist.filter.all,
         buttons = taglist_buttons,
-        layout  = { spacing = 4, layout = wibox.layout.fixed.horizontal },
+        layout  = { spacing = 0, layout = wibox.layout.fixed.horizontal },
+        style   = {
+            -- Shapes belong here, not in the template: awful.widget.common
+            -- assigns background_role.shape from the theme on every update, so
+            -- a shape set in the template is silently overwritten.
+            shape                    = rounded(UI.radius_inner),
+            shape_focus              = rounded(UI.radius_inner),
+            shape_empty              = rounded(UI.radius_inner),
+            shape_border_width_empty = 1,
+        },
         widget_template = {
+            {
+                id      = "glow_1",
+                visible = false,
+                bg      = C.mauve .. "14",
+                shape   = rounded(UI.radius_inner + 6),
+                widget  = wibox.container.background,
+            },
+            {
+                {
+                    id      = "glow_2",
+                    visible = false,
+                    bg      = C.mauve .. "2e",
+                    shape   = rounded(UI.radius_inner + 4),
+                    widget  = wibox.container.background,
+                },
+                margins = dpi(2),
+                widget  = wibox.container.margin,
+            },
+            {
+                {
+                    id      = "glow_3",
+                    visible = false,
+                    bg      = C.mauve .. "59",
+                    shape   = rounded(UI.radius_inner + 2),
+                    widget  = wibox.container.background,
+                },
+                margins = dpi(4),
+                widget  = wibox.container.margin,
+            },
             {
                 {
                     {
                         {
-                            id     = "text_role",
-                            widget = wibox.widget.textbox,
-                            align  = "center",
-                            valign = "center",
+                            {
+                                { id = "text_role", widget = wibox.widget.textbox,
+                                  align = "center", valign = "center" },
+                                { { id = "occupied", bg = C.mauve,
+                                    forced_width = dpi(12), forced_height = dpi(2),
+                                    shape = gears.shape.rounded_bar, visible = false,
+                                    widget = wibox.container.background },
+                                  valign = "bottom", halign = "center",
+                                  widget = wibox.container.place },
+                                layout = wibox.layout.stack,
+                            },
+                            forced_width  = dpi(26),
+                            forced_height = dpi(22),
+                            widget = wibox.container.background,
                         },
-                        -- Square glyph cell: without an explicit height the
-                        -- taller nerd-font glyphs push past the pill edge.
-                        forced_width  = dpi(26),
-                        forced_height = dpi(26),
-                        widget = wibox.container.background,
+                        left = 9, right = 9, top = 3, bottom = 3,
+                        widget = wibox.container.margin,
                     },
-                    left = 9, right = 9, top = UI.pill_t, bottom = UI.pill_b,
-                    widget = wibox.container.margin,
+                    id     = "background_role",
+                    widget = wibox.container.background,
                 },
-                id           = "background_role",
-                shape        = rounded(UI.radius_inner),
-                widget       = wibox.container.background,
+                -- This 6px inset IS the glow gutter: the rings paint into it,
+                -- which is why the bar's content row is 40px and not 28.
+                margins = dpi(6),
+                widget  = wibox.container.margin,
             },
-            widget = wibox.container.background,
+            layout = wibox.layout.stack,
+            create_callback = tag_state,
+            update_callback = tag_state,
         },
     }
 
-    -- Tasklist: rounded pill + underline on focused
+    -- Tasklist: icon-only pills; the focused client also shows its title (a
+    -- second, free emphasis cue) with the underline. Always-on titles turn the
+    -- middle of the bar into a wall of text that competes with the tag accent.
     s.mytasklist = awful.widget.tasklist {
         screen  = s,
         filter  = awful.widget.tasklist.filter.currenttags,
         buttons = tasklist_buttons,
         layout  = { spacing = 4, layout = wibox.layout.fixed.horizontal },
+        style   = {
+            -- see the taglist note: shapes must come from style, not the template
+            shape       = rounded(UI.radius_inner),
+            shape_focus = rounded(UI.radius_inner),
+        },
         widget_template = {
             {
                 nil,
@@ -1064,34 +1201,42 @@ awful.screen.connect_for_each_screen(function(s)
                                     strategy = "exact",
                                     widget   = wibox.container.constraint,
                                 },
-                                margins = 3,
+                                margins = 4,
                                 widget  = wibox.container.margin,
                             },
                             {
                                 {
-                                    id     = "text_role",
-                                    widget = wibox.widget.textbox,
+                                    {
+                                        id     = "text_role",
+                                        widget = wibox.widget.textbox,
+                                    },
+                                    -- textbox ellipsizes at "end" by default, so a
+                                    -- long page title truncates instead of pushing
+                                    -- the whole cluster sideways
+                                    width    = dpi(180),
+                                    strategy = "max",
+                                    widget   = wibox.container.constraint,
                                 },
-                                left = 6, right = 8,
+                                id     = "title",
+                                left   = 2, right = 8,
                                 widget = wibox.container.margin,
                             },
                             layout = wibox.layout.fixed.horizontal,
                         },
-                        left = 4, top = UI.pill_t, bottom = UI.pill_b,
+                        left = 4, top = 3, bottom = 3,
                         widget = wibox.container.margin,
                     },
-                    id           = "background_role",
-                    widget       = wibox.container.background,
-                    shape        = rounded(UI.radius_inner),
+                    id     = "background_role",
+                    widget = wibox.container.background,
                 },
                 {
                     {
                         id            = "underline",
                         bg            = C.mauve,
                         forced_height = 2,
-                        forced_width  = 26,
+                        forced_width  = dpi(26),
                         visible       = false,
-                        shape         = rounded(UI.radius_inner),
+                        shape         = gears.shape.rounded_bar,
                         widget        = wibox.container.background,
                     },
                     halign = "center",
@@ -1102,9 +1247,14 @@ awful.screen.connect_for_each_screen(function(s)
             widget = wibox.container.background,
             create_callback = function(self, c)
                 local ul = self:get_children_by_id("underline")[1]
-                ul.visible = (client.focus == c)
-                c:connect_signal("focus",   function() ul.visible = true  end)
-                c:connect_signal("unfocus", function() ul.visible = false end)
+                local tw = self:get_children_by_id("title")[1]
+                local function set(focused)
+                    ul.visible = focused
+                    tw.visible = focused
+                end
+                set(client.focus == c)
+                c:connect_signal("focus",   function() set(true)  end)
+                c:connect_signal("unfocus", function() set(false) end)
             end,
         },
     }
@@ -1121,14 +1271,14 @@ awful.screen.connect_for_each_screen(function(s)
             align  = "center",
             valign = "center",
         },
-        forced_width  = dpi(28),
-        forced_height = dpi(28),
+        forced_width  = dpi(22),
+        forced_height = dpi(22),
         widget = wibox.container.background,
     }
     local launcher_bg = wibox.widget {
         {
             launcher_glyph,
-            left = 9, right = 9, top = UI.pill_t, bottom = UI.pill_b,
+            left = 9, right = 9, top = 3, bottom = 3,
             widget = wibox.container.margin,
         },
         bg     = C.mauve,
@@ -1143,9 +1293,13 @@ awful.screen.connect_for_each_screen(function(s)
             widget = wibox.container.margin,
         },
         {
-            forced_width  = 1,
-            bg            = C.surface1,
-            widget        = wibox.container.background,
+            {
+                forced_width = 1,
+                bg           = C.surface1,
+                widget       = wibox.container.background,
+            },
+            top = dpi(9), bottom = dpi(9),
+            widget = wibox.container.margin,
         },
         {
             forced_width = 8,
@@ -1230,7 +1384,7 @@ awful.screen.connect_for_each_screen(function(s)
     }
     local function cal_place()
         awful.placement.top_right(cal_popup,
-            { parent = awful.screen.focused(), margins = { top = 56, right = 20 } })
+            { parent = awful.screen.focused(), margins = { top = 60, right = 20 } })
     end
     popup_closers.calendar = function()
         cal_popup.visible = false
@@ -1280,23 +1434,52 @@ awful.screen.connect_for_each_screen(function(s)
     s.mywibox = awful.wibar({
         position = "top",
         screen   = s,
-        height   = 50,
+        height   = 54,
         bg       = "#00000000",
         fg       = C.text,
     })
 
-    -- Right-side widget strip; battery only exists on machines that have one.
+    -- Right cluster: three grouped chips instead of seven identical ones.
+    -- Intra-group spacing is 0 (hairlines do the separating), which also fixes
+    -- a phantom gap: fixed.horizontal adds its spacing even for an invisible
+    -- child, so hiding the updates pill used to leave 12px of dead air.
+    upd_seg = wibox.widget {
+        seg_divider(),
+        segment(upd_box),
+        layout = wibox.layout.fixed.horizontal,
+    }
+    upd_seg.visible = false   -- no pending updates until the poller says so
+
+    local sys_group = group_chip {
+        segment(cpu_box),
+        seg_divider(),
+        segment(mem_box),
+        upd_seg,
+        layout = wibox.layout.fixed.horizontal,
+    }
+
+    local session_row = {
+        segment(make_volume_widget()),
+        layout = wibox.layout.fixed.horizontal,
+    }
+    if BAT_PATH then
+        table.insert(session_row, seg_divider())
+        table.insert(session_row, segment(make_battery_widget()))
+    end
+    local session_group = group_chip(session_row)
+
     local right_widgets = {
         layout  = wibox.layout.fixed.horizontal,
-        spacing = 6,
-        cpu_box,
-        mem_box,
-        upd_box,
-        make_volume_widget(),
+        spacing = UI.group_gap,
+        sys_group,
+        session_group,
+        {
+            layout  = wibox.layout.fixed.horizontal,
+            spacing = 6,
+            tray,        -- own surface: xembed icons paint their own background
+            clock_box,
+        },
     }
-    if BAT_PATH then table.insert(right_widgets, make_battery_widget()) end
-    table.insert(right_widgets, tray)
-    table.insert(right_widgets, clock_box)
 
     s.mywibox:setup {
         {
@@ -1305,15 +1488,17 @@ awful.screen.connect_for_each_screen(function(s)
                     {
                         layout  = wibox.layout.fixed.horizontal,
                         spacing = 6,
-                        launcher,
+                        { launcher, top = UI.chip_air, bottom = UI.chip_air,
+                          widget = wibox.container.margin },
                         s.mytaglist,
                         s.mypromptbox,
                     },
                     s.mytasklist,
-                    right_widgets,
+                    { right_widgets, top = UI.chip_air, bottom = UI.chip_air,
+                      widget = wibox.container.margin },
                     layout = wibox.layout.align.horizontal,
                 },
-                left = 10, right = 10, top = 4, bottom = 4,
+                left = 10, right = 10, top = 3, bottom = 3,
                 widget = wibox.container.margin,
             },
             -- Glassy floating strip (blur is excluded for dock windows, so the
@@ -1322,7 +1507,7 @@ awful.screen.connect_for_each_screen(function(s)
             shape  = rounded(UI.radius_outer),
             widget = wibox.container.background,
         },
-        left = 8, right = 8, top = 4, bottom = 2,
+        left = 8, right = 8, top = 4, bottom = 4,
         widget = wibox.container.margin,
     }
 
@@ -1591,92 +1776,306 @@ awful.screen.connect_for_each_screen(function(s)
         layout  = wibox.layout.fixed.vertical,
     }
 
-    -- One dashboard tile: hero block on top, system info below, and the music
-    -- visualizer as its bottom strip (only visible while audio is playing).
-    local CAVA_BARS   = 44   -- must match cava/.config/cava/config
-    local CAVA_STRIP_H = 54
-    local cava_values  = {}  -- smoothed values, 0..100
-    local cava_widget  = wibox.widget.base.make_widget()
-    cava_widget.forced_height = CAVA_STRIP_H
-    function cava_widget:fit(_, w, h) return w, h end
-    function cava_widget:draw(_, cr, w, h)
-        local gap = 3
-        local bw  = (w - (CAVA_BARS - 1) * gap) / CAVA_BARS
-        if bw <= 0 then return end
-        cr:set_source(gears.color(C.mauve .. "cc"))
-        for i = 1, CAVA_BARS do
-            local v  = (cava_values[i] or 0) / 100
-            local bh = math.max(2, v * (h - 2))
-            cr:save()
-            cr:translate((i - 1) * (bw + gap), h - bh)
-            gears.shape.rounded_rect(cr, bw, bh, math.min(2, bw / 2))
-            cr:restore()
-        end
-        cr:fill()
-    end
-    local cava_strip = wibox.widget {
-        {
-            {
-                bg = C.surface0, forced_height = 1,
-                widget = wibox.container.background,
-            },
-            bottom = 8,
-            widget = wibox.container.margin,
-        },
-        cava_widget,
-        visible = false,
-        layout  = wibox.layout.fixed.vertical,
-    }
-
-    -- align.vertical takes exactly three children (top/middle/bottom): the
-    -- content goes in one fixed.vertical child, the visualizer sits in the
-    -- bottom slot. Passing more than three silently drops the extras and
-    -- stretches whatever lands in the middle.
-    local TILE_H_BASE = 470
-    local dash_tile   = make_tile(TILE_W, TILE_H_BASE)
+    -- Dashboard tile: hero block over the system info. FIXED height forever —
+    -- the visualizer used to live here and swung this tile's bottom edge 63px
+    -- whenever audio started, which broke its alignment with the caption.
+    local TILE_H    = 470
+    local dash_tile = make_tile(TILE_W, TILE_H)
     dash_tile:setup {
         {
+            hero_block,
             {
-                hero_block,
                 {
-                    {
-                        bg = C.surface0, forced_height = 1,
-                        widget = wibox.container.background,
-                    },
-                    top = 14, bottom = 14,
-                    widget = wibox.container.margin,
+                    bg = C.surface0, forced_height = 1,
+                    widget = wibox.container.background,
                 },
-                {
-                    { arch_logo, widget = wibox.container.place, valign = "top" },
-                    { neo_info,  widget = wibox.container.place, valign = "top" },
-                    spacing = 18,
-                    layout  = wibox.layout.fixed.horizontal,
-                },
-                layout = wibox.layout.fixed.vertical,
+                top = 14, bottom = 14,
+                widget = wibox.container.margin,
             },
-            nil,
-            cava_strip,
-            layout = wibox.layout.align.vertical,
+            {
+                { arch_logo, widget = wibox.container.place, valign = "top" },
+                { neo_info,  widget = wibox.container.place, valign = "top" },
+                spacing = 18,
+                layout  = wibox.layout.fixed.horizontal,
+            },
+            layout = wibox.layout.fixed.vertical,
         },
         margins = UI.tile_margin,
         widget  = wibox.container.margin,
     }
-    -- The tile grows only while the visualizer is showing, so there is no
-    -- reserved empty band when nothing is playing.
-    local function set_cava_visible(v)
-        cava_strip.visible = v
-        dash_tile.height   = TILE_H_BASE + (v and (CAVA_STRIP_H + 9) or 0)
+
+    ---------------------------------------------------------------
+    -- Media panel (primary screen only) — anchors the bottom-right
+    -- corner that the composition was missing. Always present with a
+    -- fixed size: content degrades, geometry never moves. Holds the
+    -- cava visualizer, so the bars work with zero extra packages.
+    ---------------------------------------------------------------
+    local media_tile, set_cava_active, poll_media, cava_smooth =
+        nil, function() end, function() end, function() end
+
+    if s == screen.primary then
+        local CAVA_BARS = 44   -- must match cava/.config/cava/config
+        local NP_W      = math.min(720, math.max(420, s.geometry.width - TILE_W - 3 * DESK.gutter))
+        local NP_H      = 228
+        local NP_ART    = 104  -- square sigil slot; governs the top row's height
+        local cava_live = false
+        local cava_values = {}
+
+        local cava_widget = wibox.widget.base.make_widget()
+        cava_widget.forced_height = 54
+        function cava_widget:fit(_, w, h) return w, h end
+        function cava_widget:draw(_, cr, w, h)
+            -- Integer pitch: a fractional bar width put every bar on a
+            -- different sub-pixel offset, so cairo antialiased each one
+            -- differently and they looked unevenly wide in a screenshot.
+            local gap   = 3
+            local pitch = math.floor(w / CAVA_BARS)
+            local bw    = pitch - gap
+            if bw <= 0 then return end
+            local x0 = math.floor((w - (CAVA_BARS * pitch - gap)) / 2)
+            cr:set_source(gears.color(cava_live and (C.mauve .. "cc") or (C.surface1 .. "cc")))
+            for i = 1, CAVA_BARS do
+                local v  = (cava_values[i] or 0) / 100
+                local bh = math.max(2, v * (h - 2))
+                cr:save()
+                cr:translate(x0 + (i - 1) * pitch, h - bh)
+                gears.shape.rounded_rect(cr, bw, bh, math.min(2, bw / 2))
+                cr:restore()
+            end
+            cr:fill()
+        end
+
+        -- Resting state is free: every value at 0 draws 44 evenly spaced 2px
+        -- dashes, which reads as "a waveform at rest" rather than a gap.
+        set_cava_active = function(v)
+            cava_live = v
+            if not v then for i = 1, CAVA_BARS do cava_values[i] = 0 end end
+            cava_widget:emit_signal("widget::redraw_needed")
+        end
+        cava_smooth = function(line)
+            local i = 1
+            for val in line:gmatch("%d+") do
+                local target = tonumber(val) or 0
+                local prev   = cava_values[i] or 0
+                -- rise fast, fall slow: raw frames jitter at 30fps
+                cava_values[i] = prev + (target - prev) * ((target > prev) and 0.55 or 0.22)
+                i = i + 1
+            end
+            cava_widget:emit_signal("widget::redraw_needed")
+        end
+
+        local BF = function(k, fb) return beautiful[k] or fb end
+        local media_sigil = wibox.widget {
+            markup = "<span font='" .. font(40) .. "' foreground='" .. C.overlay0 .. "'>\u{f001}</span>",
+            align = "center", valign = "center", widget = wibox.widget.textbox,
+        }
+        local media_art = wibox.widget {
+            image = nil, resize = true, visible = false,
+            clip_shape = rounded(UI.radius_inner), widget = wibox.widget.imagebox,
+        }
+        local media_sigil_box = wibox.widget {
+            { media_sigil, media_art, layout = wibox.layout.stack },
+            forced_width  = NP_ART,
+            forced_height = NP_ART,   -- height governor: rows may hide without resizing the panel
+            bg            = C.surface0,
+            shape         = rounded(UI.radius_inner),
+            widget        = wibox.container.background,
+        }
+
+        local media_eyebrow_l = wibox.widget { widget = wibox.widget.textbox }
+        local media_eyebrow_r = wibox.widget { align = "right", widget = wibox.widget.textbox }
+        local media_title     = wibox.widget { ellipsize = "end", widget = wibox.widget.textbox }
+        local media_sub       = wibox.widget { ellipsize = "end", widget = wibox.widget.textbox }
+        local media_pos       = wibox.widget { widget = wibox.widget.textbox }
+        local media_len       = wibox.widget { align = "right", widget = wibox.widget.textbox }
+        local media_prog = wibox.widget {
+            max_value = 100, value = 0, forced_height = 4,
+            shape = rounded(UI.radius_inner), bar_shape = rounded(UI.radius_inner),
+            background_color = C.surface0, color = C.mauve,
+            widget = wibox.widget.progressbar,
+        }
+        local media_prog_row = wibox.widget {
+            { media_pos, forced_width = 38, widget = wibox.container.background },
+            { media_prog, left = 8, right = 8, widget = wibox.container.margin },
+            { media_len, forced_width = 38, widget = wibox.container.background },
+            visible = false,
+            layout  = wibox.layout.align.horizontal,
+        }
+
+        local micro = beautiful.micro_markup
+        local function eyebrow(text, col)
+            return micro and micro(text, col)
+                or ("<span font='" .. font(8) .. "' foreground='" .. col .. "'>" ..
+                    tostring(text):upper() .. "</span>")
+        end
+
+        local media = { avail = true, status = nil, player = nil, artist = nil,
+                        title = nil, album = nil, len = 0, pos = 0, pos_at = 0 }
+
+        local function mmss(sec)
+            sec = math.max(0, math.floor(sec or 0))
+            return string.format("%d:%02d", math.floor(sec / 60), sec % 60)
+        end
+
+        -- Idle content is the volume state: always true, always useful, and it
+        -- reframes the panel as "audio" rather than "an empty now-playing box".
+        -- "playerctl missing" is deliberately indistinguishable from "nothing
+        -- playing" — a missing dependency must not look like breakage.
+        local function render_media()
+            local playing = (media.status == "Playing")
+            local paused  = (media.status == "Paused")
+            if playing or paused then
+                media_eyebrow_l:set_markup(eyebrow(playing and "now playing" or "paused",
+                                                   playing and C.mauve or C.yellow))
+                media_eyebrow_r:set_markup(eyebrow(media.player or "", C.overlay0))
+                media_title:set_markup("<span font='" .. BF("font_h1", font(15)) ..
+                    "' foreground='" .. (playing and C.text or C.subtext1) .. "'>" ..
+                    pango_escape(media.title or "unknown track") .. "</span>")
+                local sub = "<span font='" .. BF("font_body", font(10)) .. "' foreground='" ..
+                    (playing and C.mauve or C.overlay0) .. "'>" ..
+                    pango_escape(media.artist or "unknown artist") .. "</span>"
+                if media.album and media.album ~= "" then
+                    sub = sub .. "<span font='" .. BF("font_body", font(10)) ..
+                        "' foreground='" .. C.overlay0 .. "'>  ·  " ..
+                        pango_escape(media.album) .. "</span>"
+                end
+                media_sub:set_markup(sub)
+                if media.len > 0 then
+                    local pos = math.min(media.len, media.pos + (os.time() - media.pos_at))
+                    media_prog_row.visible = true
+                    media_prog.value = pos / media.len * 100
+                    media_pos:set_markup("<span font='" .. BF("font_label", font(9)) ..
+                        "' foreground='" .. C.subtext1 .. "'>" .. mmss(pos) .. "</span>")
+                    media_len:set_markup("<span font='" .. BF("font_label", font(9)) ..
+                        "' foreground='" .. C.overlay0 .. "'>" .. mmss(media.len) .. "</span>")
+                else
+                    media_prog_row.visible = false
+                end
+            else
+                media_eyebrow_l:set_markup(eyebrow("audio", C.overlay0))
+                media_eyebrow_r:set_markup(eyebrow("idle", C.overlay0))
+                local muted = vol_state.muted
+                media_title:set_markup("<span font='" .. BF("font_h1", font(15)) ..
+                    "' foreground='" .. (muted and C.red or C.subtext1) .. "'>" ..
+                    (muted and "\u{f026}  muted" or ("\u{f028}  " .. vol_state.vol .. "%")) .. "</span>")
+                media_sub:set_markup("<span font='" .. BF("font_body", font(10)) ..
+                    "' foreground='" .. C.overlay0 .. "'>system output</span>")
+                media_prog_row.visible = false
+            end
+        end
+
+        media_tile = make_tile(NP_W, NP_H)
+        media_tile:setup {
+            {
+                {
+                    { media_sigil_box, right = 20, widget = wibox.container.margin },
+                    {
+                        {
+                            media_eyebrow_l,
+                            nil,
+                            media_eyebrow_r,
+                            layout = wibox.layout.align.horizontal,
+                        },
+                        { media_title,    top = 4, widget = wibox.container.margin },
+                        { media_sub,      top = 2, widget = wibox.container.margin },
+                        { media_prog_row, top = 8, widget = wibox.container.margin },
+                        layout = wibox.layout.fixed.vertical,
+                    },
+                    nil,
+                    expand = "inside",
+                    layout = wibox.layout.align.horizontal,
+                },
+                divider(),
+                cava_widget,
+                layout = wibox.layout.fixed.vertical,
+            },
+            margins = UI.tile_margin,
+            widget  = wibox.container.margin,
+        }
+
+        -- playerctl is optional. Exit 9 == not installed: stop polling for the
+        -- session and stay in the idle state rather than nagging.
+        local PL_FMT = "{{status}}\t{{playerName}}\t{{artist}}\t{{title}}\t{{album}}\t{{mpris:length}}\t{{position}}"
+        local PL_CMD = "sh -c \"command -v playerctl >/dev/null 2>&1 || exit 9; " ..
+                       "playerctl -a metadata --format '" .. PL_FMT .. "' 2>/dev/null\""
+
+        -- Keeps EMPTY fields: a plain gmatch over non-tab runs silently shifts
+        -- every later column when e.g. album is blank.
+        local function tsplit(line)
+            local f = {}
+            for v in (line .. "\t"):gmatch("([^\t]*)\t") do f[#f + 1] = v end
+            return f
+        end
+
+        poll_media = function()
+            if not media.avail then return end
+            awful.spawn.easy_async(PL_CMD, function(stdout, _, _, code)
+                if code == 9 then media.avail = false; render_media(); return end
+                local pick
+                for line in (stdout or ""):gmatch("[^\r\n]+") do
+                    local f = tsplit(line)
+                    if f[1] == "Playing" then pick = f; break end
+                    pick = pick or f
+                end
+                if not pick or not pick[1] or pick[1] == "" then
+                    media.status = nil
+                else
+                    media.status = pick[1]
+                    media.player = pick[2]
+                    media.artist = pick[3]
+                    media.title  = pick[4]
+                    media.album  = pick[5]
+                    media.len    = (tonumber(pick[6]) or 0) / 1000000   -- µs -> s
+                    media.pos    = (tonumber(pick[7]) or 0) / 1000000
+                    media.pos_at = os.time()
+                end
+                render_media()
+            end)
+        end
+
+        -- Advance the elapsed time locally; never poll for position.
+        gears.timer {
+            timeout = 1, autostart = true,
+            callback = function()
+                if media.status == "Playing" and media.len > 0 then render_media() end
+            end,
+        }
+        subscribe_volume(function()
+            if media.status ~= "Playing" then render_media() end
+        end)
+        render_media()
     end
 
     ---------------------------------------------------------------
-    -- Tile placement — one dashboard tile, top-left. The rest of the
-    -- screen is deliberate negative space for the wallpaper.
+    -- Tile placement — three anchors on one 24px gutter grid:
+    --   dash_tile   top-left      (primary weight)
+    --   media_tile  bottom-right  (secondary, primary screen only)
+    --   cap_box     bottom-left   (tertiary, placed by the wallpaper block)
+    -- The open centre/right is deliberate: that is where the band photo's
+    -- subject lives, and it counterweights the dash tile.
     ---------------------------------------------------------------
     local function place_tiles()
-        local wa = s.workarea -- already excludes the wibar strut
-        local m  = 24
-        dash_tile.x = wa.x + m
-        dash_tile.y = wa.y + m
+        local wa = s.workarea      -- already excludes the wibar strut
+        local g  = DESK.gutter
+        dash_tile.x = wa.x + g
+        dash_tile.y = wa.y + g
+
+        if not media_tile then return end
+        media_tile.x = wa.x + wa.width  - g - media_tile.width
+        media_tile.y = wa.y + wa.height - g - media_tile.height
+
+        -- Small screens: clamp, then move the panel off the dash tile.
+        if media_tile.x < wa.x + g then media_tile.x = wa.x + g end
+        if media_tile.y < wa.y + g then media_tile.y = wa.y + g end
+        local dash_r = dash_tile.x + dash_tile.width
+        local dash_b = dash_tile.y + dash_tile.height
+        if media_tile.x < dash_r + g and media_tile.y < dash_b + g then
+            if (wa.y + wa.height - g) - (dash_b + g) >= media_tile.height then
+                media_tile.y = dash_b + g
+            else
+                media_tile.x = dash_r + g
+            end
+        end
     end
     place_tiles()
     s:connect_signal("property::geometry", place_tiles)
@@ -1705,38 +2104,30 @@ awful.screen.connect_for_each_screen(function(s)
             return true
         end
 
+        -- A cava orphaned by a previous awesome instance keeps running but
+        -- writes to a dead pipe, so its bars sit flat at zero forever. Clear
+        -- any stray one before we spawn ours.
+        awful.spawn.with_shell("pkill -x cava >/dev/null 2>&1 || true")
+
         local function stop_cava()
             if cava_pid then awesome.kill(cava_pid, 15) end
             cava_pid = nil
-            set_cava_visible(false)
-            for i = 1, CAVA_BARS do cava_values[i] = 0 end
+            set_cava_active(false)   -- also zeroes the bars and repaints
         end
 
         local function update_cava_state()
             local want = audio_playing and desktop_visible()
             if want and not cava_pid and awful.spawn then
                 local pid = awful.spawn.with_line_callback("cava", {
-                    stdout = function(line)
-                        -- Exponential smoothing: raw cava frames jitter hard at
-                        -- 20fps, which read as "shaky". Rise fast, fall slow.
-                        local i = 1
-                        for v in line:gmatch("%d+") do
-                            local target = tonumber(v) or 0
-                            local prev   = cava_values[i] or 0
-                            local a      = (target > prev) and 0.55 or 0.22
-                            cava_values[i] = prev + (target - prev) * a
-                            i = i + 1
-                        end
-                        cava_widget:emit_signal("widget::redraw_needed")
-                    end,
+                    stdout = function(line) cava_smooth(line) end,
                     exit = function()
                         cava_pid = nil
-                        set_cava_visible(false)
+                        set_cava_active(false)
                     end,
                 })
                 if type(pid) == "number" then
                     cava_pid = pid
-                    set_cava_visible(true)
+                    set_cava_active(true)
                 elseif not cava_error_shown then
                     -- with_line_callback returns an error STRING when the
                     -- binary is missing. Say so once instead of retrying
@@ -1754,9 +2145,14 @@ awful.screen.connect_for_each_screen(function(s)
             end
         end
 
-        -- Audio state: one cheap pactl poll per 5 s (only uncorked streams count).
-        if awful.spawn and gears.filesystem.file_readable(
-               os.getenv("HOME") .. "/.config/cava/config") then
+        -- Audio state: one cheap pactl poll per 5 s (only uncorked streams
+        -- count). This runs unconditionally — the media panel needs
+        -- audio_playing for its own cadence, so gating the whole timer on a
+        -- cava config would freeze the panel permanently when cava is absent.
+        local have_cava_cfg = gears.filesystem.file_readable(
+            os.getenv("HOME") .. "/.config/cava/config")
+        if awful.spawn then
+            local media_tick = 0
             gears.timer {
                 timeout = 5, autostart = true, call_now = true,
                 callback = function()
@@ -1764,10 +2160,16 @@ awful.screen.connect_for_each_screen(function(s)
                         "pactl list sink-inputs 2>/dev/null | grep -c 'Corked: no'",
                         function(out)
                             audio_playing = (tonumber((out or ""):match("%d+")) or 0) > 0
-                            update_cava_state()
+                            if have_cava_cfg then update_cava_state() end
+                            -- Poll metadata every tick while audio plays, else
+                            -- every 8th (40s) just to catch a player starting.
+                            media_tick = media_tick + 1
+                            if audio_playing or media_tick % 8 == 0 then poll_media() end
                         end)
                 end,
             }
+        end
+        if have_cava_cfg then
             -- Desktop visibility is event-driven — no polling needed.
             tag.connect_signal("property::selected", function(t)
                 if t.screen == s then update_cava_state() end
@@ -1966,10 +2368,12 @@ exit 1
               {description = "more master clients", group = "layout"}),
     awful.key({ modkey, "Shift"   }, "comma", function () awful.tag.incnmaster(-1, nil, true) end,
               {description = "fewer master clients", group = "layout"}),
-    awful.key({ modkey,           }, "space", function () awful.layout.inc( 1)                end,
-              {description = "select next", group = "layout"}),
-    awful.key({ modkey, "Shift"   }, "space", function () awful.layout.inc(-1)                end,
-              {description = "select previous", group = "layout"}),
+    -- Columns in the STACK area. The stack is one column by default, so the
+    -- screen reads as two columns (master + stack); ncol 2 gives three.
+    awful.key({ modkey, "Control" }, "period", function () awful.tag.incncol( 1, nil, true) end,
+              {description = "more stack columns", group = "layout"}),
+    awful.key({ modkey, "Control" }, "comma", function () awful.tag.incncol(-1, nil, true) end,
+              {description = "fewer stack columns", group = "layout"}),
 
     awful.key({ modkey, "Control" }, "n",
               function ()
@@ -2181,7 +2585,7 @@ do
 
         local cap_text = wibox.widget {
             markup = "",
-            align  = "right",
+            align  = "left",
             widget = wibox.widget.textbox,
         }
         -- Width is recomputed per caption below; a fixed 640px box left a wide
@@ -2204,9 +2608,12 @@ do
             widget = wibox.container.margin,
         }
         local function place_caption()
+            -- Bottom-left: shares dash_tile's left rail and media_tile's
+            -- baseline, so three of the four rails carry ink. The old 22/16
+            -- insets were off the 24px grid in both axes.
             local g = screen.primary.workarea
-            cap_box.x = g.x + g.width  - cap_box.width  - 22
-            cap_box.y = g.y + g.height - cap_box.height - 16
+            cap_box.x = g.x + DESK.gutter
+            cap_box.y = g.y + g.height - cap_box.height - DESK.gutter
         end
         screen.primary:connect_signal("property::geometry", place_caption)
 
