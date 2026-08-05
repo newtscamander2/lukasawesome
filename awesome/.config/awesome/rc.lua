@@ -1200,7 +1200,6 @@ awful.screen.connect_for_each_screen(function(s)
         },
         widget_template = {
             {
-                nil,
                 {
                     {
                         {
@@ -1258,7 +1257,7 @@ awful.screen.connect_for_each_screen(function(s)
                     halign = "center",
                     widget = wibox.container.place,
                 },
-                layout = wibox.layout.align.vertical,
+                layout = wibox.layout.fixed.vertical,
             },
             widget = wibox.container.background,
             create_callback = function(self, c)
@@ -1534,6 +1533,22 @@ awful.screen.connect_for_each_screen(function(s)
     -- Helper: create a rounded tile wibox in the "desktop" layer.
     -- Border width/color/radius match picom's window rounding + awesome's
     -- border_normal so tiles and windows are visually consistent.
+    -- Glass rim: a 1px highlight on the tile's top edge. Real glass catches
+    -- light along its upper edge; this is the cue that separates "pane of
+    -- glass" from "dark rectangle". Wrap the margined content, not the content
+    -- itself, or the line floats 24px inside the tile.
+    local function glass(margined)
+        return wibox.widget {
+            {
+                bg            = C.text .. "14",
+                forced_height = 1,
+                widget        = wibox.container.background,
+            },
+            margined,
+            layout = wibox.layout.fixed.vertical,
+        }
+    end
+
     local function make_tile(width, height)
         return wibox({
             screen            = s,
@@ -1812,7 +1827,7 @@ awful.screen.connect_for_each_screen(function(s)
     -- is ~560 tall (hero 200 + divider 29 + 9 info rows + 2 bars + updates).
     local TILE_H    = 588
     local dash_tile = make_tile(TILE_W, TILE_H)
-    dash_tile:setup {
+    dash_tile:set_widget(glass {
         {
             hero_block,
             {
@@ -1833,7 +1848,7 @@ awful.screen.connect_for_each_screen(function(s)
         },
         margins = UI.tile_margin,
         widget  = wibox.container.margin,
-    }
+    })
 
     ---------------------------------------------------------------
     -- Media panel (primary screen only) — anchors the bottom-right
@@ -1847,35 +1862,39 @@ awful.screen.connect_for_each_screen(function(s)
     if s == screen.primary then
         local CAVA_BARS = 44   -- must match cava/.config/cava/config
         local NP_W      = math.min(720, math.max(420, s.geometry.width - TILE_W - 3 * DESK.gutter))
-        local NP_H      = 222   -- 48 margins + 96 art + 17 divider + 60 bars + slack
-        local NP_ART    = 96   -- square sigil slot; governs the top row's height
+        local NP_H      = 232   -- 48 margins + 14 eyebrow + 50 title row + 16 gaps + 104 bars
+        local NP_ART    = 44   -- small badge beside the title, not a slab
         local cava_live = false
         local cava_values = {}
 
-        local CAVA_H = 60
+        local CAVA_H = 104
         local cava_widget = wibox.widget.base.make_widget()
         -- Report our own height: returning the available height made the widget
         -- absorb all the panel's slack and pushed the bars to the very bottom.
         function cava_widget:fit(_, w, _) return w, CAVA_H end
         function cava_widget:draw(_, cr, w, h)
-            -- Integer pitch: a fractional bar width put every bar on a
-            -- different sub-pixel offset, so cairo antialiased each one
-            -- differently and they looked unevenly wide in a screenshot.
+            -- Mirrored around the centre line: reads as a real audio meter
+            -- rather than a bar chart, and the resting state degrades to a
+            -- clean dotted rule instead of a row of stubs.
             local gap   = 3
             local pitch = math.floor(w / CAVA_BARS)
             local bw    = pitch - gap
             if bw <= 0 then return end
-            local x0 = math.floor((w - (CAVA_BARS * pitch - gap)) / 2)
-            cr:set_source(gears.color(cava_live and (C.mauve .. "cc") or (C.surface1 .. "cc")))
+            local x0  = math.floor((w - (CAVA_BARS * pitch - gap)) / 2)
+            local mid = h / 2
             for i = 1, CAVA_BARS do
-                local v  = (cava_values[i] or 0) / 100
-                local bh = math.max(2, v * (h - 2))
+                local v  = math.min(1, (cava_values[i] or 0) / 100)
+                local bh = math.max(2, v * (h - 4))
+                -- Brighter with amplitude, so loud bands glow and quiet ones
+                -- recede: one accent that moves instead of a flat pink block.
+                local a = cava_live and (0.40 + 0.60 * v) or 0.34
+                cr:set_source(gears.color(C.mauve .. string.format("%02x", math.floor(a * 255))))
                 cr:save()
-                cr:translate(x0 + (i - 1) * pitch, h - bh)
-                gears.shape.rounded_rect(cr, bw, bh, math.min(2, bw / 2))
+                cr:translate(x0 + (i - 1) * pitch, mid - bh / 2)
+                gears.shape.rounded_rect(cr, bw, bh, math.min(bw / 2, 3))
                 cr:restore()
+                cr:fill()
             end
-            cr:fill()
         end
 
         -- Resting state is free: every value at 0 draws 44 evenly spaced 2px
@@ -1891,7 +1910,7 @@ awful.screen.connect_for_each_screen(function(s)
                 local target = tonumber(val) or 0
                 local prev   = cava_values[i] or 0
                 -- rise fast, fall slow: raw frames jitter at 30fps
-                cava_values[i] = prev + (target - prev) * ((target > prev) and 0.55 or 0.22)
+                cava_values[i] = prev + (target - prev) * ((target > prev) and 0.50 or 0.14)
                 i = i + 1
             end
             cava_widget:emit_signal("widget::redraw_needed")
@@ -1899,7 +1918,7 @@ awful.screen.connect_for_each_screen(function(s)
 
         local BF = function(k, fb) return beautiful[k] or fb end
         local media_sigil = wibox.widget {
-            markup = "<span font='" .. font(40) .. "' foreground='" .. C.overlay0 .. "'>\u{f001}</span>",
+            markup = "<span font='" .. font(17) .. "' foreground='" .. C.overlay0 .. "'>\u{f001}</span>",
             align = "center", valign = "center", widget = wibox.widget.textbox,
         }
         local media_art = wibox.widget {
@@ -2004,35 +2023,33 @@ awful.screen.connect_for_each_screen(function(s)
         end
 
         media_tile = make_tile(NP_W, NP_H)
-        media_tile:setup {
+        media_tile:set_widget(glass {
             {
                 {
-                    { media_sigil_box, right = 20, widget = wibox.container.margin },
-                    {
-                        {
-                            -- flex, not align: pango's letter_spacing is not
-                            -- fully counted in the textbox fit, so a natural-
-                            -- width slot came out ~2px short and the label
-                            -- wrapped ("AUDI" / "O"). Half the row each cannot
-                            -- wrap, and the right label's align does the rest.
-                            media_eyebrow_l,
-                            media_eyebrow_r,
-                            layout = wibox.layout.flex.horizontal,
-                        },
-                        { media_title,    top = 4, widget = wibox.container.margin },
-                        { media_sub,      top = 2, widget = wibox.container.margin },
-                        { media_prog_row, top = 8, widget = wibox.container.margin },
-                        layout = wibox.layout.fixed.vertical,
-                    },
-                    layout = wibox.layout.align.horizontal,
+                    media_eyebrow_l,
+                    media_eyebrow_r,
+                    layout = wibox.layout.flex.horizontal,
                 },
-                divider(),
-                cava_widget,
+                {
+                    {
+                        { media_sigil_box, right = 14, widget = wibox.container.margin },
+                        {
+                            media_title,
+                            { media_sub, top = 1, widget = wibox.container.margin },
+                            layout = wibox.layout.fixed.vertical,
+                        },
+                        layout = wibox.layout.align.horizontal,
+                    },
+                    top = 6,
+                    widget = wibox.container.margin,
+                },
+                { media_prog_row, top = 6, widget = wibox.container.margin },
+                { cava_widget, top = 10, widget = wibox.container.margin },
                 layout = wibox.layout.fixed.vertical,
             },
             margins = UI.tile_margin,
             widget  = wibox.container.margin,
-        }
+        })
 
         -- playerctl is optional. Exit 9 == not installed: stop polling for the
         -- session and stay in the idle state rather than nagging.
@@ -2131,6 +2148,7 @@ awful.screen.connect_for_each_screen(function(s)
         -- Process lifecycle: track OUR pid (never pkill blindly — the same
         -- self-match trap as the wallpaper fetch guard).
         local cava_pid = nil
+        local cava_starting = false   -- latch: two spawns in flight = duplicate bars
         local audio_playing = false
         local cava_error_shown = false -- notify once per session, not per retry
 
@@ -2145,27 +2163,32 @@ awful.screen.connect_for_each_screen(function(s)
             return true
         end
 
-        -- A cava orphaned by a previous awesome instance keeps running but
-        -- writes to a dead pipe, so its bars sit flat at zero forever. Clear
-        -- any stray one before we spawn ours.
-        awful.spawn.with_shell("pkill -x cava >/dev/null 2>&1 || true")
+        -- Kill strays SYNCHRONOUSLY before anything can spawn a new one: an
+        -- async pkill raced the audio timer's call_now, so every restart left
+        -- its cava behind and they all wrote to the same widget (11 at once,
+        -- which is what "glitchy" actually was).
+        os.execute("pkill -x cava >/dev/null 2>&1")
 
         local function stop_cava()
             if cava_pid then awesome.kill(cava_pid, 15) end
             cava_pid = nil
+            cava_starting = false
             set_cava_active(false)   -- also zeroes the bars and repaints
         end
 
         local function update_cava_state()
             local want = audio_playing and desktop_visible()
-            if want and not cava_pid and awful.spawn then
+            if want and not cava_pid and not cava_starting and awful.spawn then
+                cava_starting = true
                 local pid = awful.spawn.with_line_callback("cava", {
                     stdout = function(line) cava_smooth(line) end,
                     exit = function()
                         cava_pid = nil
+                        cava_starting = false
                         set_cava_active(false)
                     end,
                 })
+                cava_starting = false
                 if type(pid) == "number" then
                     cava_pid = pid
                     set_cava_active(true)
@@ -2751,9 +2774,15 @@ awful.spawn.with_shell(
 -- themed lock screen) after 5 min idle and on suspend/lid close. The greeter
 -- path is safe again — the malformed Xorg snippet that black-screened it is
 -- fixed and validated at install time (services.sh + xorg_conf_valid).
+-- 'xset s noblank' is the important part: with X's own blanking enabled (the
+-- default) X paints the screen BLACK at the idle timeout, and that black is
+-- what you see -- not the greeter. light-locker still gets the screensaver
+-- activation and locks; it just no longer sits behind a blanked X screen.
+-- cycle 0 stops X re-triggering, and locking 1s after activation keeps the
+-- gap between "idle" and "greeter visible" as short as possible.
 awful.spawn.with_shell(
-    "command -v light-locker >/dev/null && { xset s 300 5; " ..
-    "pgrep -x light-locker >/dev/null || light-locker --lock-after-screensaver=5 --lock-on-suspend & }")
+    "command -v light-locker >/dev/null && { xset s 300 0; xset s noblank; " ..
+    "pgrep -x light-locker >/dev/null || light-locker --lock-after-screensaver=1 --lock-on-suspend & }")
 
 -- GTK / icon / cursor theme for non-awesome apps (Brave, GTK tools, Qt via
 -- the icon name). This runs on every start and overwrites settings.ini, so it

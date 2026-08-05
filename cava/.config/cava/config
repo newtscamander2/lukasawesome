@@ -3,14 +3,14 @@
 # /dev/null` for defaults, or just run `cava` and ignore the raw numbers.
 [general]
 bars = 44
-framerate = 30
+framerate = 25
 autosens = 1
 
 [smoothing]
 # cava's own smoothing; rc.lua additionally applies exponential smoothing on
 # the values it receives, because raw frames read as "shaky" otherwise.
-monstercat = 1.5
-noise_reduction = 45
+monstercat = 2.0
+noise_reduction = 60
 
 [output]
 method = raw
