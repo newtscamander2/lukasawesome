@@ -148,6 +148,22 @@ awful.layout.layouts = {
 -- Menubar configuration
 menubar.utils.terminal = terminal
 
+-- Measure rendered text width in pixels via Pango. Character-count heuristics
+-- underestimate (they clipped the wallpaper caption), and they are outright
+-- wrong for the proportional Propo faces in the type scale.
+local _pango_ctx
+local function text_width(text, font_desc)
+    local lgi = require("lgi")
+    if not _pango_ctx then
+        _pango_ctx = lgi.PangoCairo.FontMap.get_default():create_context()
+    end
+    local layout = lgi.Pango.Layout.new(_pango_ctx)
+    layout:set_font_description(lgi.Pango.FontDescription.from_string(font_desc))
+    layout:set_text(text, -1)
+    local _, logical = layout:get_pixel_extents()
+    return logical.width
+end
+
 -- {{{ Shape + widget helpers
 local function rounded(r)
     return function(cr, w, h) gears.shape.rounded_rect(cr, w, h, r) end
@@ -1779,7 +1795,9 @@ awful.screen.connect_for_each_screen(function(s)
     -- Dashboard tile: hero block over the system info. FIXED height forever —
     -- the visualizer used to live here and swung this tile's bottom edge 63px
     -- whenever audio started, which broke its alignment with the caption.
-    local TILE_H    = 470
+    -- 470 clipped the last info rows once gpu/memory were added: the content
+    -- is ~560 tall (hero 200 + divider 29 + 9 info rows + 2 bars + updates).
+    local TILE_H    = 566
     local dash_tile = make_tile(TILE_W, TILE_H)
     dash_tile:setup {
         {
@@ -1816,14 +1834,16 @@ awful.screen.connect_for_each_screen(function(s)
     if s == screen.primary then
         local CAVA_BARS = 44   -- must match cava/.config/cava/config
         local NP_W      = math.min(720, math.max(420, s.geometry.width - TILE_W - 3 * DESK.gutter))
-        local NP_H      = 228
-        local NP_ART    = 104  -- square sigil slot; governs the top row's height
+        local NP_H      = 222   -- 48 margins + 96 art + 17 divider + 60 bars + slack
+        local NP_ART    = 96   -- square sigil slot; governs the top row's height
         local cava_live = false
         local cava_values = {}
 
+        local CAVA_H = 60
         local cava_widget = wibox.widget.base.make_widget()
-        cava_widget.forced_height = 54
-        function cava_widget:fit(_, w, h) return w, h end
+        -- Report our own height: returning the available height made the widget
+        -- absorb all the panel's slack and pushed the bars to the very bottom.
+        function cava_widget:fit(_, w, _) return w, CAVA_H end
         function cava_widget:draw(_, cr, w, h)
             -- Integer pitch: a fractional bar width put every bar on a
             -- different sub-pixel offset, so cairo antialiased each one
@@ -1882,8 +1902,14 @@ awful.screen.connect_for_each_screen(function(s)
             widget        = wibox.container.background,
         }
 
-        local media_eyebrow_l = wibox.widget { widget = wibox.widget.textbox }
-        local media_eyebrow_r = wibox.widget { align = "right", widget = wibox.widget.textbox }
+        -- ellipsize="none": pango's letter_spacing is not accounted for in the
+        -- textbox's fit, so with the default "end" the label truncated itself
+        -- ("AUDI…") despite having hundreds of spare pixels.
+        local media_eyebrow_l = wibox.widget {
+            ellipsize = "none", wrap = "none", widget = wibox.widget.textbox }
+        local media_eyebrow_r = wibox.widget {
+            align = "right", ellipsize = "none", wrap = "none",
+            widget = wibox.widget.textbox }
         local media_title     = wibox.widget { ellipsize = "end", widget = wibox.widget.textbox }
         local media_sub       = wibox.widget { ellipsize = "end", widget = wibox.widget.textbox }
         local media_pos       = wibox.widget { widget = wibox.widget.textbox }
@@ -1971,18 +1997,20 @@ awful.screen.connect_for_each_screen(function(s)
                     { media_sigil_box, right = 20, widget = wibox.container.margin },
                     {
                         {
+                            -- flex, not align: pango's letter_spacing is not
+                            -- fully counted in the textbox fit, so a natural-
+                            -- width slot came out ~2px short and the label
+                            -- wrapped ("AUDI" / "O"). Half the row each cannot
+                            -- wrap, and the right label's align does the rest.
                             media_eyebrow_l,
-                            nil,
                             media_eyebrow_r,
-                            layout = wibox.layout.align.horizontal,
+                            layout = wibox.layout.flex.horizontal,
                         },
                         { media_title,    top = 4, widget = wibox.container.margin },
                         { media_sub,      top = 2, widget = wibox.container.margin },
                         { media_prog_row, top = 8, widget = wibox.container.margin },
                         layout = wibox.layout.fixed.vertical,
                     },
-                    nil,
-                    expand = "inside",
                     layout = wibox.layout.align.horizontal,
                 },
                 divider(),
@@ -2659,9 +2687,13 @@ echo "$cap"
                 end
                 cap_text:set_markup("<span font='" .. font(9) .. "'>\u{f03e}  " ..
                                     esc(cap) .. "</span>")
-                -- FiraCode is monospace (~6.7px/glyph at size 9): size the box
-                -- to the caption instead of leaving a wide empty bar.
-                cap_box.width = math.min(1100, 64 + math.floor(#cap * 6.7))
+                -- Measure the string that is actually drawn (icon + two spaces
+                -- + caption), then add the 14/14 side margins and a little
+                -- slack. The old character-count guess was ~8px short, which is
+                -- exactly why the caption ellipsised. Capped so a long caption
+                -- can never run under the media panel.
+                cap_box.width = math.min(1080,
+                    36 + text_width("\u{f03e}  " .. cap, font(9)))
                 place_caption()
                 cap_box.visible = true
             end)

@@ -58,6 +58,7 @@ if enabled INSTALL_BASE; then
         papirus-icon-theme             # icon fallback when candy-icons is unavailable
     )
     aur+=(neofetch)                    # dropped from official repos -> AUR
+    aur+=(rofi-greenclip)              # clipboard history daemon behind Super+V (clipboard-menu.sh)
     aur+=(catppuccin-cursors-mocha)    # cursor theme for the arch (Mocha) theme
     aur+=(sweet-gtk-theme-dark)        # GTK side of the Dr460nized look
 fi

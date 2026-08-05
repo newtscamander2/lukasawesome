@@ -69,6 +69,26 @@ log "Desktop extras"
 check_pkg cava
 check_pkg xclip
 check_pkg playerctl
+# Clipboard history (Super+V). The package alone proves nothing: greenclip only
+# records while its daemon runs, so an installed-but-dead daemon means Super+V
+# opens an empty list forever. rc.lua spawns it at login, so "not running" on a
+# machine that has not re-logged in since install is expected, not breakage.
+check_pkg rofi-greenclip
+if pgrep -x greenclip >/dev/null 2>&1; then
+    pass "greenclip daemon running (clipboard history recording)"
+else
+    note "greenclip daemon not running (started by rc.lua at login — re-login or restart awesome)"
+fi
+clip_menu="$HOME/.config/awesome/scripts/clipboard-menu.sh"
+if [ ! -e "$clip_menu" ]; then
+    note "clipboard-menu.sh not deployed yet ($clip_menu — make stow)"
+elif [ ! -x "$clip_menu" ]; then
+    # Stow preserves the repo file's mode, so a non-executable link means the
+    # repo copy lost +x and the Super+V keybinding fails silently.
+    miss "clipboard-menu.sh present but not executable ($clip_menu)"
+else
+    pass "clipboard-menu.sh present and executable"
+fi
 # wallpaper-prep.sh shells out to 'magick', not 'convert': ImageMagick 7 renamed
 # the entry point, so check the binary too — a v6 leftover satisfies the package
 # check but leaves the script falling back to unprocessed wallpapers.
