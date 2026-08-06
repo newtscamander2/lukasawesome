@@ -1,0 +1,26 @@
+[greenclip]
+  # WM_CLASS names whose selections are NEVER recorded. history_file below is
+  # plaintext on disk, so every password manager must be listed here. Both the
+  # instance ("keepassxc") and class ("KeePassXC") spellings are matched.
+  blacklisted_applications = ["keepassxc", "KeePassXC", "Bitwarden", "bitwarden", "1Password", "1password"]
+
+  # Images off: they bloat the plaintext history/cache for no benefit here, and
+  # a screenshot of a password field is just as sensitive as the text.
+  enable_image_support = false
+
+  history_file = "/home/lukas/.cache/greenclip.history"
+  image_cache_directory = "/tmp/greenclip"
+
+  # 50 is plenty for "I copied that a minute ago" and halves how long anything
+  # sensitive that slips through (a password pasted from another app) lingers.
+  max_history_length = 50
+
+  # Skip anything absurdly large: those are file dumps, not clipboard reuse.
+  max_selection_size_bytes = 262144
+
+  static_history = []
+  trim_space_from_selection = true
+
+  # PRIMARY is the X selection that updates on every mouse drag-select. Leaving
+  # it off means only deliberate Ctrl+C is recorded.
+  use_primary_selection_as_input = false

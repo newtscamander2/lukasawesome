@@ -79,6 +79,17 @@ if pgrep -x greenclip >/dev/null 2>&1; then
 else
     note "greenclip daemon not running (started by rc.lua at login — re-login or restart awesome)"
 fi
+# The history file is PLAINTEXT on disk, so a missing blacklist means KeePassXC
+# copies get recorded. Treat that as a real failure, not a note.
+if [ -r "$HOME/.config/greenclip.toml" ]; then
+    if grep -qi 'blacklisted_applications.*keepassxc' "$HOME/.config/greenclip.toml"; then
+        pass "greenclip blacklists KeePassXC (passwords not recorded)"
+    else
+        miss "greenclip.toml does NOT blacklist KeePassXC — passwords would be stored in plaintext"
+    fi
+else
+    note "greenclip.toml not deployed yet (make stow)"
+fi
 clip_menu="$HOME/.config/awesome/scripts/clipboard-menu.sh"
 if [ ! -e "$clip_menu" ]; then
     note "clipboard-menu.sh not deployed yet ($clip_menu — make stow)"
@@ -193,7 +204,7 @@ if enabled INSTALL_DEV; then
 fi
 
 log "Dotfiles symlinks"
-for pkg_name in $(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash rclone clang-format cava qt applications"); do
+for pkg_name in $(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash rclone clang-format cava qt greenclip"); do
     case "$pkg_name" in
         awesome)   target="$HOME/.config/awesome" ;;
         nvim)      target="$HOME/.config/nvim" ;;
@@ -205,7 +216,7 @@ for pkg_name in $(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash
         clang-format) target="$HOME/.clang-format" ;;
         cava)      target="$HOME/.config/cava" ;;
         qt)        target="$HOME/.local/share/color-schemes/Dr460nized.colors" ;;
-        applications) target="$HOME/.local/share/applications/awesome-power.desktop" ;;
+        greenclip) target="$HOME/.config/greenclip.toml" ;;
         *)         target="" ;;
     esac
     [ -z "$target" ] && continue
