@@ -169,8 +169,39 @@ local function rounded(r)
     return function(cr, w, h) gears.shape.rounded_rect(cr, w, h, r) end
 end
 
+-- Hairlines. NOT `{ bg = X, forced_height = 1, widget = container.background }`:
+-- a background container paints its bg from before_draw_children, which never
+-- runs when it has no child — so every divider written that way drew NOTHING.
+-- wibox.widget.separator draws itself. Vertical separators need an explicit
+-- length: laid out in a fixed.horizontal they otherwise fit to zero height.
+local function hline(colour, length)
+    return {
+        orientation   = "horizontal",
+        thickness     = 1,
+        color         = colour,
+        forced_height = 1,
+        forced_width  = length,
+        widget        = wibox.widget.separator,
+    }
+end
+local function vline(colour, length)
+    return {
+        orientation   = "vertical",
+        thickness     = 1,
+        color         = colour,
+        forced_width  = 1,
+        forced_height = length,
+        widget        = wibox.widget.separator,
+    }
+end
+
 -- Rofi theme follows the active arch-family theme (rofi-<theme>.rasi).
-local rofi_arch = "rofi -show drun -show-icons -theme "
+-- combi mode concatenates its sub-modes in order, so the power actions appear
+-- as ordinary entries directly AFTER the apps rather than in a separate menu
+-- you have to search. "power" is a rofi script mode (scripts/rofi-power-mode.sh).
+local rofi_arch = "rofi -show combi -modes combi -combi-modes "
+    .. "'drun,power:" .. os.getenv("HOME") .. "/.config/awesome/scripts/rofi-power-mode.sh'"
+    .. " -show-icons -theme "
     .. os.getenv("HOME") .. "/.config/awesome/themes/" .. ACTIVE_THEME
     .. "/rofi-" .. ACTIVE_THEME .. ".rasi"
 
@@ -233,11 +264,7 @@ end
 
 local function seg_divider()
     return wibox.widget {
-        {
-            forced_width = 1,
-            bg           = C.surface1,
-            widget       = wibox.container.background,
-        },
+        vline(C.surface1, UI.chip_h - 2 * UI.div_inset),
         top = UI.div_inset, bottom = UI.div_inset,
         widget = wibox.container.margin,
     }
@@ -553,11 +580,7 @@ vol_popup:setup {
             layout = wibox.layout.align.horizontal,
         },
         vol_slider,
-        {
-            bg            = C.surface0,
-            forced_height = 1,
-            widget        = wibox.container.background,
-        },
+        hline(C.surface0),
         sink_btn_bg,
         sink_rows,
         spacing = 12,
@@ -1156,10 +1179,13 @@ awful.screen.connect_for_each_screen(function(s)
                             {
                                 { id = "text_role", widget = wibox.widget.textbox,
                                   align = "center", valign = "center" },
-                                { { id = "occupied", bg = C.mauve,
+                                -- separator, not a childless background: the
+                                -- latter never paints (see hline/vline).
+                                { { id = "occupied", color = C.mauve,
+                                    orientation = "horizontal", thickness = dpi(2),
                                     forced_width = dpi(12), forced_height = dpi(2),
-                                    shape = gears.shape.rounded_bar, visible = false,
-                                    widget = wibox.container.background },
+                                    visible = false,
+                                    widget = wibox.widget.separator },
                                   valign = "bottom", halign = "center",
                                   widget = wibox.container.place },
                                 layout = wibox.layout.stack,
@@ -1308,11 +1334,7 @@ awful.screen.connect_for_each_screen(function(s)
             widget = wibox.container.margin,
         },
         {
-            {
-                forced_width = 1,
-                bg           = C.surface1,
-                widget       = wibox.container.background,
-            },
+            vline(C.surface1, UI.chip_h + 2 * UI.chip_air - 2 * dpi(9)),
             top = dpi(9), bottom = dpi(9),
             widget = wibox.container.margin,
         },
@@ -1539,11 +1561,7 @@ awful.screen.connect_for_each_screen(function(s)
     -- itself, or the line floats 24px inside the tile.
     local function glass(margined)
         return wibox.widget {
-            {
-                bg            = C.text .. "14",
-                forced_height = 1,
-                widget        = wibox.container.background,
-            },
+            hline(C.text .. "24"),
             margined,
             layout = wibox.layout.fixed.vertical,
         }
@@ -1765,11 +1783,7 @@ awful.screen.connect_for_each_screen(function(s)
 
     local divider = function()
         return wibox.widget {
-            {
-                bg            = C.surface0,
-                forced_height = 1,
-                widget        = wibox.container.background,
-            },
+            hline(C.surface0),
             top = 8, bottom = 8,
             widget = wibox.container.margin,
         }
@@ -1831,10 +1845,7 @@ awful.screen.connect_for_each_screen(function(s)
         {
             hero_block,
             {
-                {
-                    bg = C.surface0, forced_height = 1,
-                    widget = wibox.container.background,
-                },
+                hline(C.surface0),
                 top = 14, bottom = 14,
                 widget = wibox.container.margin,
             },
@@ -1858,6 +1869,9 @@ awful.screen.connect_for_each_screen(function(s)
     ---------------------------------------------------------------
     local media_tile, set_cava_active, poll_media, cava_smooth =
         nil, function() end, function() end, function() end
+    -- Right-hand column, primary screen only. Declared out here so
+    -- place_tiles() can reach them; assigned inside the primary block.
+    local cal_tile, stats_tile = nil, nil
 
     if s == screen.primary then
         local CAVA_BARS = 44   -- must match cava/.config/cava/config
@@ -2102,6 +2116,426 @@ awful.screen.connect_for_each_screen(function(s)
             if media.status ~= "Playing" then render_media() end
         end)
         render_media()
+
+        -----------------------------------------------------------
+        -- SYSTEM STRIP — storage + network, right-aligned directly
+        -- above the media panel so the two share both side rails.
+        -- Same width as the media panel; deliberately short, it is a
+        -- readout, not a tile.
+        -----------------------------------------------------------
+        local STATS_H = 116
+
+        local function hbytes(n)
+            local u, i = { "B", "K", "M", "G", "T" }, 1
+            while n >= 1024 and i < #u do n = n / 1024; i = i + 1 end
+            return string.format((n < 10 and i > 1) and "%.1f%s" or "%.0f%s", n, u[i])
+        end
+
+        -- label | bar | value. The value cell is a FIXED width: sized to fit,
+        -- the two bars in a column would end at different x for "44G / 49G"
+        -- vs "283G / 866G" and the strip would look broken.
+        local function meter_row(label, colour)
+            local lbl = wibox.widget {
+                markup = "<span font='" .. font(9) .. "' foreground='" ..
+                         C.subtext1 .. "'>" .. label .. "</span>",
+                widget = wibox.widget.textbox,
+                valign = "center", wrap = "none", ellipsize = "none",
+            }
+            local bar = bar_widget(colour)
+            bar.forced_height = 8
+            bar.forced_width  = nil   -- the align layout's centre slot governs
+            local val = wibox.widget {
+                widget = wibox.widget.textbox,
+                align  = "right", valign = "center",
+                wrap   = "none", ellipsize = "none",
+            }
+            return {
+                lbl = lbl, bar = bar, val = val,
+                w = wibox.widget {
+                    { lbl, forced_width = 54, widget = wibox.container.background },
+                    { bar, left = 4, right = 12, widget = wibox.container.margin },
+                    { val, forced_width = 96, widget = wibox.container.background },
+                    forced_height = 22,
+                    layout = wibox.layout.align.horizontal,
+                },
+            }
+        end
+
+        local disk_rows = { meter_row("/", C.blue), meter_row("/home", C.teal) }
+        local net_rows  = { meter_row("\u{f01a}  down", C.green),
+                            meter_row("\u{f01b}  up",   C.peach) }
+        -- Throughput has no "capacity", so an opaque track reads as an empty
+        -- input box. The disk rows keep theirs: there, unfilled IS free space.
+        for _, r in ipairs(net_rows) do r.bar.background_color = C.surface0 .. "55" end
+
+        local disk_eyebrow = wibox.widget {
+            markup = eyebrow("storage", C.overlay0),
+            widget = wibox.widget.textbox, wrap = "none", ellipsize = "none",
+        }
+        local net_eyebrow = wibox.widget {
+            markup = eyebrow("network", C.overlay0),
+            widget = wibox.widget.textbox, wrap = "none", ellipsize = "none",
+        }
+
+        local function stat_col(eb, rows)
+            return wibox.widget {
+                { eb, bottom = 6, widget = wibox.container.margin },
+                rows[1].w,
+                rows[2].w,
+                layout = wibox.layout.fixed.vertical,
+            }
+        end
+
+        -- Halves need explicit widths: fixed.horizontal would size each column
+        -- to its content and the divider would drift with the longest value.
+        local STATS_COL_W = math.floor((NP_W - 2 * UI.tile_margin - 45) / 2)
+        local function half(w)
+            return wibox.widget {
+                w, width = STATS_COL_W, strategy = "exact",
+                widget = wibox.container.constraint,
+            }
+        end
+
+        stats_tile = make_tile(NP_W, STATS_H)
+        stats_tile:set_widget(glass {
+            {
+                { half(stat_col(disk_eyebrow, disk_rows)), right = 22,
+                  widget = wibox.container.margin },
+                vline(C.surface1, STATS_H - 2 * UI.tile_margin - 6),
+                { half(stat_col(net_eyebrow, net_rows)), left = 22,
+                  widget = wibox.container.margin },
+                layout = wibox.layout.fixed.horizontal,
+            },
+            margins = UI.tile_margin,
+            widget  = wibox.container.margin,
+        })
+
+        -- Storage. df once every two minutes: mount usage does not move fast
+        -- enough to justify a shorter interval, and this spawns a process.
+        local DISK_LABELS = { "/", "/home" }
+        local function poll_disk()
+            -- pcent comes from df rather than used/size: the two disagree by
+            -- several points on ext4 (reserved-for-root blocks), and the number
+            -- people cross-check against is the one df prints.
+            awful.spawn.easy_async_with_shell(
+                "df -B1 --output=target,used,size,pcent / /home 2>/dev/null | tail -n +2",
+                function(stdout)
+                    local seen, i = {}, 0
+                    for line in (stdout or ""):gmatch("[^\r\n]+") do
+                        local target, used, size, pcent =
+                            line:match("^%s*(%S+)%s+(%d+)%s+(%d+)%s+(%d+)%%")
+                        -- /home on the same filesystem as / makes df print "/"
+                        -- twice; showing the same numbers on both rows would
+                        -- read as a bug, so drop the duplicate row instead.
+                        if target and not seen[target] then
+                            seen[target] = true
+                            i = i + 1
+                            local r = disk_rows[i]
+                            if r then
+                                used, size = tonumber(used), tonumber(size)
+                                local pct = tonumber(pcent)
+                                    or (size > 0 and (used / size * 100)) or 0
+                                r.w.visible = true
+                                r.lbl:set_markup("<span font='" .. font(9) ..
+                                    "' foreground='" .. C.subtext1 .. "'>" ..
+                                    (DISK_LABELS[i] or target) .. "</span>")
+                                r.bar:set_value(pct)
+                                -- >90% full is the one storage fact worth
+                                -- shouting about; recolour the bar, not just
+                                -- the text, so it is visible at a glance.
+                                r.bar.color = pct >= 90 and C.red
+                                    or (pct >= 75 and C.yellow)
+                                    or (i == 1 and C.blue or C.teal)
+                                r.val:set_markup("<span font='" .. font(9) ..
+                                    "' foreground='" ..
+                                    (pct >= 90 and C.red or C.overlay0) .. "'>" ..
+                                    hbytes(used) .. " / " .. hbytes(size) .. "</span>")
+                            end
+                        end
+                    end
+                    for j = i + 1, #disk_rows do disk_rows[j].w.visible = false end
+                end)
+        end
+        poll_disk()
+        gears.timer { timeout = 120, autostart = true, callback = poll_disk }
+
+        -- Network. Both readings are procfs, so this stays in-process — no
+        -- shell every two seconds. The interface is resolved per tick from the
+        -- default route, so wifi/VPN switches follow without a restart.
+        local function default_iface()
+            local f = io.open("/proc/net/route", "r")
+            if not f then return nil end
+            local iface
+            for line in f:lines() do
+                local name, dest = line:match("^(%S+)%s+(%S+)")
+                if name and name ~= "Iface" and dest == "00000000" then
+                    iface = name
+                    break
+                end
+            end
+            f:close()
+            return iface
+        end
+
+        local function iface_bytes(iface)
+            local f = io.open("/proc/net/dev", "r")
+            if not f then return nil end
+            local rx, tx
+            for line in f:lines() do
+                local name, rest = line:match("^%s*([^:%s]+):%s*(.+)$")
+                if name == iface then
+                    local fld = {}
+                    for v in rest:gmatch("%S+") do fld[#fld + 1] = v end
+                    rx, tx = tonumber(fld[1]), tonumber(fld[9])
+                    break
+                end
+            end
+            f:close()
+            return rx, tx
+        end
+
+        local NET_INTERVAL = 2
+        local net_prev_rx, net_prev_tx, net_prev_if
+        -- Throughput has no natural full-scale, so the bars are scaled to the
+        -- session peak (floor 256 KB/s). Self-calibrating: a 1 Gbit transfer
+        -- and an idle link both read sensibly.
+        local net_peak = 256 * 1024
+        local function poll_net()
+            local iface = default_iface()
+            if not iface then
+                net_eyebrow:set_markup(eyebrow("network · offline", C.red))
+                for _, r in ipairs(net_rows) do
+                    r.bar:set_value(0)
+                    r.val:set_markup("<span font='" .. font(9) .. "' foreground='" ..
+                        C.overlay0 .. "'>—</span>")
+                end
+                net_prev_rx, net_prev_tx, net_prev_if = nil, nil, nil
+                return
+            end
+            net_eyebrow:set_markup(eyebrow("network · " .. iface, C.overlay0))
+            local rx, tx = iface_bytes(iface)
+            if not rx then return end
+            -- A different interface (or a counter reset) makes the delta
+            -- meaningless: re-seed and show nothing for one tick.
+            if iface ~= net_prev_if or not net_prev_rx
+                or rx < net_prev_rx or tx < net_prev_tx then
+                net_prev_rx, net_prev_tx, net_prev_if = rx, tx, iface
+                return
+            end
+            local drx = (rx - net_prev_rx) / NET_INTERVAL
+            local dtx = (tx - net_prev_tx) / NET_INTERVAL
+            net_prev_rx, net_prev_tx = rx, tx
+            net_peak = math.max(net_peak, drx, dtx)
+            local rates = { drx, dtx }
+            for i, r in ipairs(net_rows) do
+                r.bar:set_value(rates[i] / net_peak * 100)
+                r.val:set_markup("<span font='" .. font(9) .. "' foreground='" ..
+                    (rates[i] > 1024 and C.subtext1 or C.overlay0) .. "'>" ..
+                    hbytes(rates[i]) .. "/s</span>")
+            end
+        end
+        poll_net()
+        gears.timer { timeout = NET_INTERVAL, autostart = true, callback = poll_net }
+
+        -----------------------------------------------------------
+        -- CALENDAR COLUMN — top-right anchor: month grid over the
+        -- next seven days. Narrow on purpose; it holds the right
+        -- edge without closing the open centre where the band
+        -- photo's subject sits.
+        -----------------------------------------------------------
+        local CAL_W = 340
+        -- Height is whatever is left once the strip and the media panel have
+        -- taken their share of the right column, so all four gaps stay equal.
+        local CAL_H = math.max(420, math.min(760,
+            s.workarea.height - 4 * DESK.gutter - STATS_H - NP_H))
+
+        local cal_month = wibox.widget {
+            widget = wibox.widget.textbox, wrap = "none", ellipsize = "none",
+        }
+        local cal_year = wibox.widget {
+            widget = wibox.widget.textbox, align = "right", valign = "bottom",
+            wrap = "none", ellipsize = "none",
+        }
+
+        -- 42 cells built once and rewritten in place. Rebuilding the tree each
+        -- midnight would drop 42 layouts on the floor every day.
+        local CAL_CELLS = 42
+        local cal_cells = {}
+        for i = 1, CAL_CELLS do
+            local tb = wibox.widget {
+                align = "center", valign = "center",
+                widget = wibox.widget.textbox,
+            }
+            local bg = wibox.widget {
+                tb,
+                forced_height = 30,
+                shape         = rounded(UI.radius_inner),
+                widget        = wibox.container.background,
+            }
+            cal_cells[i] = {
+                tb = tb, bg = bg,
+                w  = wibox.widget { bg, margins = 2, widget = wibox.container.margin },
+            }
+        end
+
+        local cal_grid = wibox.widget { spacing = 0, layout = wibox.layout.fixed.vertical }
+        for row = 0, 5 do
+            local line = wibox.widget { layout = wibox.layout.flex.horizontal }
+            for col = 1, 7 do line:add(cal_cells[row * 7 + col].w) end
+            cal_grid:add(line)
+        end
+
+        -- Monday-first, two letters: locale %a is three and would not fit a
+        -- 41px cell at this size.
+        local WD = { "Mo", "Tu", "We", "Th", "Fr", "Sa", "Su" }
+        local cal_head = wibox.widget { layout = wibox.layout.flex.horizontal }
+        for i, name in ipairs(WD) do
+            cal_head:add(wibox.widget {
+                markup = "<span font='" .. font(8) .. "' foreground='" ..
+                         (i >= 6 and C.overlay0 or C.blue) .. "'>" .. name .. "</span>",
+                align = "center", widget = wibox.widget.textbox,
+                wrap = "none", ellipsize = "none",
+            })
+        end
+
+        local cal_days_eyebrow = wibox.widget {
+            markup = eyebrow("next 7 days", C.overlay0),
+            widget = wibox.widget.textbox, wrap = "none", ellipsize = "none",
+        }
+        local cal_day_rows = {}
+        for i = 1, 7 do
+            local wd  = wibox.widget { widget = wibox.widget.textbox, valign = "center",
+                                       wrap = "none", ellipsize = "none" }
+            local dt  = wibox.widget { widget = wibox.widget.textbox, valign = "center",
+                                       wrap = "none", ellipsize = "none" }
+            local rel = wibox.widget { widget = wibox.widget.textbox, valign = "center",
+                                       align = "right", wrap = "none", ellipsize = "none" }
+            cal_day_rows[i] = {
+                wd = wd, dt = dt, rel = rel,
+                w  = wibox.widget {
+                    { wd, forced_width = 42, widget = wibox.container.background },
+                    { dt, widget = wibox.container.background },
+                    { rel, widget = wibox.container.background },
+                    forced_height = 26,
+                    layout = wibox.layout.align.horizontal,
+                },
+            }
+        end
+
+        local function refresh_calendar()
+            local now = os.date("*t")
+            cal_month:set_markup("<span font='" .. BF("font_h1", font(20)) ..
+                "' foreground='" .. C.text .. "'>" .. os.date("%B") .. "</span>")
+            cal_year:set_markup("<span font='" .. BF("font_body", font(10)) ..
+                "' foreground='" .. C.overlay0 .. "'>" ..
+                os.date("%Y  ·  w%V") .. "</span>")
+
+            -- wday is 1=Sunday; this rotates it to a Monday-first column index
+            -- and yields the number of blank leading cells.
+            local first = os.date("*t", os.time {
+                year = now.year, month = now.month, day = 1, hour = 12 })
+            local lead  = (first.wday + 5) % 7
+            -- day 0 of next month == last day of this one (mktime normalises
+            -- month 13, so December needs no special case).
+            local ndays = os.date("*t", os.time {
+                year = now.year, month = now.month + 1, day = 0, hour = 12 }).day
+
+            for i = 1, CAL_CELLS do
+                local c, d = cal_cells[i], i - lead
+                if d < 1 or d > ndays then
+                    c.tb:set_markup("")
+                    c.bg.bg = nil
+                elseif d == now.day then
+                    c.tb:set_markup("<span font='" .. font(11) .. "' foreground='" ..
+                        C.crust .. "' weight='bold'>" .. d .. "</span>")
+                    c.bg.bg = C.mauve
+                else
+                    local weekend = ((i - 1) % 7) >= 5
+                    c.tb:set_markup("<span font='" .. font(11) .. "' foreground='" ..
+                        (d < now.day and C.overlay0
+                         or (weekend and C.subtext1 or C.text)) .. "'>" .. d .. "</span>")
+                    c.bg.bg = nil
+                end
+            end
+
+            for i = 1, 7 do
+                -- day + n overflows the month on purpose: mktime normalises it,
+                -- which is what makes the list cross month and year ends.
+                local t = os.time { year = now.year, month = now.month,
+                                    day = now.day + (i - 1), hour = 12 }
+                local d       = os.date("*t", t)
+                local today   = (i == 1)
+                local weekend = (d.wday == 1 or d.wday == 7)
+                local r = cal_day_rows[i]
+                r.wd:set_markup("<span font='" .. font(10) .. "' foreground='" ..
+                    (today and C.mauve or (weekend and C.overlay0 or C.subtext1)) ..
+                    "'>" .. os.date("%a", t) .. "</span>")
+                r.dt:set_markup("<span font='" .. font(10) .. "' foreground='" ..
+                    (today and C.text or C.subtext1) .. "'>" ..
+                    os.date("%d %b", t) .. "</span>")
+                r.rel:set_markup("<span font='" .. font(9) .. "' foreground='" ..
+                    (today and C.mauve or C.overlay0) .. "'>" ..
+                    (today and "today" or (i == 2 and "tomorrow")
+                     or ("in " .. (i - 1) .. " days")) .. "</span>")
+            end
+        end
+
+        -- align.vertical, EXACTLY three children: grid at the top, day list
+        -- pinned to the bottom, an empty expander between them. A fixed.vertical
+        -- would leave the height slack as extra padding under the last row, so
+        -- the tile looked bottom-heavy at every resolution but one.
+        cal_tile = make_tile(CAL_W, CAL_H)
+        cal_tile:set_widget(glass {
+            {
+                {
+                    {
+                        cal_month,
+                        cal_year,
+                        layout = wibox.layout.align.horizontal,
+                    },
+                    { cal_head, top = 12, bottom = 4, widget = wibox.container.margin },
+                    cal_grid,
+                    layout = wibox.layout.fixed.vertical,
+                },
+                { widget = wibox.container.background },   -- expander
+                {
+                    { hline(C.surface0), bottom = 12, widget = wibox.container.margin },
+                    cal_days_eyebrow,
+                    {
+                        {
+                            cal_day_rows[1].w, cal_day_rows[2].w, cal_day_rows[3].w,
+                            cal_day_rows[4].w, cal_day_rows[5].w, cal_day_rows[6].w,
+                            cal_day_rows[7].w,
+                            layout = wibox.layout.fixed.vertical,
+                        },
+                        top = 6, widget = wibox.container.margin,
+                    },
+                    layout = wibox.layout.fixed.vertical,
+                },
+                -- forced_height is what makes the bottom anchor work at all:
+                -- glass() stacks in a fixed.vertical, which hands this layout
+                -- its CONTENT height, so without it there is no slack for the
+                -- expander to take and the day list floats mid-tile.
+                forced_height = CAL_H - 2 * UI.tile_margin - 1,
+                layout = wibox.layout.align.vertical,
+            },
+            margins = UI.tile_margin,
+            widget  = wibox.container.margin,
+        })
+        refresh_calendar()
+        -- One cheap tick a minute, rewriting only when the date actually rolls
+        -- over. A "sleep until midnight" timer does not survive suspend.
+        local cal_day_key = os.date("%Y-%j")
+        gears.timer {
+            timeout = 60, autostart = true,
+            callback = function()
+                local key = os.date("%Y-%j")
+                if key ~= cal_day_key then
+                    cal_day_key = key
+                    refresh_calendar()
+                end
+            end,
+        }
     end
 
     ---------------------------------------------------------------
@@ -2133,6 +2567,21 @@ awful.screen.connect_for_each_screen(function(s)
             else
                 media_tile.x = dash_r + g
             end
+        end
+
+        -- Right column: calendar at the top edge, system strip stacked on the
+        -- media panel. All three share the right rail, so the column reads as
+        -- one element regardless of the differing widths.
+        if cal_tile then
+            cal_tile.x = wa.x + wa.width - g - cal_tile.width
+            cal_tile.y = wa.y + g
+        end
+        if stats_tile then
+            stats_tile.x = wa.x + wa.width - g - stats_tile.width
+            stats_tile.y = media_tile.y - g - stats_tile.height
+            -- Anchored to the panel above it, so on a short screen it would
+            -- ride off the top: fall back to hiding rather than overlapping.
+            stats_tile.visible = stats_tile.y >= wa.y + g
         end
     end
     place_tiles()
@@ -2453,13 +2902,24 @@ exit 1
 
     -- Prompt
     awful.key({ modkey },            "r",     function () awful.spawn(rofi_arch) end,
-              {description = "open Rofi (apps + \"Power…\" entry)", group = "launcher"}),
+              {description = "open Rofi (apps, then power actions)", group = "launcher"}),
     awful.key({ modkey, "Shift" },   "v",
         function () awful.spawn(os.getenv("HOME") .. "/.config/awesome/scripts/clipboard-menu.sh") end,
               {description = "clipboard history", group = "launcher"}),
+    -- Same script mode the launcher lists, shown on its own: one definition of
+    -- the actions, two ways in. (Super+R for "with everything else", Super+P
+    -- for "just these five".)
     awful.key({ modkey },            "p",
-        function () awful.spawn(os.getenv("HOME") .. "/.config/awesome/scripts/power-menu.sh") end,
-              {description = "power menu (lock/logout/suspend/reboot/off)", group = "launcher"})
+        function ()
+            awful.spawn.with_shell(
+                "rofi -show power -modes 'power:" .. os.getenv("HOME") ..
+                "/.config/awesome/scripts/rofi-power-mode.sh' -theme " ..
+                os.getenv("HOME") .. "/.config/awesome/themes/" .. ACTIVE_THEME ..
+                "/rofi-" .. ACTIVE_THEME .. ".rasi " ..
+                "-theme-str 'window { width: 420px; } " ..
+                "listview { columns: 1; lines: 5; } element-icon { size: 0px; }'")
+        end,
+              {description = "power actions (lock/logout/suspend/reboot/off)", group = "launcher"})
 )
 
 clientkeys = gears.table.join(
