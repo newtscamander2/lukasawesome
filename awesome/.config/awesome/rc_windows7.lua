@@ -32,6 +32,7 @@ local naughty   = require("naughty")
 local menubar   = require("menubar")
 local hotkeys_popup = require("awful.hotkeys_popup")
 local nav       = require("lib.nav")
+local startmenu = require("lib.w7_startmenu")
 local focus_dir, move_dir = nav.focus_dir, nav.move_dir
 
 -- Configure the DEFAULT hotkeys widget before anything populates it.
@@ -203,11 +204,14 @@ awful.screen.connect_for_each_screen(function(s)
     local function ql(icon, cmd, tip)
         local img = wibox.widget {
             image = ICONS .. icon, resize = true,
-            forced_width = dpi(22), forced_height = dpi(22),
+            -- Win7 SP1's default is LARGE taskbar icons: pinned items nearly
+            -- fill the bar's height. At 22px they read as a toolbar, not a
+            -- taskbar.
+            forced_width = dpi(28), forced_height = dpi(28),
             widget = wibox.widget.imagebox,
         }
         local b = aero_button(img, {
-            pad = dpi(5), vpad = dpi(4),
+            pad = dpi(4), vpad = dpi(3),
             bg = "#ffffff00",     -- invisible until hovered, like Win7's
             on_click = function() awful.spawn(cmd) end,
         })
@@ -216,9 +220,9 @@ awful.screen.connect_for_each_screen(function(s)
     end
 
     local quick_launch = wibox.widget {
-        ql("ql-explorer.png", filemanager, "Windows Explorer (Dolphin)"),
         ql("ql-browser.png",  browser,     "Internet (Brave)"),
-        ql("ql-terminal.png", terminal,    "Command Prompt (Alacritty)"),
+        ql("ql-explorer.png", filemanager, "Windows Explorer (Dolphin)"),
+        ql("sm-media.png",    "mpv --player-operation-mode=pseudo-gui", "Media Player (mpv)"),
         spacing = dpi(2),
         layout  = wibox.layout.fixed.horizontal,
     }
@@ -228,32 +232,35 @@ awful.screen.connect_for_each_screen(function(s)
     -- pips rather than the Arch mode's labelled pills. Kept because
     -- the tag keys still exist and dead keys are worse than pips.
     ---------------------------------------------------------------
-    s.mytaglist = awful.widget.taglist {
-        screen  = s,
-        filter  = awful.widget.taglist.filter.all,
-        buttons = gears.table.join(
-            awful.button({}, 1, function(t) t:view_only() end),
-            awful.button({}, 3, awful.tag.viewtoggle),
-            awful.button({}, 4, function(t) awful.tag.viewprev(t.screen) end),
-            awful.button({}, 5, function(t) awful.tag.viewnext(t.screen) end)
-        ),
-        style   = { shape = shape3 },
-        layout  = { spacing = dpi(3), layout = wibox.layout.fixed.horizontal },
-        widget_template = {
-            {
-                {
-                    { id = "text_role", widget = wibox.widget.textbox,
-                      align = "center", valign = "center" },
-                    left = dpi(6), right = dpi(6), top = dpi(3), bottom = dpi(3),
-                    widget = wibox.container.margin,
-                },
-                id     = "background_role",
-                widget = wibox.container.background,
-            },
-            top = dpi(6), bottom = dpi(6),
-            widget = wibox.container.margin,
-        },
+    -- Windows 7 has no workspaces, so a row of tag pills is the loudest
+    -- non-Windows thing that could sit on this bar. The tag number instead
+    -- lives in the notification area as a small indicator, exactly where Win7
+    -- put the keyboard-language badge — believable, and the information is
+    -- still there. Click cycles, scroll steps.
+    local tag_ind = wibox.widget {
+        widget = wibox.widget.textbox, align = "center", valign = "center",
+        wrap = "none", ellipsize = "none",
     }
+    local function refresh_tag_ind()
+        local t = s.selected_tag
+        tag_ind:set_markup("<span font='Noto Sans 8' foreground='" ..
+            beautiful.w7_text_lite_dim .. "'>" .. (t and t.name or "-") .. "</span>")
+    end
+    refresh_tag_ind()
+    s:connect_signal("tag::history::update", refresh_tag_ind)
+    local tag_indicator = wibox.widget {
+        { tag_ind, forced_width = dpi(14), widget = wibox.container.place },
+        left = dpi(4), right = dpi(4),
+        widget = wibox.container.margin,
+    }
+    tag_indicator:buttons(gears.table.join(
+        awful.button({}, 1, function() awful.tag.viewnext(s) end),
+        awful.button({}, 3, function() awful.tag.viewprev(s) end),
+        awful.button({}, 4, function() awful.tag.viewprev(s) end),
+        awful.button({}, 5, function() awful.tag.viewnext(s) end)
+    ))
+    awful.tooltip { objects = { tag_indicator },
+                    text = "Desktop (click to switch)", delay_show = 0.6 }
 
     ---------------------------------------------------------------
     -- Task buttons — the signature Win7 element: wide, labelled,
@@ -397,8 +404,6 @@ awful.screen.connect_for_each_screen(function(s)
             { forced_width = ORB_D + dpi(4), widget = wibox.container.place },
             quick_launch,
             glass_divider(),
-            s.mytaglist,
-            glass_divider(),
             s.mytasklist,
         },
         {   -- Middle: prompt only. Task buttons deliberately stay LEFT — a
@@ -409,6 +414,7 @@ awful.screen.connect_for_each_screen(function(s)
         {   -- Right: notification area
             layout = wibox.layout.fixed.horizontal,
             glass_divider(),
+            tag_indicator,
             flag_ic,
             net_ic,
             vol_ic,
@@ -436,8 +442,47 @@ awful.screen.connect_for_each_screen(function(s)
         type    = "utility",
     })
     s.orb:set_widget(orb_img)
+    ---------------------------------------------------------------
+    -- Start menu. Entries are REAL programs on this machine under the
+    -- names Windows used, which is what the left column always was:
+    -- recently-used programs, not a fixed set.
+    ---------------------------------------------------------------
+    s.start_menu = startmenu.new(s, {
+        user   = (os.getenv("USER") or "user"):gsub("^%l", string.upper),
+        avatar = ICONS .. "avatar.png",
+        power_icon = ICONS .. "sm-power.png",
+        left = {
+            { icon = ICONS .. "ql-browser.png",  label = "Internet",           cmd = browser },
+            { icon = ICONS .. "ql-explorer.png", label = "Windows Explorer",   cmd = filemanager },
+            { icon = ICONS .. "ql-terminal.png", label = "Command Prompt",     cmd = terminal },
+            { icon = ICONS .. "sm-code.png",     label = "Visual Studio Code", cmd = "code" },
+            { icon = ICONS .. "sm-snip.png",     label = "Snipping Tool",      cmd = screenshot },
+            { icon = ICONS .. "sm-media.png",    label = "Media Player",       cmd = "mpv --player-operation-mode=pseudo-gui" },
+            { icon = ICONS .. "sm-key.png",      label = "Passwords",          cmd = password_manager },
+        },
+        home = filemanager .. " " .. os.getenv("HOME"),
+        right = {
+            { label = "Documents", cmd = filemanager .. " " .. os.getenv("HOME") .. "/Documents" },
+            { label = "Pictures",  cmd = filemanager .. " " .. os.getenv("HOME") .. "/Pictures" },
+            { label = "Music",     cmd = filemanager .. " " .. os.getenv("HOME") .. "/Music",
+              rule = true },
+            { label = "Computer",  cmd = filemanager .. " /" },
+            { label = "Control Panel", cmd = terminal .. " -e htop" },
+            { label = "Devices and Printers",
+              cmd = terminal .. " -e sh -c 'lsblk -o NAME,SIZE,MODEL,MOUNTPOINTS; echo; lsusb; echo; read -n1'",
+              rule = true },
+            { label = "Help and Support", cmd = "xdg-open https://wiki.archlinux.org" },
+        },
+        all_programs = rofi_w7,
+        search       = rofi_w7,
+        power = "rofi -show power -modes 'power:" .. os.getenv("HOME") ..
+                "/.config/awesome/scripts/rofi-power-mode.sh' -theme " .. W7 ..
+                "rofi-windows7.rasi -theme-str 'window { width: 420px; } " ..
+                "listview { columns: 1; lines: 5; } element-icon { size: 0px; }'",
+    })
+
     s.orb:buttons(gears.table.join(awful.button({}, 1, function()
-        awful.spawn(rofi_w7)
+        s.start_menu.toggle()
     end)))
     s.orb:connect_signal("mouse::enter",
         function() orb_img.image = beautiful.w7_start_orb_hover end)
@@ -533,12 +578,12 @@ awful.screen.connect_for_each_screen(function(s)
             return box
         end
 
+        -- A stock Windows 7 desktop has exactly ONE icon. Everything else
+        -- lives in the Start menu and quick launch, so that is where the rest
+        -- of these went.
         s.desktop_icons = {
-            desktop_icon(1, ICONS .. "desk-computer.png", "Computer", filemanager),
-            desktop_icon(2, ICONS .. "desk-recycle.png",  "Recycle Bin",
+            desktop_icon(1, ICONS .. "desk-recycle.png", "Recycle Bin",
                          filemanager .. " trash:/"),
-            desktop_icon(3, ICONS .. "ql-browser.png",    "Internet", browser),
-            desktop_icon(4, ICONS .. "ql-terminal.png",   "Command Prompt", terminal),
         }
 
         local function place_desktop_icons()
@@ -703,7 +748,11 @@ command -v dm-tool >/dev/null 2>&1 && dm-tool lock 2>&1
         end,
         {description = "restore minimized", group = "client"}),
 
-    awful.key({ modkey }, "r", function () awful.spawn(rofi_w7) end,
+    awful.key({ modkey }, "r",
+        function ()
+            local sc = awful.screen.focused()
+            if sc.start_menu then sc.start_menu.toggle() else awful.spawn(rofi_w7) end
+        end,
               {description = "Start menu", group = "launcher"}),
     awful.key({ modkey, "Shift" }, "v",
         function () awful.spawn(os.getenv("HOME") .. "/.config/awesome/scripts/clipboard-menu.sh") end,

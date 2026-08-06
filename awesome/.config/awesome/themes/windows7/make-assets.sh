@@ -272,6 +272,65 @@ make_desk_icons() {
     rm -f _g.png
 }
 
+# --- Start-menu icons + user picture -----------------------------------------
+# Generated rather than harvested from /usr/share/icons: the paths differ per
+# machine (dolphin and code have no icon at all here), and a menu that mixes
+# Candy icons into Aero chrome looks like two eras stapled together.
+make_menu_icons() {
+    local S=128
+    # Snipping Tool: scissors.
+    magick -size ${S}x${S} xc:none -stroke '#4a6b82' -strokewidth 9 -fill none \
+        -draw "line 34,30 88,92" -draw "line 94,30 40,92" \
+        -fill '#dceaf5' -stroke '#4a6b82' -strokewidth 7 \
+        -draw "circle 34,102 34,86" -draw "circle 94,102 94,86" \
+        -resize 24x24 icons/sm-snip.png
+    # Media Player: play triangle on a glass disc.
+    magick -size ${S}x${S} gradient:'#ffb36b-#d1542a' _g.png
+    magick -size ${S}x${S} xc:none -tile _g.png -draw "circle 64,64 64,8" \
+        -fill white -stroke none -draw "polygon 50,38 94,64 50,90" \
+        -fill none -stroke 'rgba(255,255,255,0.5)' -strokewidth 4 \
+        -draw "arc 16,16 112,112 200,340" \
+        -resize 24x24 icons/sm-media.png
+    # Visual Studio Code: angle brackets on a dark panel.
+    magick -size ${S}x${S} gradient:'#4a90c2-#1c5a8a' _g.png
+    magick -size ${S}x${S} xc:none -tile _g.png \
+        -draw "roundrectangle 10,18 118,110 10,10" \
+        -fill none -stroke white -strokewidth 8 \
+        -draw "polyline 48,44 28,64 48,84" -draw "polyline 80,44 100,64 80,84" \
+        -resize 24x24 icons/sm-code.png
+    # Passwords: a key.
+    magick -size ${S}x${S} xc:none \
+        -fill '#e8b830' -stroke '#8a6a10' -strokewidth 5 \
+        -draw "circle 44,56 44,26" \
+        -fill '#e8b830' -stroke none -draw "rectangle 58,48 108,64" \
+        -draw "rectangle 88,64 98,84" -draw "rectangle 68,64 78,78" \
+        -fill '#1b2b38' -stroke none -draw "circle 44,56 44,44" \
+        -resize 24x24 icons/sm-key.png
+    # Shut-down glyph for the menu's bottom-right button.
+    magick -size ${S}x${S} xc:none -stroke '#2a4356' -strokewidth 11 -fill none \
+        -draw "arc 20,20 108,108 -60,240" \
+        -draw "line 64,10 64,52" \
+        -resize 20x20 icons/sm-power.png
+    rm -f _g.png
+}
+
+# Win7's default user picture, near enough: a light glass tile with a bust
+# silhouette and the era's thin bevel.
+make_avatar() {
+    local S=192
+    magick -size ${S}x${S} gradient:'#ffd9a8-#e07a2f' _g.png
+    magick -size ${S}x${S} xc:none -tile _g.png \
+        -draw "roundrectangle 0,0 $((S-1)),$((S-1)) 8,8" \
+        `# bust: head + shoulders, the shape Windows used` \
+        -fill 'rgba(255,255,255,0.92)' -stroke none \
+        -draw "circle 96,74 96,40" \
+        -draw "path 'M 40,168 C 40,120 152,120 152,168 Z'" \
+        -fill none -stroke 'rgba(255,255,255,0.65)' -strokewidth 4 \
+        -draw "roundrectangle 3,3 $((S-4)),$((S-4)) 8,8" \
+        -resize 48x48 icons/avatar.png
+    rm -f _g.png
+}
+
 what="${1:-all}"
 run_orb()   { make_orb "start.png" 100; make_orb "start-hover.png" 122; }
 run_btns()  {
@@ -289,12 +348,14 @@ run_btns()  {
 case "$what" in
     # "all" deliberately leaves the wallpaper alone: it is committed, and a
     # network fetch on every asset tweak is both slow and rude.
-    all)       run_orb; run_btns; make_tray_icons; make_ql_icons; make_desk_icons ;;
+    all)       run_orb; run_btns; make_tray_icons; make_ql_icons; make_desk_icons
+               make_menu_icons; make_avatar ;;
     orb)       run_orb ;;
     buttons)   run_btns ;;
     wallpaper)     make_wallpaper "wallpaper.jpg" ;;
     wallpaper-draw) draw_wallpaper "wallpaper.jpg" ;;
-    misc)      make_tray_icons; make_ql_icons; make_desk_icons ;;
+    misc)      make_tray_icons; make_ql_icons; make_desk_icons
+               make_menu_icons; make_avatar ;;
     *) echo "usage: make-assets.sh [all|orb|buttons|wallpaper|wallpaper-draw|misc]" >&2
        exit 1 ;;
 esac
