@@ -5,15 +5,18 @@
 # ImageMagick — this script exists so the assets stay reproducible and tweakable
 # instead of being opaque binaries nobody can regenerate.
 #
-#   ./make-assets.sh              # everything except the wallpaper
-#   ./make-assets.sh orb          # orb | buttons | misc | desk
-#   ./make-assets.sh wallpaper    # re-fetch Windows 7's Harmony (needs network)
-#   ./make-assets.sh wallpaper-draw   # draw the offline stand-in instead
+#   ./make-assets.sh              # everything drawn (not the fetched assets)
+#   ./make-assets.sh buttons      # buttons | misc
+#   ./make-assets.sh orb          # re-fetch the real Vista/7 start orb
+#   ./make-assets.sh wallpaper    # re-fetch Windows 7's Harmony
+#   ./make-assets.sh orb-draw | wallpaper-draw    # offline stand-ins instead
 #
-# Everything except the wallpaper is drawn from primitives to *evoke* Aero — no
-# Microsoft asset is traced. The wallpaper IS the genuine Windows 7 default
-# (fetched, see WALLPAPER_URL); `wallpaper-draw` produces a drawn stand-in for
-# machines that cannot reach the network.
+# Two assets are the genuine articles, fetched rather than drawn: the start orb
+# (ORB_URL) and the Harmony wallpaper (WALLPAPER_URL). Everything else — the
+# titlebar glass, tray, quick-launch, desktop and Start-menu icons, and the user
+# picture — is drawn from primitives to evoke Aero, tracing nothing. The two
+# fetched assets have drawn stand-ins (`orb-draw`, `wallpaper-draw`) so a machine
+# with no network still gets a coherent desktop.
 #
 # IM gotcha worth knowing before editing: filling a shape with a gradient is
 # done with `-tile <gradient> -draw`. The obvious `gradient | mask |
@@ -24,9 +27,32 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 mkdir -p titlebar icons
 
 # --- Start orb ---------------------------------------------------------------
-# Drawn at 4x and downscaled: the rim highlight and the flag gaps are ~1px
-# features at the final 64px, and drawing them directly at that size mushes them.
-make_orb() {
+# The real Vista/7 orb. Committed, so this only runs to re-fetch it. Stored at
+# 128px — twice the on-screen size, which keeps cairo's downscale crisp — and
+# the hover state is the same art lifted, as Windows does.
+ORB_URL="https://www.rw-designer.com/icon-image/25968-256x256x32.png"
+
+make_orb_official() {
+    local tmp
+    tmp="$(mktemp -t w7orb.XXXXXX.png)"
+    if curl -sfL --max-time 40 -A "Mozilla/5.0" -o "$tmp" "$ORB_URL" \
+       && magick identify "$tmp" >/dev/null 2>&1; then
+        magick "$tmp" -filter Lanczos -resize 128x128 start.png
+        magick start.png -modulate 118,112 start-hover.png
+        rm -f "$tmp"
+        echo "fetched start.png from $ORB_URL"
+    else
+        rm -f "$tmp"
+        echo "download failed — drawing the synthetic orb instead" >&2
+        draw_orb "start.png" 100
+        draw_orb "start-hover.png" 122
+    fi
+}
+
+# Offline fallback, drawn at 4x and downscaled: the rim highlight and the flag
+# gaps are ~1px features at the final 64px, and drawing them directly at that
+# size mushes them. Lighter glass than the real orb, but the right silhouette.
+draw_orb() {
     local out="$1"
     local bright="$2"
     local S=256 C=128 R=118 FS G
@@ -332,7 +358,7 @@ make_avatar() {
 }
 
 what="${1:-all}"
-run_orb()   { make_orb "start.png" 100; make_orb "start-hover.png" 122; }
+run_orb()   { draw_orb "start.png" 100; draw_orb "start-hover.png" 122; }
 run_btns()  {
     make_button "titlebar/minimize.png" $BTN_W $BTN_H '#d3ecff' '#7cbde6' "${MIN_GLYPH[@]}"
     make_button "titlebar/maximize.png" $BTN_W $BTN_H '#d3ecff' '#7cbde6' "${MAX_GLYPH[@]}"
@@ -348,15 +374,18 @@ run_btns()  {
 case "$what" in
     # "all" deliberately leaves the wallpaper alone: it is committed, and a
     # network fetch on every asset tweak is both slow and rude.
-    all)       run_orb; run_btns; make_tray_icons; make_ql_icons; make_desk_icons
+    # "all" leaves the fetched assets (orb, wallpaper) alone: they are
+    # committed, and hitting the network on every asset tweak is slow and rude.
+    all)       run_btns; make_tray_icons; make_ql_icons; make_desk_icons
                make_menu_icons; make_avatar ;;
-    orb)       run_orb ;;
+    orb)           make_orb_official ;;
+    orb-draw)      run_orb ;;
     buttons)   run_btns ;;
     wallpaper)     make_wallpaper "wallpaper.jpg" ;;
     wallpaper-draw) draw_wallpaper "wallpaper.jpg" ;;
     misc)      make_tray_icons; make_ql_icons; make_desk_icons
                make_menu_icons; make_avatar ;;
-    *) echo "usage: make-assets.sh [all|orb|buttons|wallpaper|wallpaper-draw|misc]" >&2
+    *) echo "usage: make-assets.sh [all|orb|orb-draw|buttons|wallpaper|wallpaper-draw|misc]" >&2
        exit 1 ;;
 esac
 echo "assets written to $(pwd)"
