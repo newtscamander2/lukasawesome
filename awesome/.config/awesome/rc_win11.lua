@@ -496,7 +496,8 @@ globalkeys = gears.table.join(
               {description = "quit awesome", group = "awesome"}),
     awful.key({ modkey, "Shift" }, "t",
         function()
-            local order = { "dr460nized", "arch", "ubuntu", "windows7", "win11" }
+            -- Keep identical to rc.lua's and rc_windows7.lua's list.
+            local order = { "dr460nized", "arch", "windows7", "win11" }
             local path = os.getenv("HOME") .. "/.config/awesome/active_theme"
             local f = io.open(path, "r")
             local curr = (f and f:read("*l")) or "arch"
@@ -515,7 +516,7 @@ globalkeys = gears.table.join(
                 :format(home, aterm, home))
             awesome.restart()
         end,
-        {description = "cycle theme (dr460nized/arch/ubuntu/windows7/win11)", group = "awesome"}),
+        {description = "cycle theme (dr460nized/arch/windows7/win11)", group = "awesome"}),
 
     awful.key({ modkey,           }, "l",     function () awful.tag.incmwfact( 0.05) end,
               {description = "increase master width factor", group = "layout"}),

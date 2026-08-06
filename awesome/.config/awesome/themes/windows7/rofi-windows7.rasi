@@ -1,115 +1,131 @@
 /*
- * Windows 7 (Aero) — dark glass base, Aero blue accent.
- * Same 720x620 centered 6x5 grid as the other themes.
+ * Windows 7 Start menu, as far as rofi will go.
+ *
+ * The two things that make it read as Win7 rather than "a dark launcher":
+ *   1. LIGHT panel with dark text. Win7's Start menu is a white app list, not
+ *      a dark overlay — this is the biggest single difference from the win11
+ *      and dr460nized rasi files.
+ *   2. The search box is at the BOTTOM ("Search programs and files"), which is
+ *      only possible because `children:` lets us reorder the window's parts.
+ *
+ * Anchored bottom-left, above the taskbar, so it grows out of the orb.
  */
 
-configuration {
-    show-icons: true;
-    display-drun: "";
-    drun-display-format: "{name}";
-}
-
 * {
-    bg:           #1c2b3a;
-    bg-alt:       #2e4760;
-    bg-selected:  #3d5a78;
-    fg:           #eaf3fb;
-    fg-dim:       #7fa0bd;
-    accent:       #4aa3df;
-    accent-alt:   #1ba1e2;
-    border:       #3d5a78;
+    w7-glass:      rgba(244, 250, 254, 96%);
+    w7-panel:      rgba(255, 255, 255, 92%);
+    w7-edge:       rgba(122, 168, 200, 90%);
+    w7-text:       #12354f;
+    w7-text-dim:   #4a708c;
+    w7-sel:        rgba(203, 232, 250, 95%);
+    w7-sel-edge:   rgba(90, 160, 205, 95%);
+    w7-header:     rgba(28, 74, 112, 92%);
 
     background-color: transparent;
-    text-color:       @fg;
-    font:             "FiraCode Nerd Font 11";
+    text-color:       @w7-text;
+    font:             "Noto Sans 10";
 }
 
 window {
-    width:            720px;
-    height:           620px;
-    location:         center;
-    anchor:           center;
-    padding:          0;
-    border:           2px;
-    border-color:     @accent;
-    border-radius:    14px;
-    background-color: @bg;
+    /* Bottom-left, clear of the 40px taskbar. */
+    location:         southwest;
+    anchor:           southwest;
+    x-offset:         6px;
+    y-offset:         -46px;
+    width:            420px;
+    height:           540px;
+    background-color: @w7-glass;
+    border:           1px;
+    border-color:     @w7-edge;
+    border-radius:    6px;
+    padding:          0px;
     children:         [ mainbox ];
 }
 
 mainbox {
-    padding:  28px;
-    spacing:  20px;
-    children: [ inputbar, listview ];
-}
-
-inputbar {
-    padding:          12px 18px;
-    background-color: @bg-alt;
-    border:           1px;
-    border-color:     @border;
-    border-radius:    10px;
-    children:         [ prompt-icon, entry ];
-    spacing:          12px;
-}
-
-prompt-icon {
-    expand:           false;
-    str:              "";
-    text-color:       @accent;
-    vertical-align:   0.5;
-}
-
-entry {
-    placeholder:       "Search apps…";
-    placeholder-color: @fg-dim;
-    text-color:        @fg;
-    cursor:            text;
-}
-
-message {
-    enabled:  false;
+    background-color: transparent;
+    padding:          0px;
+    spacing:          0px;
+    /* listview first, inputbar last: the Win7 search box sits at the bottom. */
+    children:         [ listview, inputbar ];
 }
 
 listview {
-    columns:      6;
-    lines:        5;
-    spacing:      10px;
-    padding:      4px 0px;
-    fixed-height: true;
-    scrollbar:    false;
-    layout:       vertical;
-    cycle:        true;
+    background-color: @w7-panel;
+    columns:          1;
+    lines:            11;
+    spacing:          1px;
+    padding:          6px 4px 6px 4px;
+    margin:           4px 4px 0px 4px;
+    border:           1px;
+    border-color:     rgba(160, 195, 220, 70%);
+    border-radius:    4px;
+    scrollbar:        true;
+    fixed-height:     true;
+}
+
+scrollbar {
+    handle-color:     rgba(120, 170, 205, 80%);
+    handle-width:     6px;
+    background-color: rgba(0, 0, 0, 4%);
+    border-radius:    3px;
 }
 
 element {
-    padding:          14px 8px;
-    border-radius:    10px;
-    orientation:      vertical;
-    spacing:          8px;
-    children:         [ element-icon, element-text ];
+    padding:       5px 8px;
+    spacing:       10px;
+    border-radius: 3px;
     background-color: transparent;
-    text-color:       @fg;
-    cursor:           pointer;
+    text-color:       @w7-text;
 }
 
 element selected {
-    background-color: @bg-selected;
-    text-color:       @fg;
-    border:           0px 0px 2px 0px;
-    border-color:     @accent;
-    border-radius:    10px;
+    /* Aero's selection: pale blue fill with a defined edge, not a flat block. */
+    background-color: @w7-sel;
+    border:           1px;
+    border-color:     @w7-sel-edge;
+    text-color:       @w7-text;
 }
 
 element-icon {
-    size:             44px;
-    horizontal-align: 0.5;
+    size:             24px;
+    vertical-align:   0.5;
     background-color: transparent;
 }
 
 element-text {
-    horizontal-align: 0.5;
     vertical-align:   0.5;
-    text-color:       inherit;
     background-color: transparent;
+    text-color:       inherit;
+}
+
+inputbar {
+    background-color: transparent;
+    padding:          6px 8px 8px 8px;
+    spacing:          6px;
+    children:         [ prompt, entry ];
+}
+
+prompt {
+    background-color: transparent;
+    text-color:       @w7-text-dim;
+    padding:          4px 2px;
+}
+
+entry {
+    background-color: rgba(255, 255, 255, 95%);
+    text-color:       @w7-text;
+    placeholder:      "Search programs and files";
+    placeholder-color: @w7-text-dim;
+    padding:          6px 8px;
+    border:           1px;
+    border-color:     rgba(140, 180, 210, 85%);
+    border-radius:    3px;
+}
+
+message {
+    background-color: @w7-header;
+    text-color:       #ffffff;
+    padding:          6px 8px;
+    border-radius:    3px;
 }

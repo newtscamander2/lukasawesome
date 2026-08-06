@@ -1,15 +1,17 @@
--- Theme dispatcher: arch-family themes (dr460nized/arch/ubuntu/windows7) share
--- this config and only swap palette; win11 has its own bespoke layout.
-local ARCH_FAMILY = { dr460nized = true, arch = true, ubuntu = true, windows7 = true }
+-- Theme dispatcher. Two kinds of theme live in this repo:
+--   * arch-family (dr460nized, arch) share THIS config and only swap palette
+--   * win11 and windows7 are full desktop mimics with their own config file
+-- Anything unknown falls back to arch rather than failing to start.
+local ARCH_FAMILY = { dr460nized = true, arch = true }
+local BESPOKE = { win11 = "rc_win11.lua", windows7 = "rc_windows7.lua" }
 do
     local path = os.getenv("HOME") .. "/.config/awesome/active_theme"
     local f = io.open(path, "r")
     local t = f and f:read("*l") or "arch"
     if f then f:close() end
-    if t == "win11" then
-        return dofile(os.getenv("HOME") .. "/.config/awesome/rc_win11.lua")
+    if BESPOKE[t] then
+        return dofile(os.getenv("HOME") .. "/.config/awesome/" .. BESPOKE[t])
     end
-    -- Unknown themes fall back to arch.
     ACTIVE_THEME = ARCH_FAMILY[t] and t or "arch"
 end
 
@@ -2700,56 +2702,10 @@ end)
 -- }}}
 
 -- {{{ Directional window navigation
--- awesome's built-in focus.bydirection only compares the top-left edge of
--- windows and ignores columns, so from a full-height master "up" matches
--- nothing (it is already the topmost window) while "down" jumps sideways into
--- the stack. This walks the actual neighbours instead: a candidate must
--- overlap on the perpendicular axis (same column for up/down, same row for
--- left/right) and lie beyond the current edge; nearest wins.
-local function neighbour(dir)
-    local cur = client.focus
-    if not cur then return nil end
-    local vertical = (dir == "up" or dir == "down")
-    local a = cur:geometry()
-    local best, best_d
-    for _, c in ipairs(awful.client.visible(cur.screen)) do
-        if c ~= cur and not c.minimized then
-            local b = c:geometry()
-            local overlaps, delta
-            if vertical then
-                overlaps = (b.x < a.x + a.width) and (b.x + b.width > a.x)
-                delta    = (dir == "up") and (a.y - b.y) or (b.y - a.y)
-            else
-                overlaps = (b.y < a.y + a.height) and (b.y + b.height > a.y)
-                delta    = (dir == "left") and (a.x - b.x) or (b.x - a.x)
-            end
-            if overlaps and delta > 0 and (not best_d or delta < best_d) then
-                best, best_d = c, delta
-            end
-        end
-    end
-    return best
-end
-
-local function focus_dir(dir)
-    local target = neighbour(dir)
-    if target then
-        target:emit_signal("request::activate", "focus_dir", { raise = false })
-    elseif dir == "up" or dir == "down" then
-        -- Nothing in this column (e.g. the full-height master): walk the client
-        -- list so j/k are never dead keys.
-        awful.client.focus.byidx(dir == "down" and 1 or -1)
-    end
-end
-
-local function move_dir(dir)
-    local target = neighbour(dir)
-    if target then
-        client.focus:swap(target)
-    elseif dir == "up" or dir == "down" then
-        awful.client.swap.byidx(dir == "down" and 1 or -1)
-    end
-end
+-- Lives in lib/nav.lua so rc_windows7.lua binds the same keys to the same
+-- behaviour instead of carrying a second copy that drifts.
+local nav = require("lib.nav")
+local focus_dir, move_dir = nav.focus_dir, nav.move_dir
 -- }}}
 
 -- {{{ Key bindings
@@ -2844,7 +2800,7 @@ exit 1
               {description = "quit awesome", group = "awesome"}),
     awful.key({ modkey, "Shift" }, "t",
         function()
-            local order = { "dr460nized", "arch", "ubuntu", "windows7", "win11" }
+            local order = { "dr460nized", "arch", "windows7", "win11" }
             local path = os.getenv("HOME") .. "/.config/awesome/active_theme"
             local f = io.open(path, "r")
             local curr = (f and f:read("*l")) or "arch"
@@ -2864,7 +2820,7 @@ exit 1
                 :format(home, aterm, home))
             awesome.restart()
         end,
-        {description = "cycle theme (dr460nized/arch/ubuntu/windows7/win11)", group = "awesome"}),
+        {description = "cycle theme (dr460nized/arch/windows7/win11)", group = "awesome"}),
 
     -- RESIZE: same hjkl directions, held with Control.
     -- h/l move the master split; j/k grow/shrink the focused client's row.

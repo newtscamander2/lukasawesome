@@ -112,11 +112,20 @@ packages; `make stow` symlinks each into `$HOME`:
 
 ## AwesomeWM themes
 
-Five themes cycle with **Super+Shift+T**: `dr460nized` (default, Garuda-inspired
-Dracula neon — hot pink on near-black), `arch` (Catppuccin Mocha), `ubuntu`
-(Yaru), `windows7` (Aero), and `win11`. The active one is stored in
-`~/.config/awesome/active_theme`; the terminal palette follows it (see
-`alacritty/.config/alacritty/themes/`).
+Four themes cycle with **Super+Shift+T**. Two of them are palette swaps sharing
+`rc.lua` — `dr460nized` (default, Garuda-inspired Dracula neon: hot pink on
+near-black) and `arch` (Catppuccin Mocha). The other two are full desktop
+mimics with their own config and assets:
+
+| Theme | Config | What you get |
+|---|---|---|
+| `windows7` | `rc_windows7.lua` | Aero: bottom taskbar in blue glass, round Start orb overhanging it, wide labelled task buttons, quick launch, notification area with a two-line clock, "Show desktop" sliver, glass titlebars with the centred title and the red X |
+| `win11` | `rc_win11.lua` | Centred taskbar, search pill, icon-only task buttons, light grey chrome |
+
+The active theme is stored in `~/.config/awesome/active_theme`; the terminal
+palette follows it (see `alacritty/.config/alacritty/themes/`). The Windows 7
+assets (orb, titlebar buttons, wallpaper, icons) are generated and committed —
+regenerate with `awesome/.config/awesome/themes/windows7/make-assets.sh`.
 
 - **Super+F1** shows all keybindings, including Neovim and Claude Code cheatsheets.
 - Volume / brightness / media hardware keys (`XF86*`) are bound (pactl, brightnessctl, playerctl).

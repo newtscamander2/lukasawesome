@@ -60,8 +60,8 @@ theme.cat_surface_hi = "#33354a"  -- surface0 lifted: top stop of "raised chip" 
 -- Weight keywords are Pango's own (Light/Medium/Semi-Bold), verified to
 -- resolve to real FiraCode faces via fontconfig — not family-name suffixes.
 -- ALL of these are NEW, OPTIONAL keys: rc.lua must read them defensively,
--- e.g. `font = beautiful.font_h2 or beautiful.font`, so the arch/ubuntu/
--- windows7 themes (which do not define them) keep working unchanged.
+-- e.g. `font = beautiful.font_h2 or beautiful.font`, so the arch theme
+-- (which does not define them) keeps working unchanged.
 ---------------------------------------------------------------
 theme.font           = "FiraCode Nerd Font 10"                  -- base: unchanged on purpose
 theme.font_display   = "FiraCode Nerd Font Propo Light 52"      -- hero clock: the one statement element

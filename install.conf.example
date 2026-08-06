@@ -16,7 +16,7 @@ DISPLAY_MANAGER=lightdm       # lightdm | sddm | ly | none
 STOW_PACKAGES="awesome nvim tmux alacritty fontconfig bash rclone clang-format cava qt greenclip"
 
 # --- AwesomeWM themes to keep available (cycled with Super+Shift+T) ---
-THEMES="dr460nized arch ubuntu windows7 win11"
+THEMES="dr460nized arch windows7 win11"
 
 # --- Package groups ---
 INSTALL_BASE=yes              # git, stow, base-devel, zathura, rofi, feh, neofetch, keepassxc, dolphin, flameshot, timeshift

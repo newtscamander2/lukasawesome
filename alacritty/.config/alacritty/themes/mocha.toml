@@ -1,4 +1,4 @@
-# Catppuccin Mocha — used by the arch/ubuntu/windows7 awesome themes.
+# Catppuccin Mocha — used by the arch awesome theme (windows7/win11 ship their own chrome).
 [colors.primary]
 background = "#1e1e2e"
 foreground = "#cdd6f4"
