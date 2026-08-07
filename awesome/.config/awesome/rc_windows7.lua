@@ -942,6 +942,10 @@ awful.spawn.with_shell("pkill -x picom; picom --config " ..
     os.getenv("HOME") .. "/.config/awesome/picom-windows7.conf")
 awful.spawn.with_shell("pgrep -x flameshot >/dev/null || flameshot &")
 awful.spawn.with_shell("pgrep -x greenclip >/dev/null || greenclip daemon &")
+-- This mode has no visualizer, so any cava is a leftover from the arch-family
+-- config. SIGKILL because cava does not act on SIGTERM — leaving it running
+-- means it keeps feeding frames to a widget that no longer exists.
+awful.spawn.with_shell("pkill -9 -x cava >/dev/null 2>&1 || true")
 
 -- Idle lock, matching rc.lua: blanking OFF so the greeter is visible rather
 -- than a black screen painted by X itself.

@@ -2599,7 +2599,6 @@ awful.screen.connect_for_each_screen(function(s)
         -- Process lifecycle: track OUR pid (never pkill blindly — the same
         -- self-match trap as the wallpaper fetch guard).
         local cava_pid = nil
-        local cava_starting = false   -- latch: two spawns in flight = duplicate bars
         local audio_playing = false
         local cava_error_shown = false -- notify once per session, not per retry
 
@@ -2614,32 +2613,37 @@ awful.screen.connect_for_each_screen(function(s)
             return true
         end
 
-        -- Kill strays SYNCHRONOUSLY before anything can spawn a new one: an
-        -- async pkill raced the audio timer's call_now, so every restart left
-        -- its cava behind and they all wrote to the same widget (11 at once,
-        -- which is what "glitchy" actually was).
-        os.execute("pkill -x cava >/dev/null 2>&1")
+        -- SIGKILL, not SIGTERM. cava INSTALLS a SIGTERM handler and does not
+        -- reliably act on it (verified: kill -15 left it running for minutes,
+        -- kill -9 dropped it instantly). Sending 15 and then forgetting the pid
+        -- is what accumulated 131 live cava processes over one session — each
+        -- writing raw frames into awesome at 25fps, which is what dragged the
+        -- WM to 15GB RSS and pinned a core.
+        --
+        -- Synchronously, before anything can spawn a new one: an async pkill
+        -- raced the audio timer's call_now.
+        os.execute("pkill -9 -x cava >/dev/null 2>&1")
 
         local function stop_cava()
-            if cava_pid then awesome.kill(cava_pid, 15) end
+            if cava_pid then awesome.kill(cava_pid, 9) end
             cava_pid = nil
-            cava_starting = false
             set_cava_active(false)   -- also zeroes the bars and repaints
         end
 
         local function update_cava_state()
             local want = audio_playing and desktop_visible()
-            if want and not cava_pid and not cava_starting and awful.spawn then
-                cava_starting = true
+            if want and not cava_pid and awful.spawn then
+                -- No "starting" latch: with_line_callback returns the pid
+                -- synchronously, so there is no window for a second spawn to
+                -- slip through. The old latch was set and cleared around one
+                -- blocking call and guarded nothing.
                 local pid = awful.spawn.with_line_callback("cava", {
                     stdout = function(line) cava_smooth(line) end,
                     exit = function()
                         cava_pid = nil
-                        cava_starting = false
                         set_cava_active(false)
                     end,
                 })
-                cava_starting = false
                 if type(pid) == "number" then
                     cava_pid = pid
                     set_cava_active(true)
@@ -2695,6 +2699,33 @@ awful.screen.connect_for_each_screen(function(s)
             end
             -- Never leak the process across restarts.
             awesome.connect_signal("exit", stop_cava)
+
+            -- Safety net. The tracked pid and reality demonstrably diverge:
+            -- awesome believes it stopped cava, cava disagrees, and the next
+            -- favourable tick spawns another. Rather than trust one variable,
+            -- sweep for any cava that is not ours and SIGKILL it. Cheap
+            -- (one pgrep a minute) and it catches every leak path, including
+            -- switching to a theme whose config has no visualizer at all.
+            gears.timer {
+                timeout = 60, autostart = true,
+                callback = function()
+                    awful.spawn.easy_async_with_shell("pgrep -x cava || true",
+                        function(out)
+                            local strays = 0
+                            for word in (out or ""):gmatch("%d+") do
+                                local p = tonumber(word)
+                                if p and p ~= cava_pid then
+                                    awesome.kill(p, 9)
+                                    strays = strays + 1
+                                end
+                            end
+                            if strays > 0 then
+                                gears.debug.print_warning(
+                                    "cava reaper: killed " .. strays .. " stray process(es)")
+                            end
+                        end)
+                end,
+            }
         end
     end
 

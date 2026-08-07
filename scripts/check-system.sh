@@ -67,6 +67,18 @@ fi
 
 log "Desktop extras"
 check_pkg cava
+# One cava is correct while audio plays; more than one means the visualizer's
+# process tracking has drifted from reality. This reached 131 processes once,
+# dragging awesome to 15GB RSS, because cava ignores SIGTERM and the old code
+# assumed the kill had worked.
+cava_n=$(pgrep -xc cava 2>/dev/null || echo 0)
+if [ "$cava_n" -gt 1 ]; then
+    miss "$cava_n cava processes running (expected 0 or 1) — run: pkill -9 -x cava"
+elif [ "$cava_n" -eq 1 ]; then
+    pass "cava: 1 process (visualizer running)"
+else
+    note "cava not running (only runs while audio plays and the desktop is visible)"
+fi
 check_pkg xclip
 check_pkg playerctl
 # Clipboard history (Super+V). The package alone proves nothing: greenclip only

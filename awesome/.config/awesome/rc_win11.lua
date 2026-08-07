@@ -727,6 +727,9 @@ else
 end
 awful.spawn.with_shell("pkill -x picom; picom --config " .. os.getenv("HOME") .. "/.config/awesome/picom-win11.conf")
 awful.spawn.with_shell("pgrep -x flameshot >/dev/null || flameshot &")
+-- No visualizer in this mode, so any cava is a leftover from the arch-family
+-- config. SIGKILL because cava does not act on SIGTERM.
+awful.spawn.with_shell("pkill -9 -x cava >/dev/null 2>&1 || true")
 
 -- Apply light GTK/system color scheme so Brave and other GTK apps follow Win11 mode
 awful.spawn.with_shell(
