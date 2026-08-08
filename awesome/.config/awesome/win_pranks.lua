@@ -5,14 +5,18 @@
 --
 -- Each one only ever draws pixels: no filesystem, no network, no persistence.
 --
--- SAFETY (learned the hard way — an earlier version trapped a live session):
---   * NO keyboard grab. Your keybindings keep working while an overlay is up,
---     so Super+Shift+<key> can always toggle it away and nothing can swallow
---     your input even if this file has a bug.
---   * A click anywhere on the overlay (or its backdrop) closes it.
---   * A 20 s failsafe timer closes it unconditionally.
+-- SAFETY (learned the hard way — an earlier version trapped a live session).
+-- Three independent ways out, and none of them depend on this file being
+-- bug-free:
+--   * NO keyboard grab. This is the one that matters. Your keybindings keep
+--     working while an overlay is up, so Super+Shift+<key> always toggles it
+--     away and nothing can swallow your input even if the code below breaks.
+--   * A click anywhere — on the fake window or the invisible full-screen
+--     layer over the rest of the desktop — closes it.
 --   * M.close() / M.is_open() are exported, so `awesome-client
---     'require("win_pranks").close()'` is always an escape hatch.
+--     'require("win_pranks").close()'` works from any other machine or tty.
+-- There is deliberately NO auto-close timer: an overlay that vanishes on its
+-- own is not convincing, and the three routes above do not need a backstop.
 local awful = require("awful")
 local wibox = require("wibox")
 local gears = require("gears")
@@ -22,11 +26,10 @@ local M = {}
 -- All shared state declared ONCE, before any function that touches it — an
 -- earlier version declared `backdrop` after close(), so close() silently
 -- referenced a nil global and left the backdrop covering the screen forever.
-local overlay, backdrop, timer, failsafe
+local overlay, backdrop, timer
 
 local function close()
     if timer    then timer:stop();    timer = nil    end
-    if failsafe then failsafe:stop(); failsafe = nil end
     -- pcall so a widget error can never leave a layer stuck on screen.
     if overlay  then pcall(function() overlay.visible  = false end); overlay  = nil end
     if backdrop then pcall(function() backdrop.visible = false end); backdrop = nil end
@@ -34,8 +37,9 @@ end
 
 function M.is_open() return overlay ~= nil or backdrop ~= nil end
 
--- Click-to-close on every layer + an unconditional failsafe. Deliberately no
--- keygrabber: grabbing the keyboard is what made a bug here catastrophic.
+-- Click-to-close on every layer. Deliberately no keygrabber: grabbing the
+-- keyboard is what made a bug here catastrophic, and no auto-close timer,
+-- because an overlay that disappears by itself is not convincing.
 local function arm_dismissal(...)
     local click = gears.table.join(
         awful.button({}, 1, close),
@@ -44,27 +48,6 @@ local function arm_dismissal(...)
     for _, w in ipairs({ ... }) do
         if w then w:buttons(click) end
     end
-    failsafe = gears.timer {
-        timeout = 20, single_shot = true, autostart = true, callback = close,
-    }
-end
-
-local function hint_widget()
-    return wibox.widget {
-        nil, nil,
-        {
-            {
-                markup = "<span font='Noto Sans 10' foreground='#ffffffcc'>" ..
-                         "click anywhere, press Super+Shift+W, or wait 20s to close" ..
-                         "</span>",
-                align  = "center",
-                widget = wibox.widget.textbox,
-            },
-            bottom = 14,
-            widget = wibox.container.margin,
-        },
-        layout = wibox.layout.align.vertical,
-    }
 end
 
 -- Fullscreen overlay (update / bsod).
@@ -85,12 +68,16 @@ local function open_window(w, h, content, border)
     close()
     local s = awful.screen.focused()
 
-    backdrop = wibox({ ontop = true, visible = false, type = "splash" })
+    -- A full-screen INVISIBLE layer, not a dimmer. Its only job is to catch a
+    -- click anywhere outside the fake window.
+    --
+    -- type = "dnd" is load-bearing: picom blurs whatever sits behind any
+    -- window it is not told to skip, so a full-screen transparent layer fogged
+    -- the entire desktop. Nothing else uses the dnd type, and every picom
+    -- config here excludes it from blur and shadow.
+    backdrop = wibox({ ontop = true, visible = false, type = "dnd" })
     backdrop:geometry(s.geometry)
-    backdrop.bg = "#00000099"
-    -- Exit hint lives on the backdrop, outside the fake window, so the mock
-    -- itself stays screenshot-clean while the way out is always visible.
-    backdrop:set_widget(hint_widget())
+    backdrop.bg = "#00000000"
     backdrop.visible = true
 
     overlay = wibox({
