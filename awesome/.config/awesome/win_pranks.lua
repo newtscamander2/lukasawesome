@@ -97,7 +97,7 @@ local function open_window(w, h, content, border)
         ontop        = true,
         visible      = false,
         type         = "splash",
-        bg           = "#c11f1f",
+        bg           = "#8b1414",
         border_width = 1,
         border_color = border or "#7a0c0c",
     })
@@ -194,19 +194,43 @@ function M.bsod()
     end }
 end
 
--- Wana Decrypt0r 2.0 lookalike: a faithful mock of the 2017 window, purely
--- cosmetic. It reads nothing, writes nothing, sends nothing and survives
--- nothing — Escape closes it and the machine is exactly as it was.
+-- Wana Decrypt0r 2.0 lookalike. Purely cosmetic: it reads nothing, writes
+-- nothing, sends nothing and survives nothing. Every colour and proportion
+-- below was sampled from a screenshot of the real thing rather than guessed —
+-- the body red is #8b1414, not the bright #c11f1f an eyeball picks.
+--
+-- The bitcoin address is DELIBERATELY not the real one. WannaCry's actual
+-- wallet is public, and a believable window plus a working address is how a
+-- prank turns into someone actually sending money to criminals. Same length,
+-- same base58 shape, different characters: identical at a glance, inert.
 function M.wannacry()
-    local RED, RED_DK = "#c11f1f", "#a11414"
-    local PANEL       = "#cf4444"   -- countdown panel fill
-    local YELLOW      = "#ffe066"
-    local WHITE       = "#ffffff"
-    local PAPER       = "#f4f4f4"   -- right-hand text area
-    local INK         = "#101010"
+    -- Sampled from the reference screenshot.
+    local RED        = "#8b1414"   -- body and panel fill
+    local FRAME      = "#7c0707"   -- window frame
+    local TILE_RED   = "#a51e1e"   -- lock tile, one step lighter than the body
+    local EDGE       = "#c98a8a"   -- the 1px light rule around every panel
+    local TITLE_BG   = "#d5868c"   -- Windows titlebar, red-tinted
+    local TITLE_FG   = "#3d2b2b"   -- title text is DARK, not white
+    local CLOSE_BG   = "#c0392b"
+    local GOLD       = "#ffd700"
+    local LINK       = "#7ec8e8"
+    local DIGITS     = "#dbb6b7"   -- countdown digits: dusty pink, not white
+    local PAPER      = "#ffffff"
+    local INK        = "#000000"
+    local BTN_FACE   = "#f2f2f2"
+    local BTN_EDGE   = "#9a8080"
+    local SB_TRACK   = "#c3c1be"
+    local SB_THUMB   = "#aaa8a8"
+    local LOGO_BG    = "#c8c8c8"
+    local ORANGE     = "#f7931a"
 
-    local t_pay  = os.time() + 3 * 86400
-    local t_lost = os.time() + 7 * 86400
+    local W, H     = 800, 600      -- the original's window size
+    local LEFT_W   = 226
+
+    -- The dates are the real ones from the 2017 screenshots, so the window is
+    -- internally consistent; the countdowns tick from now.
+    local t_pay  = os.time() + 3 * 86400 - 1
+    local t_lost = os.time() + 7 * 86400 - 1
 
     local function countdown(deadline)
         local left = math.max(0, deadline - os.time())
@@ -214,220 +238,436 @@ function M.wannacry()
             math.floor(left / 86400), math.floor(left % 86400 / 3600),
             math.floor(left % 3600 / 60), left % 60)
     end
-    local function digits(t)
-        return "<span font='FiraCode Nerd Font Bold 19' foreground='" .. WHITE .. "'>" .. t .. "</span>"
+
+    local function span(text, colour, font, extra)
+        return "<span font='" .. font .. "' foreground='" .. colour .. "'" ..
+               (extra or "") .. ">" .. text .. "</span>"
     end
 
-    local pay_tb, lost_tb = tb(digits(countdown(t_pay)), "center"), tb(digits(countdown(t_lost)), "center")
-
-    -- rounded box helper
-    local function box(child, bg, radius, pad)
+    -- A solid block that ACTUALLY paints. A childless container.background
+    -- draws nothing (its bg comes from before_draw_children, which never runs
+    -- without children), so every one of these carries an empty textbox.
+    local function block(colour, w, h)
         return wibox.widget {
-            { child, margins = pad or 8, widget = wibox.container.margin },
-            bg     = bg,
-            shape  = function(cr, w, h) gears.shape.rounded_rect(cr, w, h, radius or 3) end,
-            widget = wibox.container.background,
+            { text = "", widget = wibox.widget.textbox },
+            forced_width  = w,
+            forced_height = h,
+            bg            = colour,
+            widget        = wibox.container.background,
         }
     end
 
-    -- ---- title bar ---------------------------------------------------------
+    -- A bordered panel: 1px light rule, red fill, like every box in the original.
+    local function panel(child, pad)
+        return wibox.widget {
+            { child, margins = pad or 6, widget = wibox.container.margin },
+            bg                 = RED,
+            shape              = gears.shape.rectangle,
+            shape_border_width = 1,
+            shape_border_color = EDGE,
+            widget             = wibox.container.background,
+        }
+    end
+
+    ---------------------------------------------------------------
+    -- The padlock, drawn rather than shipped: an emoji lock renders as a
+    -- colour glyph on this system, and the original is a flat white lock.
+    ---------------------------------------------------------------
+    local function padlock(size)
+        local w = wibox.widget.base.make_widget()
+        function w:fit() return size, size end
+        function w:draw(_, cr, width, height)
+            local cx = width / 2
+            local body_top = height * 0.50
+            cr:set_source(gears.color("#ffffff"))
+            -- Shackle. Its centre sits just BELOW the body's top edge so the
+            -- two legs end inside the body: centred above it, the legs stop
+            -- short and the lock reads as open, which is the opposite of the
+            -- point.
+            cr:set_line_width(width * 0.13)
+            cr:arc(cx, body_top + height * 0.02, width * 0.21, math.pi, 2 * math.pi)
+            cr:stroke()
+            -- body
+            local bw, bh = width * 0.62, height * 0.38
+            cr:save()
+            cr:translate(cx - bw / 2, body_top)
+            gears.shape.rounded_rect(cr, bw, bh, width * 0.035)
+            cr:restore()
+            cr:fill()
+            -- keyhole, punched in the tile's own red: circle plus a short slot
+            cr:set_source(gears.color(TILE_RED))
+            cr:arc(cx, body_top + bh * 0.34, width * 0.055, 0, 2 * math.pi)
+            cr:fill()
+            cr:save()
+            cr:translate(cx - width * 0.024, body_top + bh * 0.34)
+            gears.shape.rectangle(cr, width * 0.048, bh * 0.42)
+            cr:restore()
+            cr:fill()
+        end
+        return w
+    end
+
+    ---------------------------------------------------------------
+    -- Title bar
+    ---------------------------------------------------------------
     local titlebar = wibox.widget {
         {
             {
-                tb("<span font='Noto Sans 9' foreground='#f0c9c9'>\u{f023}</span>"),
-                { tb("<span font='Noto Sans 9' foreground='" .. WHITE .. "'>Wana Decrypt0r 2.0</span>"),
-                  left = 8, widget = wibox.container.margin },
-                layout = wibox.layout.fixed.horizontal,
+                { padlock(15), valign = "center", widget = wibox.container.place },
+                left = 5, right = 5, top = 3, bottom = 3,
+                widget = wibox.container.margin,
             },
-            nil,
-            tb("<span font='Noto Sans Bold 10' foreground='" .. WHITE .. "'>  \u{2715}  </span>", "right"),
+            tb(span("Wana Decrypt0r 2.0", TITLE_FG, "Noto Sans 10"), "center"),
+            {
+                {
+                    tb(span("\u{2715}", "#ffffff", "Noto Sans 9"), "center"),
+                    forced_width = 26, forced_height = 17,
+                    bg = CLOSE_BG,
+                    shape_border_width = 1, shape_border_color = "#8f2418",
+                    widget = wibox.container.background,
+                },
+                right = 3, top = 3, bottom = 3, left = 3,
+                widget = wibox.container.margin,
+            },
             layout = wibox.layout.align.horizontal,
         },
-        left = 8, right = 4, top = 4, bottom = 4,
-        widget = wibox.container.margin,
+        bg     = TITLE_BG,
+        widget = wibox.container.background,
     }
 
-    -- ---- left column -------------------------------------------------------
-    local lock_art = box(
-        tb("<span font='Noto Sans 46' foreground='" .. WHITE .. "'>\u{1f512}</span>", "center"),
-        "#d95757", 4, 14)
+    ---------------------------------------------------------------
+    -- Left column
+    ---------------------------------------------------------------
+    local lock_tile = wibox.widget {
+        {
+            { padlock(96), halign = "center", valign = "center",
+              widget = wibox.container.place },
+            margins = 6,
+            widget  = wibox.container.margin,
+        },
+        forced_height      = 120,
+        bg                 = {
+            type = "linear", from = { 0, 0 }, to = { 0, 120 },
+            stops = { { 0, "#9c1c1c" }, { 0.45, "#b32424" }, { 1, "#a01e1e" } },
+        },
+        shape_border_width = 1,
+        shape_border_color = "#e8d0d0",
+        widget             = wibox.container.background,
+    }
 
-    local function timer_panel(title, deadline, value_tb)
-        local body = wibox.widget {
-            tb("<span font='Noto Sans Bold 9' foreground='" .. YELLOW .. "'>" .. title .. "</span>", "center"),
-            { tb("<span font='Noto Sans 8' foreground='" .. WHITE .. "'>" ..
-                 os.date("%d/%m/%Y %H:%M:%S", deadline) .. "</span>", "center"),
-              top = 4, widget = wibox.container.margin },
-            { tb("<span font='Noto Sans 8' foreground='" .. WHITE .. "'>Time Left</span>", "center"),
-              top = 6, widget = wibox.container.margin },
-            { value_tb, top = 2, widget = wibox.container.margin },
-            layout = wibox.layout.fixed.vertical,
-        }
-        -- the little green->red gradient strip on the right of each panel
-        local strip = wibox.widget {
-            forced_width = 7,
-            bg = {
-                type = "linear", from = { 0, 0 }, to = { 0, 70 },
-                stops = { { 0, "#39d353" }, { 0.55, "#e8d44d" }, { 1, "#d13b3b" } },
+    local pay_tb  = tb(span(countdown(t_pay),  DIGITS, "DejaVu Sans Mono Bold 15"), "center")
+    local lost_tb = tb(span(countdown(t_lost), DIGITS, "DejaVu Sans Mono Bold 15"), "center")
+
+    local function timer_panel(title, when, value_tb)
+        return panel(wibox.widget {
+            {
+                tb(span(title, GOLD, "Noto Sans Bold 10"), "center"),
+                { tb(span(when, "#ffffff", "Noto Sans 9"), "center"),
+                  top = 10, widget = wibox.container.margin },
+                { tb(span("Time Left", "#ffffff", "Noto Sans 9"), "center"),
+                  top = 12, widget = wibox.container.margin },
+                { value_tb, top = 4, widget = wibox.container.margin },
+                layout = wibox.layout.fixed.vertical,
             },
-            widget = wibox.container.background,
-        }
-        return box(wibox.widget {
-            body, nil, strip,
+            nil,
+            -- The green-to-red strip sits at the panel's right edge, spanning
+            -- the date and countdown rows only.
+            {
+                {
+                    { text = "", widget = wibox.widget.textbox },
+                    forced_width  = 11,
+                    forced_height = 76,
+                    bg = {
+                        type = "linear", from = { 0, 0 }, to = { 0, 76 },
+                        stops = { { 0, "#22c722" }, { 0.45, "#c9c020" },
+                                  { 1, "#c62020" } },
+                    },
+                    widget = wibox.container.background,
+                },
+                top = 26, left = 6,
+                widget = wibox.container.margin,
+            },
             layout = wibox.layout.align.horizontal,
-        }, PANEL, 3, 8)
+        }, 8)
     end
 
-    local function link(text)
-        return tb("<span font='Noto Sans 8' foreground='#dfe9ff' underline='single'>" .. text .. "</span>")
+    local function link(text, font)
+        return tb(span(text, LINK, font or "Noto Sans 9", " underline='single'"))
     end
 
     local left_col = wibox.widget {
-        lock_art,
-        { timer_panel("Payment will be raised on", t_pay,  pay_tb),  top = 10, widget = wibox.container.margin },
-        { timer_panel("Your files will be lost on", t_lost, lost_tb), top = 8,  widget = wibox.container.margin },
+        lock_tile,
+        { timer_panel("Payment will be raised on", "5/16/2017 00:47:55", pay_tb),
+          top = 12, widget = wibox.container.margin },
+        { timer_panel("Your files will be lost on", "5/20/2017 00:47:55", lost_tb),
+          top = 10, widget = wibox.container.margin },
         {
             {
                 link("About bitcoin"),
-                { link("How to buy bitcoins?"), top = 6, widget = wibox.container.margin },
-                { tb("<span font='Noto Sans Bold 10' foreground='" .. WHITE ..
-                     "' underline='single'>Contact Us</span>"), top = 10, widget = wibox.container.margin },
+                { link("How to buy bitcoins?"), top = 10,
+                  widget = wibox.container.margin },
+                { link("Contact Us", "Noto Sans Bold 13"), top = 16,
+                  widget = wibox.container.margin },
                 layout = wibox.layout.fixed.vertical,
             },
-            top = 14,
+            top = 16, left = 2,
             widget = wibox.container.margin,
         },
         layout = wibox.layout.fixed.vertical,
     }
 
-    -- ---- right column ------------------------------------------------------
+    ---------------------------------------------------------------
+    -- Right column: heading, the white paper, the bitcoin bar, buttons
+    ---------------------------------------------------------------
     local function head(t)
-        return tb("<span font='Noto Sans Bold 12' foreground='" .. INK .. "'>" .. t .. "</span>")
+        return tb(span(t, INK, "Noto Sans Bold 13"))
     end
     local function para(t)
-        local w = tb("<span font='Noto Sans 9' foreground='" .. INK .. "'>" .. t .. "</span>")
+        local w = tb(span(t, INK, "Noto Sans 9"))
         w.wrap = "word_char"
         return w
     end
 
-    local paper = wibox.widget {
+    -- Faked scrollbar: the original's text pane is scrolled, and the trough on
+    -- its right edge is one of those details you notice by its absence.
+    -- The TRACK is the outer background, so it fills the pane's full height;
+    -- the arrow stub and thumb stack at the top inside it. Built as one
+    -- background rather than an align.vertical: the track needs to stretch, and
+    -- a 3-slot align with a trailing nil is the constructor trap that gives an
+    -- ambiguous array length.
+    local scrollbar = wibox.widget {
         {
+            block("#8f8f8f", 14, 13),
             {
-                head("What Happened to My Computer?"),
-                { para("Your important files are encrypted.\n" ..
-                       "Many of your documents, photos, videos, databases and other files are no longer " ..
-                       "accessible because they have been encrypted. Maybe you are busy looking for a way to " ..
-                       "recover your files, but do not waste your time. Nobody can recover your files without " ..
-                       "our decryption service."), top = 4, widget = wibox.container.margin },
-                { head("Can I Recover My Files?"), top = 12, widget = wibox.container.margin },
-                { para("Sure. We guarantee that you can recover all your files safely and easily. But you have " ..
-                       "not so enough time.\n" ..
-                       "You can decrypt some of your files for free. Try now by clicking <Decrypt>.\n" ..
-                       "But if you want to decrypt all your files, you need to pay.\n" ..
-                       "You only have 3 days to submit the payment. After that the price will be doubled.\n" ..
-                       "Also, if you don't pay in 7 days, you won't be able to recover your files forever."),
-                  top = 4, widget = wibox.container.margin },
-                { head("How Do I Pay?"), top = 12, widget = wibox.container.margin },
-                { para("Payment is accepted in Bitcoin only. For more information, click <About bitcoin>.\n" ..
-                       "Please check the current price of Bitcoin and buy some bitcoins. For more information, " ..
-                       "click <How to buy bitcoins>.\n" ..
-                       "And send the correct amount to the address specified in this window.\n" ..
-                       "After your payment, click <Check Payment>. Best time to check: 9:00am - 11:00am."),
-                  top = 4, widget = wibox.container.margin },
-                layout = wibox.layout.fixed.vertical,
+                block(SB_THUMB, 12, 130),
+                top = 1, left = 1, right = 1,
+                widget = wibox.container.margin,
             },
-            margins = 12,
-            widget  = wibox.container.margin,
+            layout = wibox.layout.fixed.vertical,
         },
+        forced_width = 14,
+        bg           = SB_TRACK,
+        widget       = wibox.container.background,
+    }
+
+    local paper_text = wibox.widget {
+        {
+            head("What Happened to My Computer?"),
+            { para("Your important files are encrypted."),
+              top = 6, widget = wibox.container.margin },
+            { para("Many of your documents, photos, videos, databases and other files " ..
+              "are no longer accessible because they have been encrypted. Maybe you " ..
+              "are busy looking for a way to recover your files, but do not waste " ..
+              "your time. Nobody can recover your files without our decryption service."),
+              top = 2, widget = wibox.container.margin },
+            { head("Can I Recover My Files?"), top = 14,
+              widget = wibox.container.margin },
+            { para("Sure. We guarantee that you can recover all your files safely and " ..
+              "easily. But you have not so enough time."),
+              top = 6, widget = wibox.container.margin },
+            { para("You can decrypt some of your files for free. Try now by clicking &lt;Decrypt&gt;.\n" ..
+              "But if you want to decrypt all your files, you need to pay.\n" ..
+              "You only have 3 days to submit the payment. After that the price will be doubled.\n" ..
+              "Also, if you don't pay in 7 days, you won't be able to recover your files forever.\n" ..
+              "We will have free events for users who are so poor that they couldn't pay in 6 months."),
+              top = 2, widget = wibox.container.margin },
+            { head("How Do I Pay?"), top = 14,
+              widget = wibox.container.margin },
+            { para("Payment is accepted in Bitcoin only. For more information, click &lt;About bitcoin&gt;.\n" ..
+              "Please check the current price of Bitcoin and buy some bitcoins. For more " ..
+              "information, click &lt;How to buy bitcoins&gt;.\n" ..
+              "And send the correct amount to the address specified in this window.\n" ..
+              "After your payment, click &lt;Check Payment&gt;. Best time to check: 9:00am - 11:00am"),
+              top = 6, widget = wibox.container.margin },
+            layout = wibox.layout.fixed.vertical,
+        },
+        margins = 12,
+        widget  = wibox.container.margin,
+    }
+
+    -- align.horizontal's MIDDLE slot is the one that absorbs slack, and the
+    -- text pane's natural width is unbounded — declared as {text, scrollbar}
+    -- the text became the middle and squeezed the scrollbar to zero width.
+    -- Built imperatively because putting the text in the middle declaratively
+    -- needs a leading nil, which makes the array length ambiguous.
+    local paper_row = wibox.layout.align.horizontal()
+    paper_row:set_middle(paper_text)
+    paper_row:set_third(scrollbar)
+
+    local paper = wibox.widget {
+        paper_row,
         bg     = PAPER,
         widget = wibox.container.background,
     }
 
-    -- bitcoin bar
-    local btc_bar = wibox.widget {
+    -- Bitcoin logo: orange disc, white B, wordmark. Drawn, so the module keeps
+    -- shipping zero assets.
+    local btc_disc = wibox.widget.base.make_widget()
+    function btc_disc:fit() return 34, 34 end
+    function btc_disc:draw(_, cr, width, height)
+        cr:set_source(gears.color(ORANGE))
+        cr:arc(width / 2, height / 2, math.min(width, height) / 2 - 1, 0, 2 * math.pi)
+        cr:fill()
+    end
+    local btc_logo = wibox.widget {
         {
-            box(tb("<span font='Noto Sans Bold 13' foreground='#f7931a'>\u{20bf} bitcoin</span>\n" ..
-                   "<span font='Noto Sans 7' foreground='#666666'>ACCEPTED HERE</span>", "center"),
-                "#e6e6e6", 2, 6),
             {
                 {
-                    tb("<span font='Noto Sans Bold 9' foreground='" .. YELLOW ..
-                       "'>Send $300 worth of bitcoin to this address:</span>"),
-                    {
-                        {
-                            box(tb("<span font='FiraCode Nerd Font 10' foreground='#101010'>" ..
-                                   "1PRANKnotREALbtcADDRESSxxxxxxxxxx</span>"), "#ffffff", 2, 5),
-                            nil,
-                            box(tb("<span font='Noto Sans 8' foreground='#101010'>Copy</span>", "center"),
-                                "#e0e0e0", 2, 5),
-                            layout = wibox.layout.align.horizontal,
-                        },
-                        top = 4,
-                        widget = wibox.container.margin,
-                    },
-                    layout = wibox.layout.fixed.vertical,
+                    { btc_disc, valign = "center", widget = wibox.container.place },
+                    tb(span("B", "#ffffff", "Noto Serif Bold 15"), "center"),
+                    layout = wibox.layout.stack,
                 },
-                left = 10,
-                widget = wibox.container.margin,
+                {
+                    {
+                        tb(span("bitcoin", "#2b2b2b", "Noto Serif Bold 15")),
+                        tb(span("ACCEPTED HERE", "#4a4a4a", "Noto Sans Italic 7")),
+                        layout = wibox.layout.fixed.vertical,
+                    },
+                    left = 5,
+                    widget = wibox.container.margin,
+                },
+                layout = wibox.layout.fixed.horizontal,
             },
-            layout = wibox.layout.align.horizontal,
+            margins = 6,
+            widget  = wibox.container.margin,
         },
-        top = 8, bottom = 8,
-        widget = wibox.container.margin,
+        bg     = LOGO_BG,
+        widget = wibox.container.background,
     }
 
-    local function button(label)
-        return box(tb("<span font='Noto Sans 10' foreground='#101010'>" .. label .. "</span>", "center"),
-                   "#e4e4e4", 2, 8)
+    local address = wibox.widget {
+        {
+            tb(span("1Mz7ULfKk8LqYtNVGjW4pRsc2XbAd9eQhT", "#101010",
+                    "Noto Sans Bold 11")),
+            left = 8, right = 8, top = 6, bottom = 6,
+            widget = wibox.container.margin,
+        },
+        bg                 = "#ffffff",
+        shape_border_width = 1,
+        shape_border_color = "#8a6a6a",
+        widget             = wibox.container.background,
+    }
+
+    local copy_btn = wibox.widget {
+        {
+            tb(span("Copy", "#101010", "Noto Sans 9"), "center"),
+            left = 6, right = 6, top = 6, bottom = 6,
+            widget = wibox.container.margin,
+        },
+        bg                 = BTN_FACE,
+        shape_border_width = 1,
+        shape_border_color = BTN_EDGE,
+        widget             = wibox.container.background,
+    }
+
+    local btc_bar = panel(wibox.widget {
+        { btc_logo, valign = "center", widget = wibox.container.place },
+        {
+            {
+                tb(span("Send $300 worth of bitcoin to this address:", GOLD,
+                        "Noto Sans Bold 11")),
+                {
+                    {
+                        address,
+                        nil,
+                        { copy_btn, left = 4, widget = wibox.container.margin },
+                        layout = wibox.layout.align.horizontal,
+                    },
+                    top = 6,
+                    widget = wibox.container.margin,
+                },
+                layout = wibox.layout.fixed.vertical,
+            },
+            left = 10,
+            widget = wibox.container.margin,
+        },
+        nil,
+        layout = wibox.layout.align.horizontal,
+    }, 6)
+
+    -- The accelerator underline on P and D is in the original.
+    local function button(markup)
+        return wibox.widget {
+            {
+                tb(span(markup, "#101010", "Noto Sans 12"), "center"),
+                top = 7, bottom = 7,
+                widget = wibox.container.margin,
+            },
+            bg                 = BTN_FACE,
+            shape_border_width = 1,
+            shape_border_color = BTN_EDGE,
+            widget             = wibox.container.background,
+        }
     end
     local buttons_row = wibox.widget {
-        button("Check Payment"),
-        button("Decrypt"),
-        spacing = 24,
+        button("Check <u>P</u>ayment"),
+        button("<u>D</u>ecrypt"),
+        spacing = 14,
         layout  = wibox.layout.flex.horizontal,
     }
 
     local right_col = wibox.widget {
         {
             {
-                tb("<span font='Noto Sans Bold 13' foreground='" .. WHITE ..
-                   "'>Ooops, your files have been encrypted!</span>", "center"),
                 nil,
-                box(tb("<span font='Noto Sans 8' foreground='#101010'>English  \u{25be}</span>"),
-                    "#ededed", 2, 4),
+                tb(span("Ooops, your files have been encrypted!", "#ffffff",
+                        "Noto Sans Bold 15"), "center"),
+                {
+                    {
+                        {
+                            tb(span("English", "#101010", "Noto Sans 9")),
+                            nil,
+                            tb(span("\u{25be}", "#101010", "Noto Sans 7"), "right"),
+                            layout = wibox.layout.align.horizontal,
+                        },
+                        left = 6, right = 4, top = 3, bottom = 3,
+                        widget = wibox.container.margin,
+                    },
+                    forced_width       = 96,
+                    bg                 = "#ffffff",
+                    shape_border_width = 1,
+                    shape_border_color = "#8a6a6a",
+                    widget             = wibox.container.background,
+                },
                 layout = wibox.layout.align.horizontal,
             },
             bottom = 8,
             widget = wibox.container.margin,
         },
         paper,
-        btc_bar,
-        buttons_row,
+        {
+            {
+                btc_bar,
+                { buttons_row, top = 8, widget = wibox.container.margin },
+                layout = wibox.layout.fixed.vertical,
+            },
+            top = 8,
+            widget = wibox.container.margin,
+        },
         layout = wibox.layout.align.vertical,
     }
 
-    -- ---- assemble ----------------------------------------------------------
     local body = wibox.widget {
         {
-            { left_col, forced_width = 250, widget = wibox.container.background },
-            { right_col, left = 14, widget = wibox.container.margin },
+            { left_col, forced_width = LEFT_W, widget = wibox.container.margin },
+            { right_col, left = 10, widget = wibox.container.margin },
             layout = wibox.layout.align.horizontal,
         },
-        margins = 12,
+        margins = 8,
         widget  = wibox.container.margin,
     }
 
     local content = wibox.widget {
-        { titlebar, bg = RED_DK, widget = wibox.container.background },
+        titlebar,
         body,
         nil,
         layout = wibox.layout.align.vertical,
     }
 
-    open_window(900, 660, content, "#7a0c0c")
+    open_window(W, H, content, FRAME)
     timer = gears.timer { timeout = 1, autostart = true, callback = function()
-        pay_tb:set_markup(digits(countdown(t_pay)))
-        lost_tb:set_markup(digits(countdown(t_lost)))
+        pay_tb:set_markup(span(countdown(t_pay),  DIGITS, "DejaVu Sans Mono Bold 15"))
+        lost_tb:set_markup(span(countdown(t_lost), DIGITS, "DejaVu Sans Mono Bold 15"))
     end }
 end
 
