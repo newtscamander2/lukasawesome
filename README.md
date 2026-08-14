@@ -147,7 +147,7 @@ Coursework is kept in one predictable tree:
 gm                                         # the tree, and every course in it
 gm --create-course "Introduktion til Programmering"
 gm --create-lecture "Writing hello world in Python"
-gm --create-homework "Week 3" -c algo      # -c takes an alias, prefix or dir name
+gm --create-homework "Week 3" -c bol       # -c: alias, prefix, substring or initials
 gm --create-report "Sorting benchmark"     # built from goat's templates/report.tex
 gm --list                                  # entries in the current course
 cd "$(gm --latest -c algo)"                # jump to the newest entry
@@ -166,6 +166,12 @@ entry count and newest entry.
    datastrukturer-og-algoritmer             1 entry     latest 2026-08-14 uge 3
    introduktion-til-programmering  (itp)    2 entries   latest 2026-08-20 lister og loekker
 ```
+
+`-c` resolves against courses that already exist — by alias, exact name, unique
+prefix, unique substring, or initials (`bol` finds `beregnelighed-og-logik`) — and
+errors out listing the real ones if nothing matches, rather than inventing a
+directory from a typo. Making a course is `--create-course`'s job, and it creates
+the semester directory too when it is the first one.
 
 Run from inside a course directory, `--create-*` files the new entry next to its
 siblings with no flags at all. Outside the tree it falls back to

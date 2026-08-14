@@ -797,6 +797,17 @@ class Context:
         return self.semester_dir / self.course if self.course else None
 
 
+SEMESTER_RE = re.compile(r"^\d+semester$")
+
+
+def existing_semesters(root):
+    """Semester directories that actually exist, in numeric order."""
+    if not root.is_dir():
+        return []
+    names = [p.name for p in root.iterdir() if p.is_dir() and SEMESTER_RE.match(p.name)]
+    return sorted(names, key=lambda n: int(n.removesuffix("semester")))
+
+
 def existing_courses(semester_dir):
     if not semester_dir.is_dir():
         return []
@@ -828,13 +839,30 @@ def resolve_context(args, cfg, interactive=True, require_course=True):
         semester = normalize_semester(args.semester)
     elif semester is None:
         semester = normalize_semester(cfg["current_semester"])
+        # A config default should not outvote the only semester on disk: if the
+        # configured one does not exist and exactly one does, that is the one
+        # meant. (Nothing on disk yet -> keep the config value and create it.)
+        if not (root / semester).is_dir():
+            present = existing_semesters(root)
+            if len(present) == 1:
+                semester = present[0]
     else:
         semester = normalize_semester(semester)
 
     if args.course:
         course = resolve_course(args.course, root / semester, cfg)
+        if course is None:
+            options = existing_courses(root / semester)
+            where = (f"existing: {', '.join(options)}" if options
+                     else f"no courses in {root / semester} yet")
+            raise Fail(f"no course matching '{args.course}' ({where}). "
+                       f'Create it with: {INVOKED} --create-course "{args.course}"')
     elif course is None and cfg.get("current_course"):
         course = resolve_course(cfg["current_course"], root / semester, cfg)
+        if course is None:
+            # Stale config rather than a typo: say so and carry on to the prompt.
+            warn(f"current_course '{cfg['current_course']}' in {CONFIG_PATH} "
+                 f"does not exist under {semester}")
 
     if course is None and require_course:
         options = existing_courses(root / semester)
@@ -849,11 +877,18 @@ def resolve_context(args, cfg, interactive=True, require_course=True):
     return Context(root=root, semester=semester, course=course)
 
 
-def resolve_course(name, semester_dir, cfg):
-    """Map an alias / partial name to a course directory name.
+def course_initials(course):
+    """beregnelighed-og-logik -> bol (how people actually abbreviate a course)."""
+    return "".join(w[0] for w in course.split("-") if w)
 
-    Order: [courses] alias, exact directory, unique prefix or substring match,
-    then fall back to a slug of what was typed (a new course).
+
+def resolve_course(name, semester_dir, cfg):
+    """Map an alias / abbreviation / partial name to an existing course.
+
+    Order: [courses] alias, exact name, exact slug, unique prefix, unique
+    substring, unique initials. Returns None when nothing matches -- inventing
+    a directory from an unmatched -c is how you end up with bol/ sitting next
+    to beregnelighed-og-logik/, so creating courses is --create-course's job.
     """
     aliases = cfg.get("courses", {})
     if name in aliases:
@@ -864,13 +899,14 @@ def resolve_course(name, semester_dir, cfg):
     slug = slugify(name)
     if slug in options:
         return slug
-    hits = [c for c in options if c.startswith(slug)] or \
-           [c for c in options if slug in c]
-    if len(hits) == 1:
-        return hits[0]
-    if len(hits) > 1:
-        raise Fail(f"'{name}' matches several courses: {', '.join(hits)}")
-    return slug
+    for candidates in ([c for c in options if c.startswith(slug)],
+                       [c for c in options if slug in c],
+                       [c for c in options if course_initials(c) == slug]):
+        if len(candidates) == 1:
+            return candidates[0]
+        if len(candidates) > 1:
+            raise Fail(f"'{name}' matches several courses: {', '.join(candidates)}")
+    return None
 
 
 def prompt(question, default=""):
@@ -1202,13 +1238,21 @@ def cmd_status(args, cfg):
     install = installed_goat(cfg)
     ctx = resolve_context(args, cfg, interactive=False, require_course=False)
     root = ctx.root
+    semesters = existing_semesters(root)
 
-    print(f"{C_BLUE}::{C_RESET} {root}  {dim('(' + ctx.semester + ')')}")
-
-    if not root.is_dir():
-        warn(f"{root} does not exist yet")
-        log(f'create the first course: {INVOKED} --create-course "Datalogi 1"')
+    # Nothing exists yet: say that, and do not talk about a semester that only
+    # exists in the config file.
+    if not root.is_dir() or not semesters:
+        print(f"{C_BLUE}::{C_RESET} {root}")
+        warn("no semesters yet" if root.is_dir() else "does not exist yet")
+        log(f'start here: {INVOKED} --create-course "Datalogi 1"')
+        print(f"   {dim('that creates')} {root / ctx.semester}/datalogi-1/"
+              f"{dim(', or use -s N for another semester')}")
         return 0
+
+    known = ctx.semester in semesters
+    print(f"{C_BLUE}::{C_RESET} {root}  "
+          f"{dim('(' + ctx.semester + ('' if known else ', not created yet') + ')')}")
 
     # Where the shell currently is, when that is inside the tree.
     try:
@@ -1217,16 +1261,16 @@ def cmd_status(args, cfg):
             print(f"   {dim('you are here:')} {'/'.join(rel.parts)}")
     except (ValueError, OSError):
         pass
+    if len(semesters) > 1:
+        print(f"   {dim('semesters:')} {', '.join(semesters)}")
 
     courses = existing_courses(ctx.semester_dir)
     if not courses:
         print()
         warn(f"no courses in {ctx.semester_dir}")
-        others = [d.name for d in sorted(root.iterdir())
-                  if d.is_dir() and d.name != ctx.semester and existing_courses(d)]
-        if others:
-            log(f"other semesters with content: {', '.join(others)} "
-                f"(use -s, or set current_semester in {CONFIG_PATH})")
+        if not known:
+            log(f"semesters that exist: {', '.join(semesters)} "
+                f"(use -s N, or set current_semester in {CONFIG_PATH})")
         else:
             log(f'add one: {INVOKED} --create-course "Datalogi 1"')
         return 0
