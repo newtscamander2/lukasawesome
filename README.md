@@ -185,6 +185,15 @@ A `.tex` file in goat's `templates/` wins over a built-in of the same name, so
 adding `templates/lecture.tex` to goat replaces the built-in lecture skeleton
 without touching this tool.
 
+Nothing is ever overwritten. Running the same command twice refuses rather than
+replacing your work, and there is no flag to force it:
+
+```
+$ gm --create-lecture "Kollision"
+  x main.tex already exists in 2026-08-14-kollision — nothing written.
+    Delete it first, or use another title
+```
+
 Inside an entry there is nothing to create — that is where you write. `gm` there
 reports the document and its pinned goat version instead.
 
@@ -205,13 +214,12 @@ $ cd ~/aarhusuni/1semester/math/2026-08-14-lister/img && gm --create-lecture "X"
 ### Looking around
 
 Typed on its own, `gm` reports the level you are on and what is on it — the
-semesters in a root, the courses in a semester, the entries in a course (with
-`*` marking the entry you are inside).
+semesters in a root, the courses in a semester, the entries in a course, the
+document and its pinned goat version in an entry.
 
 ```
 $ cd ~/aarhusuni/1semester && gm
 :: /home/lukas/aarhusuni/1semester  (semester)
-   tree: /home/lukas/aarhusuni  -> 1semester
 
    beregnelighed-og-logik    3 entries   latest 2026-08-20 turingmaskiner
    math                      1 entry     latest 2026-08-14 lister og loekker
@@ -219,11 +227,10 @@ $ cd ~/aarhusuni/1semester && gm
 :: cd into a course, or: gm --create-course math
 ```
 
-```bash
-gm --list                # bare names on this level, one per line, for scripts
-cd "$(gm --latest)"      # jump to the newest entry in this course
-gm --where               # detected level, paths, and which goat will be pinned
-```
+`gm --help` is also level-aware: it lists only the actions that work where you
+are (in a course, that includes the table of available templates; in an entry,
+only the document commands), so it stays short enough to read. `gm --where`
+prints the detected level and which goat a new document would be pinned to.
 
 ### Filling in documents
 

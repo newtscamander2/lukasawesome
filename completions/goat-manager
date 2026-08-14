@@ -11,14 +11,11 @@ _goat_manager() {
 
     local actions="--get-version --check-upgrade --upgrade --create-semester
                    --create-course --create-lecture --create-homework
-                   --create-report --templates --list --latest --where"
-    local opts="--template --date --slug -n --dry-run -q --quiet --json --force
-                --print-path --no-verify -h --help --version"
+                   --create-report --templates --where"
+    local opts="--template --slug -n --dry-run -q --quiet --json
+                --no-verify -h --help --version"
 
     case "$prev" in
-        --date)
-            mapfile -t COMPREPLY < <(compgen -W "$(date +%F)" -- "$cur")
-            return ;;
         --template)
             # Ask gm itself, so the list cannot drift from what it accepts.
             mapfile -t COMPREPLY < <(compgen -W "$(gm --templates -q 2>/dev/null)" -- "$cur")

@@ -21,9 +21,10 @@ level down at a time, the same way you would do it by hand:
 
 Each --create-* in a course makes the dated directory and copies one of goat's
 templates into it as main.tex (gm --templates lists them, --template picks one).
+Nothing is ever overwritten: if the document is already there, gm refuses.
 
 You move between levels with cd. Typed on its own, gm says where you are and
-what is there.
+what is there; gm --help offers only what this level can actually do.
 
 It also tracks which goat release a document targets, so a document written
 today still compiles years from now:
@@ -819,9 +820,8 @@ def wrong_level(loc, need, what):
 # ---------------------------------------------------------------------------
 # Actions: building the tree
 # ---------------------------------------------------------------------------
-def cmd_create_semester(args):
+def cmd_create_semester(args, loc):
     """In the root: make <N>semester."""
-    loc = locate()
     if loc.level not in ("root", "outside"):
         raise wrong_level(loc, "root", "a semester")
 
@@ -848,14 +848,11 @@ def cmd_create_semester(args):
             print(f"   {dim(str(loc.cwd))} {dim('is now a coursework root')}")
     print()
     log(f"cd {target.name} && {INVOKED} --create-course math")
-    if args.print_path:
-        print(target)
     return 0
 
 
-def cmd_create_course(args):
+def cmd_create_course(args, loc):
     """In a semester: make the course directory."""
-    loc = locate()
     if loc.level != "semester":
         raise wrong_level(loc, "semester", "a course")
 
@@ -883,18 +880,15 @@ def cmd_create_course(args):
         ok(f"created {target}")
     print()
     log(f'cd {slug} && {INVOKED} --create-lecture "..."')
-    if args.print_path:
-        print(target)
     return 0
 
 
-def cmd_create_entry(kind, title, args):
+def cmd_create_entry(kind, title, args, loc):
     """In a course: make a dated entry holding main.tex from a goat template.
 
     Only in a course: an entry is where you write, so from inside one the answer
     is cd .. rather than nesting another entry underneath it.
     """
-    loc = locate()
     if loc.level != "course":
         raise wrong_level(loc, "course", f"a {kind}")
     course_dir = loc.course_dir
@@ -908,19 +902,21 @@ def cmd_create_entry(kind, title, args):
         if not title:
             raise Fail("no title given")
 
-    date = args.date or dt.date.today().isoformat()
-    try:
-        dt.date.fromisoformat(date)
-    except ValueError as exc:
-        raise Fail(f"--date must be YYYY-MM-DD, got '{date}'") from exc
-
+    date = dt.date.today().isoformat()
     slug = args.slug or slugify(title)
     if not slug:
         raise Fail(f"'{title}' does not slugify into a directory name")
 
+    # Never overwrite: an existing entry without a document may be filled in,
+    # but a document that is already there is left exactly as it is.
     target = course_dir / f"{date}-{slug}"
-    if target.exists() and not args.force:
-        raise Fail(f"{target} already exists (use --force to write into it)")
+    existing_doc = next((target / n for n in MAIN_CANDIDATES
+                         if (target / n).is_file()), None)
+    if existing_doc is not None:
+        raise Fail(f"{existing_doc.name} already exists in {target.name} — "
+                   f"nothing written. Delete it first, or use another title")
+    if target.exists() and not target.is_dir():
+        raise Fail(f"{target} exists and is not a directory")
 
     template, origin = load_template(args.template or DEFAULT_TEMPLATE[kind], install)
     lang = setting("LANG", "danish").lower()
@@ -954,8 +950,6 @@ def cmd_create_entry(kind, title, args):
 
     target.mkdir(parents=True, exist_ok=True)
     (target / "img").mkdir(exist_ok=True)
-    if main.exists() and not args.force:
-        raise Fail(f"{main} already exists (use --force to overwrite)")
     main.write_text(body, encoding="utf-8")
     latexmkrc = target / ".latexmkrc"
     if not latexmkrc.exists():
@@ -966,8 +960,6 @@ def cmd_create_entry(kind, title, args):
     print(f"   {dim('goat')}     {install.version} (pinned in main.tex)")
     print()
     log(f"cd {target.name} && latexmk -pdf main.tex")
-    if args.print_path:
-        print(target)
     return 0
 
 
@@ -983,21 +975,17 @@ def prompt(question, default=""):
 # ---------------------------------------------------------------------------
 # Actions: looking around
 # ---------------------------------------------------------------------------
-def cmd_status(args):
+def cmd_status(args, loc):
     """The bare `gm`: which level you are on, and what is on it."""
-    loc = locate()
-
     if loc.level == "outside":
         print(f"{C_BLUE}::{C_RESET} {loc.cwd}")
         warn("not inside a coursework tree (no <N>semester directory here or above)")
         log(f"make this directory a root: {INVOKED} --create-semester 1")
         return 0
 
-    header = {"root": "root", "semester": "semester",
-              "course": "course", "entry": "entry"}[loc.level]
-    print(f"{C_BLUE}::{C_RESET} {loc.cwd}  {dim('(' + header + ')')}")
-    if loc.level != "root":
-        print(f"   {dim('tree:')} {loc.root}  {dim('->')} {loc.describe()}")
+    # The absolute path already contains the root and every level below it, so
+    # there is nothing to add but the name of the level you are on.
+    print(f"{C_BLUE}::{C_RESET} {loc.cwd}  {dim('(' + loc.level + ')')}")
     print()
 
     if loc.level == "root":
@@ -1038,8 +1026,8 @@ def cmd_status(args):
                     if (entry_dir / n).is_file()), None)
         if doc is None:
             warn("no document in this entry")
-            log(f"{INVOKED} is not able to add one here; "
-                f"cd .. and use --create-lecture, or copy a template by hand")
+            log(f"cd .. and re-run --create-lecture with the same title to "
+                f"put a main.tex here")
             return 0
         print(f"   {dim('document:')} {doc.name}  {describe_pin(doc)}")
         print()
@@ -1083,37 +1071,8 @@ def describe_pin(doc):
         return dim("(not pinned)")
 
 
-def cmd_list(args):
-    """Bare names for the current level, one per line, for scripts and pipes."""
-    loc = locate()
-    if loc.level == "outside":
-        raise Fail("not inside a coursework tree")
-    if loc.level == "root":
-        names = semesters_in(loc.cwd)
-    elif loc.level == "semester":
-        names = courses_in(loc.cwd)
-    else:
-        names = [p.name for _d, _s, p in entries_in(loc.course_dir)]
-    for name in names:
-        print(name)
-    return 0
-
-
-def cmd_latest(args):
-    """Path of the newest entry in this course (for `cd "$(gm --latest)"`)."""
-    loc = locate()
-    if loc.level not in ("course", "entry"):
-        raise wrong_level(loc, "course", "--latest")
-    found = entries_in(loc.course_dir)
-    if not found:
-        raise Fail(f"no entries in {loc.course_dir}")
-    print(found[-1][2])
-    return 0
-
-
-def cmd_where(args):
+def cmd_where(args, loc):
     """Diagnostics: what gm detected, and which goat it will pin to."""
-    loc = locate()
     install = installed_goat()
     repo = goat_repo(install)
     entries = changelog_entries(repo)
@@ -1356,35 +1315,98 @@ def render_template(text, fields):
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
-def build_parser():
+ANY_LEVEL = ("root", "semester", "course", "entry", "outside")
+
+# Everything still parses at every level -- being at the wrong one is an error
+# that explains itself, not an unknown flag. This only decides what --help
+# offers you here, so the help stays as short as the level is.
+VISIBLE_AT = {
+    "create_semester": ("root", "outside"),
+    "create_course": ("semester",),
+    "create_lecture": ("course",),
+    "create_homework": ("course",),
+    "create_report": ("course",),
+    "templates": ("course",),
+    "template": ("course",),
+    "slug": ("semester", "course"),
+    # A document can live anywhere, so the version actions are always offered.
+    "get_version": ANY_LEVEL,
+    "check_upgrade": ANY_LEVEL,
+    "upgrade": ANY_LEVEL,
+    "where": ANY_LEVEL,
+}
+
+
+def epilog_for(loc, with_templates):
+    """The part of --help that depends on where you are."""
+    version_block = (
+        "any document, anywhere:\n"
+        "  gm FILE --get-version       which goat release it targets\n"
+        "  gm FILE --check-upgrade     is a newer goat available?\n"
+        "  gm FILE --upgrade           re-pin, then verify it still compiles\n")
+    codes = ("\nexit codes:\n"
+             "  0 success / nothing to do   10 an upgrade is available\n"
+             "  1 error                     11 document needs a newer goat\n")
+
+    if loc.level == "outside":
+        here = ("here: not inside a coursework tree\n\n"
+                "  gm --create-semester 1      make this directory a root\n\n"
+                "the tree is <root>/<N>semester/<course>/<date>-<slug>/main.tex,\n"
+                "and you move between the levels with cd\n\n")
+    elif loc.level == "root":
+        nxt = max((int(n.removesuffix("semester"))
+                   for n in semesters_in(loc.cwd)), default=0) + 1
+        here = (f"here: the root of the tree\n\n"
+                f"  gm --create-semester {nxt}\n\n"
+                f"then: cd {nxt}semester && gm --create-course math\n\n")
+    elif loc.level == "semester":
+        here = (f"here: {loc.semester}\n\n"
+                f"  gm --create-course math\n\n"
+                f"then: cd math && gm --create-lecture \"...\"\n\n")
+    elif loc.level == "course":
+        here = (f"here: the course {loc.course}. Each of these makes a dated\n"
+                f"directory with one of goat's templates in it as main.tex:\n\n"
+                f"  gm --create-lecture \"Writing hello world in Python\"\n"
+                f"  gm --create-homework \"Uge 3\"\n"
+                f"  gm --create-report \"Sorteringsbenchmark\"\n\n")
+        if with_templates:
+            here += template_block()
+    else:  # entry
+        here = (f"here: {loc.entry}. This is where you write, so there is\n"
+                f"nothing to create:\n\n"
+                f"  latexmk -pdf main.tex\n"
+                f"  cd ..                       back to {loc.course}\n\n")
+    return here + version_block + codes
+
+
+def template_block():
+    """The template table, for --help in a course."""
+    try:
+        templates = available_templates(installed_goat())
+    except Fail:
+        return ""
+    width = max(len(n) for n in templates)
+    kinds = {v: k for k, v in DEFAULT_TEMPLATE.items()}
+    home = str(Path.home())
+    out = ["templates for --template:"]
+    for name in sorted(templates):
+        origin = templates[name].replace(home, "~")
+        default_for = kinds.get(name)
+        note = f"  (default for --create-{default_for})" if default_for else ""
+        out.append(f"  {name.ljust(width)}  {origin}{note}")
+    return "\n".join(out) + "\n\n"
+
+
+def build_parser(loc, with_templates=False):
+    def shown(name, text):
+        """Help text, or hidden when this level cannot use the option."""
+        return text if loc.level in VISIBLE_AT.get(name, ANY_LEVEL) else argparse.SUPPRESS
+
     p = argparse.ArgumentParser(
         prog=INVOKED,
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description="Manage goat LaTeX documents and the coursework tree.",
-        epilog="""the tree, one level at a time (cd between levels):
-
-  <root>/<N>semester/<course>/<YYYY-MM-DD>-<slug>/main.tex
-
-  in the root      gm --create-semester 1
-  in a semester    gm --create-course math
-  in a course      gm --create-lecture "Writing hello world in Python"
-  in an entry      nothing: this is where you write
-
-examples:
-  gm --templates                    which goat templates can become main.tex
-  gm --create-report "Bench" --template goat_documentation
-  gm                                where you are, and what is on this level
-  gm --list                         bare names on this level, for scripts
-  cd "$(gm --latest)"               jump to the newest entry in this course
-  gm main.tex --get-version         which goat release this document targets
-  gm main.tex --check-upgrade       is a newer goat available?
-  gm main.tex --upgrade             re-pin to the newest goat, then test-compile
-  gm --where                        what gm detected
-
-exit codes:
-  0 success / nothing to do   10 an upgrade is available
-  1 error                     11 document needs a newer goat than is installed
-""")
+        epilog=epilog_for(loc, with_templates))
     p.add_argument("file", nargs="?", metavar="FILE",
                    help="a .tex file, or a directory containing one "
                         "(default: the document in the current directory)")
@@ -1392,49 +1414,42 @@ exit codes:
     actions = p.add_argument_group("actions (pick one)")
     g = actions.add_mutually_exclusive_group()
     g.add_argument("--get-version", action="store_true",
-                   help="print the goat version FILE was written against")
+                   help=shown("get_version",
+                              "print the goat version FILE was written against"))
     g.add_argument("--check-upgrade", action="store_true",
-                   help="report whether FILE can move to a newer goat")
+                   help=shown("check_upgrade",
+                              "report whether FILE can move to a newer goat"))
     g.add_argument("--upgrade", nargs="?", const=True, metavar="VERSION",
-                   help="record VERSION (default: the newest goat) in FILE, "
-                        "then verify it still compiles")
+                   help=shown("upgrade",
+                              "record VERSION (default: the newest goat) in FILE, "
+                              "then verify it still compiles"))
     g.add_argument("--create-semester", nargs="?", const="", metavar="N",
-                   help="in the root: create <N>semester (default: the next one)")
+                   help=shown("create_semester",
+                              "create <N>semester here (default: the next one)"))
     g.add_argument("--create-course", nargs="?", const="", metavar="NAME",
-                   help="in a semester: create the course directory")
+                   help=shown("create_course", "create a course directory here"))
     g.add_argument("--create-lecture", nargs="?", const="", metavar="TITLE",
-                   help="in a course: scaffold a lecture-notes entry")
+                   help=shown("create_lecture", "new entry from the lecture template"))
     g.add_argument("--create-homework", nargs="?", const="", metavar="TITLE",
-                   help="in a course: scaffold a homework entry")
+                   help=shown("create_homework", "new entry from the homework template"))
     g.add_argument("--create-report", nargs="?", const="", metavar="TITLE",
-                   help="in a course: scaffold a report (goat's templates/report.tex)")
+                   help=shown("create_report", "new entry from the report template"))
     g.add_argument("--templates", action="store_true",
-                   help="list the templates --template accepts")
-    g.add_argument("--list", action="store_true",
-                   help="bare names on this level, one per line")
-    g.add_argument("--latest", action="store_true",
-                   help="print the path of the newest entry in this course")
+                   help=shown("templates", "list the templates --template accepts"))
     g.add_argument("--where", action="store_true",
-                   help="show the detected level, paths and goat version")
+                   help=shown("where", "show the detected level, paths and goat version"))
 
     beh = p.add_argument_group("behaviour")
     beh.add_argument("--template", metavar="NAME",
-                     help="which goat template becomes main.tex "
-                          f"({INVOKED} --templates to list them)")
-    beh.add_argument("--date", metavar="YYYY-MM-DD",
-                     help="entry date (default: today)")
+                     help=shown("template", "which goat template becomes main.tex"))
     beh.add_argument("--slug", metavar="SLUG",
-                     help="directory name (default: derived from the title)")
+                     help=shown("slug", "directory name (default: from the title)"))
     beh.add_argument("-n", "--dry-run", action="store_true",
                      help="print what would happen, change nothing")
     beh.add_argument("-q", "--quiet", action="store_true",
                      help="print bare values, for scripts")
     beh.add_argument("--json", action="store_true",
                      help="machine-readable output where it applies")
-    beh.add_argument("--force", action="store_true",
-                     help="write into an entry that already exists")
-    beh.add_argument("--print-path", action="store_true",
-                     help="print the created directory as the last line")
     beh.add_argument("--no-verify", action="store_true",
                      help="skip the verification compile after --upgrade")
     beh.add_argument("--version", action="version",
@@ -1443,7 +1458,11 @@ exit codes:
 
 
 def main(argv):
-    parser = build_parser()
+    # Where we are decides what --help offers, so locate first. (Cheap: it only
+    # looks at the path, and lists the root's directories.)
+    loc = locate()
+    wants_help = any(a in ("-h", "--help") for a in argv[1:])
+    parser = build_parser(loc, with_templates=wants_help)
     args = parser.parse_args(argv[1:])
 
     # An entry action takes a title, which may also be sitting in `file` when
@@ -1457,16 +1476,16 @@ def main(argv):
         if args.create_semester is not None:
             if not args.create_semester and args.file:
                 args.create_semester, args.file = args.file, None
-            return cmd_create_semester(args)
+            return cmd_create_semester(args, loc)
         if args.create_course is not None:
             if not args.create_course and args.file:
                 args.create_course, args.file = args.file, None
-            return cmd_create_course(args)
+            return cmd_create_course(args, loc)
         if entries:
             kind, title = entries[0]
             if not title and args.file:
                 title, args.file = args.file, None
-            return cmd_create_entry(kind, title, args)
+            return cmd_create_entry(kind, title, args, loc)
         if args.get_version:
             return cmd_get_version(args)
         if args.check_upgrade:
@@ -1475,18 +1494,14 @@ def main(argv):
             return cmd_upgrade(args)
         if args.templates:
             return cmd_templates(args)
-        if args.list:
-            return cmd_list(args)
-        if args.latest:
-            return cmd_latest(args)
         if args.where:
-            return cmd_where(args)
+            return cmd_where(args, loc)
 
         # No action given: `gm file.tex` is most usefully the version query, and
         # a bare `gm` is "where am I, and what is here".
         if args.file:
             return cmd_get_version(args)
-        return cmd_status(args)
+        return cmd_status(args, loc)
     except Fail as exc:
         err(str(exc))
         return 1
