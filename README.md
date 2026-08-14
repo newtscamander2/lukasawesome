@@ -108,17 +108,20 @@ packages; `make stow` symlinks each into `$HOME`:
 | `nvim/`      | `~/.config/nvim`       |
 | `tmux/`      | `~/.config/tmux`       |
 | `alacritty/` | `~/.config/alacritty`  |
-| `goat-manager/` | `~/.config/goat-manager` + bash completion |
 
 `scripts/` holds the installer; `vscode/` holds settings applied by `make apps`;
-`bin/` holds personal CLI tools installed by `make bin`.
+`bin/` holds personal CLI tools and `completions/` their bash completion, both
+installed by `make bin`.
 
 ## goat-manager (`gm`)
 
 `bin/goat-manager` manages [goat](https://gitlab.com/newtscamander/goat) LaTeX
 documents: which release of the library a document targets, and where coursework
 lives on disk. `make bin` links it into `~/.local/bin` as both `goat-manager`
-and `gm`; `make stow` installs its config and bash completion.
+and `gm`, with bash completion for both names.
+
+It has **no configuration file**. The coursework tree is its only state, and
+where you are in that tree decides what you can do.
 
 ```bash
 gm main.tex --get-version      # which goat release this document targets
@@ -134,51 +137,83 @@ order of precedence. `--upgrade` keeps a `.bak`, rewrites the pin, compiles the
 document in a temp directory, and restores the original if that compile fails —
 so upgrading can never silently break a hand-in.
 
-Coursework is kept in one predictable tree:
+### The tree
+
+Three levels, and the root can be called anything:
 
 ```
-~/aarhusuni/1semester/introtoprogramming/2026-10-05-writing-hello-world-in-python/
-└── main.tex        # goat preamble, fields filled in, version pinned
-    img/            # goat's \gimage / goat-img drop images here
-    .latexmkrc      # pdflatex + biber + shell-escape
+~/aarhusuni/                                      root
+└── 1semester/                                    semester
+    └── math/                                     course
+        └── 2026-10-05-writing-hello-world-in-python/
+            ├── main.tex        goat preamble, fields filled in, version pinned
+            ├── img/            \gimage and goat-img put images here
+            └── .latexmkrc      pdflatex + biber + shell-escape
+```
+
+There are no marker or config files: a directory named `<N>semester` is the
+hinge, so everything above it is the root and everything below is a course and
+its entries. Moving or renaming the tree changes nothing.
+
+You create one level at a time, from the level above, and move between them with
+`cd` — the same way you would do it by hand:
+
+```bash
+cd ~/aarhusuni      && gm --create-semester 1
+cd 1semester        && gm --create-course math
+cd math             && gm --create-lecture "Writing hello world in Python"
+                       gm --create-homework "Uge 3"
+                       gm --create-report "Sorteringsbenchmark"
+```
+
+Ask for the wrong level and it says so rather than guessing:
+
+```
+$ cd ~/aarhusuni && gm --create-course math
+  x a course belongs in a semester, but you are in the root
+    (/home/lukas/aarhusuni). cd into a semester first, e.g. cd 1semester
+```
+
+### Looking around
+
+Typed on its own, `gm` reports the level you are on and what is on it — the
+semesters in a root, the courses in a semester, the entries in a course (with
+`*` marking the entry you are inside).
+
+```
+$ cd ~/aarhusuni/1semester && gm
+:: /home/lukas/aarhusuni/1semester  (semester)
+   tree: /home/lukas/aarhusuni  -> 1semester
+
+   beregnelighed-og-logik    3 entries   latest 2026-08-20 turingmaskiner
+   math                      1 entry     latest 2026-08-14 lister og loekker
+
+:: cd into a course, or: gm --create-course math
 ```
 
 ```bash
-gm                                         # the tree, and every course in it
-gm --create-course "Introduktion til Programmering"
-gm --create-lecture "Writing hello world in Python"
-gm --create-homework "Week 3" -c bol       # -c: alias, prefix, substring or initials
-gm --create-report "Sorting benchmark"     # built from goat's templates/report.tex
-gm --list                                  # entries in the current course
-cd "$(gm --latest -c algo)"                # jump to the newest entry
-gm --where                                 # what is configured and detected
+gm --list                # bare names on this level, one per line, for scripts
+cd "$(gm --latest)"      # jump to the newest entry in this course
+gm --where               # detected level, paths, and which goat will be pinned
 ```
 
-Typed on its own, `gm` is a status view: which coursework root and semester are
-in effect, where in the tree the shell currently is, and every course with its
-entry count and newest entry.
+### Filling in documents
 
-```
-:: /home/lukas/aarhusuni  (1semester)
-   you are here: 1semester/introduktion-til-programmering
+Scaffolded documents take their author and similar details from the environment,
+so there is still nothing to configure. Unset variables leave the template's own
+placeholder visible, so you notice it needs filling in.
 
-   algo                                     0 entries
-   datastrukturer-og-algoritmer             1 entry     latest 2026-08-14 uge 3
-   introduktion-til-programmering  (itp)    2 entries   latest 2026-08-20 lister og loekker
-```
+| Variable | Fills in |
+| --- | --- |
+| `GOAT_AUTHOR` | `\setgoatauthor` |
+| `GOAT_STUDENT_ID` | `\setgoatstudentid` |
+| `GOAT_DEPARTMENT` | `\setgoatdept` |
+| `GOAT_LANG` | `lang=` (default `danish`) |
+| `GOAT_STYLE` | `style=` (default `au`) |
 
-`-c` resolves against courses that already exist — by alias, exact name, unique
-prefix, unique substring, or initials (`bol` finds `beregnelighed-og-logik`) — and
-errors out listing the real ones if nothing matches, rather than inventing a
-directory from a typo. Making a course is `--create-course`'s job, and it creates
-the semester directory too when it is the first one.
-
-Run from inside a course directory, `--create-*` files the new entry next to its
-siblings with no flags at all. Outside the tree it falls back to
-`current_semester`/`current_course` from `~/.config/goat-manager/config.toml`
-(this repo's `goat-manager/` package) and asks when it still cannot tell.
-Edit that file to set your author name, student id, department, language, style
-and course aliases; `gm --where` shows what is in effect.
+Export them from `bash/.bashrc` if you want them permanently. `--create-report`
+is built from goat's own `templates/report.tex` when that exists, so improving
+the template there improves scaffolding here.
 
 ## AwesomeWM themes
 

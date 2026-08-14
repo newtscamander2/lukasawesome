@@ -145,8 +145,6 @@ for pkg_name in $(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash
         clang-format) target="$HOME/.clang-format" ;;
         cava)      target="$HOME/.config/cava" ;;
         qt)        target="$HOME/.local/share/color-schemes/Dr460nized.colors" ;;
-        # The directory itself is the symlink (stow folds it), not the file.
-        goat-manager) target="$HOME/.config/goat-manager" ;;
         *)         target="" ;;
     esac
     [ -z "$target" ] && continue

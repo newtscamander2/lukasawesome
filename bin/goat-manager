@@ -1,39 +1,50 @@
 #!/usr/bin/env python3
 """goat-manager (gm) -- manage goat LaTeX documents and the coursework tree.
 
-Two jobs:
+The tree is three levels, and it is the only state this tool has:
 
-1. Versions. Report which goat release a document was written against, whether
-   a newer one is installed, and record/upgrade that pin -- so a document
-   written today still compiles years from now.
+    <root>/                 anything you like: ~/aarhusuni, ~/uni, ...
+      <N>semester/          1semester, 2semester, ...
+        <course>/           math, beregnelighed-og-logik, ...
+          <YYYY-MM-DD>-<slug>/main.tex
 
-       gm main.tex --get-version
-       gm main.tex --check-upgrade
-       gm main.tex --upgrade            # rewrite the pin, then test-compile
+There is no configuration file. gm works out where it is by looking at the
+directory you run it in, and what you can create depends on that level -- one
+level down at a time, the same way you would do it by hand:
 
-2. Structure. Keep coursework in one predictable tree and scaffold into it:
+    in the root        gm --create-semester 1
+    in a semester      gm --create-course math
+    in a course        gm --create-lecture "Writing hello world in Python"
+                       gm --create-homework "Uge 3"
+                       gm --create-report "Sorteringsbenchmark"
 
-       <root>/<semester>/<course>/<YYYY-MM-DD>-<slug>/main.tex
-       ~/aarhusuni/1semester/introtoprogramming/2026-10-05-writing-hello-world-in-python/
+You move between levels with cd. Typed on its own, gm says where you are and
+what is there.
 
-       gm --create-lecture "Writing hello world in Python"
-       gm --create-homework "Week 3"
-       gm --create-report "Sorting benchmark"
-       gm --list                        # entries in the current course
-       gm --latest                      # path of the newest entry (for cd)
+It also tracks which goat release a document targets, so a document written
+today still compiles years from now:
 
-Configuration lives in ~/.config/goat-manager/config.toml (see --init-config);
-every value can be overridden per invocation with a flag.
+    gm main.tex --get-version
+    gm main.tex --check-upgrade
+    gm main.tex --upgrade        # re-pin, then verify it still compiles
 
-Exit codes: 0 nothing to do / success, 1 error, 10 an upgrade is available,
+Optional environment variables, for filling in scaffolded documents:
+
+    GOAT_AUTHOR      name for \\setgoatauthor
+    GOAT_STUDENT_ID  \\setgoatstudentid
+    GOAT_DEPARTMENT  \\setgoatdept
+    GOAT_LANG        danish (default) | english
+    GOAT_STYLE       au (default) | plain
+
+Exit codes: 0 success / nothing to do, 1 error, 10 an upgrade is available,
 11 the document needs a newer goat than the one installed.
 
-Stdlib only: needs Python 3.11+, and TeX Live only for the optional
-post-upgrade verification compile.
+Stdlib only: needs Python 3.11+, and TeX Live only for the verification compile.
 """
 
 import argparse
 import datetime as dt
+import difflib
 import json
 import os
 import re
@@ -46,9 +57,9 @@ import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 
-TOOL_VERSION = "1.0.0"
-PROG = "goat-manager"            # canonical name: config dir, --version
-INVOKED = Path(sys.argv[0]).name or PROG   # what the user typed: usage, hints
+TOOL_VERSION = "2.0.0"
+PROG = "goat-manager"                       # canonical name, for --version
+INVOKED = Path(sys.argv[0]).name or PROG    # what you typed, for hints
 
 # ---------------------------------------------------------------------------
 # Output helpers. Same glyph vocabulary as the dotfiles installer (lib.sh) so
@@ -88,97 +99,14 @@ class Fail(Exception):
 
 
 # ---------------------------------------------------------------------------
-# Configuration
+# Settings. Not a config file: just optional environment variables, so nothing
+# has to be installed or kept in sync for gm to work.
 # ---------------------------------------------------------------------------
-CONFIG_PATH = Path(
-    os.environ.get("GOAT_MANAGER_CONFIG",
-                   Path.home() / ".config" / PROG / "config.toml"))
-
-DEFAULT_CONFIG = {
-    "academic_root": "~/aarhusuni",
-    "current_semester": 1,
-    "current_course": "",
-    "author": "",
-    "student_id": "",
-    "department": "",
-    "lang": "danish",
-    "style": "au",
-    "goat_repo": "~/projects/goat",
-    "open_editor": False,
-    "courses": {},
-}
-
-CONFIG_TEMPLATE = '''\
-# goat-manager configuration.
-#
-# Written by `goat-manager --init-config`. Every setting here can be overridden
-# per invocation by the matching flag (--root, --semester, --course, ...).
-
-# Root of the coursework tree. Entries are created as
-#   <academic_root>/<semester>/<course>/<YYYY-MM-DD>-<slug>/
-academic_root = "{academic_root}"
-
-# Which semester new entries go into. A bare number is fine: 1 -> "1semester".
-current_semester = {current_semester}
-
-# Default course when the command is run from outside the tree. Use a directory
-# name or one of the [courses] aliases below.
-current_course = "{current_course}"
-
-# Written into scaffolded documents as \\setgoatauthor{{...}} etc. Leave a value
-# empty to keep the template's own placeholder, so you notice it needs filling.
-author = "{author}"
-student_id = "{student_id}"
-department = "{department}"
-
-# Passed to \\usepackage[...]{{goat}} in scaffolded documents.
-lang = "{lang}"    # danish | english
-style = "{style}"        # au | plain
-
-# Where the goat repo is checked out. Only a fallback: goat is normally located
-# with kpsewhich, so this matters just when TeX Live cannot find it.
-goat_repo = "{goat_repo}"
-
-# Open $EDITOR on the new file right after --create-*.
-open_editor = {open_editor}
-
-# Short aliases for long course directory names, so `gm -c algo ...` works.
-# The value is the directory name under <academic_root>/<semester>/.
-[courses]
-# algo = "algorithmsanddatastructures"
-# ip   = "introduktiontilprogrammering"
-'''
+GOAT_REPO_FALLBACK = "~/projects/goat"   # only used if kpsewhich cannot help
 
 
-def load_config():
-    """Read config.toml over the built-in defaults. Missing file is fine."""
-    cfg = dict(DEFAULT_CONFIG)
-    if CONFIG_PATH.is_file():
-        try:
-            with CONFIG_PATH.open("rb") as fh:
-                cfg.update(tomllib.load(fh))
-        except (OSError, tomllib.TOMLDecodeError) as exc:
-            raise Fail(f"cannot read {CONFIG_PATH}: {exc}") from exc
-    # Environment wins over the file; flags (applied by the caller) win overall.
-    if os.environ.get("GOAT_ACADEMIC_ROOT"):
-        cfg["academic_root"] = os.environ["GOAT_ACADEMIC_ROOT"]
-    cfg.setdefault("courses", {})
-    return cfg
-
-
-def cmd_init_config(args):
-    if CONFIG_PATH.exists() and not args.force:
-        raise Fail(f"{CONFIG_PATH} already exists (use --force to overwrite)")
-    body = CONFIG_TEMPLATE.format(
-        **{k: ("true" if v is True else "false" if v is False else v)
-           for k, v in DEFAULT_CONFIG.items() if k != "courses"})
-    if args.dry_run:
-        log(f"would write {CONFIG_PATH}")
-        return 0
-    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    CONFIG_PATH.write_text(body, encoding="utf-8")
-    ok(f"wrote {CONFIG_PATH}")
-    return 0
+def setting(name, default=""):
+    return os.environ.get(f"GOAT_{name}", default).strip()
 
 
 # ---------------------------------------------------------------------------
@@ -253,7 +181,7 @@ PROVIDES_RE = re.compile(
     r"(?P<date>\d{4}[/-]\d{2}[/-]\d{2})\s+v?(?P<ver>[0-9][\w.\-]*)")
 
 
-def installed_goat(cfg):
+def installed_goat():
     """Locate goat.sty and read its \\ProvidesPackage version and date."""
     candidates = []
     found = kpsewhich("goat.sty")
@@ -261,7 +189,7 @@ def installed_goat(cfg):
         candidates.append(found)
     candidates += [
         Path.home() / "texmf/tex/latex/goat/goat.sty",
-        Path(cfg["goat_repo"]).expanduser() / "goat" / "goat.sty",
+        Path(GOAT_REPO_FALLBACK).expanduser() / "goat" / "goat.sty",
     ]
     for path in candidates:
         try:
@@ -277,18 +205,18 @@ def installed_goat(cfg):
                "`kpsewhich goat.sty`.")
 
 
-def goat_repo(cfg, install=None):
+def goat_repo(install=None):
     """The goat checkout, resolved through the texmf symlink when possible.
 
     install.sh symlinks <repo>/goat into ~/texmf/tex/latex/goat, so resolving
-    the real path of goat.sty and walking up two levels lands in the repo.
+    the real path of goat.sty and walking up lands in the repo.
     """
     if install is not None:
         real = install.path.resolve()
         for parent in list(real.parents)[:4]:
             if (parent / "install.sh").is_file() and (parent / "goat").is_dir():
                 return parent
-    repo = Path(cfg["goat_repo"]).expanduser()
+    repo = Path(GOAT_REPO_FALLBACK).expanduser()
     return repo if repo.is_dir() else None
 
 
@@ -487,10 +415,10 @@ def resolve_document(arg):
 # ---------------------------------------------------------------------------
 # Actions: versions
 # ---------------------------------------------------------------------------
-def cmd_get_version(args, cfg):
+def cmd_get_version(args):
     path = resolve_document(args.file)
     scan = scan_document(path)
-    install = installed_goat(cfg)
+    install = installed_goat()
     pin = scan.pin()
 
     if args.json:
@@ -534,11 +462,11 @@ def cmd_get_version(args, cfg):
     return 0
 
 
-def cmd_check_upgrade(args, cfg):
+def cmd_check_upgrade(args):
     path = resolve_document(args.file)
     scan = scan_document(path)
-    install = installed_goat(cfg)
-    repo = goat_repo(cfg, install)
+    install = installed_goat()
+    repo = goat_repo(install)
     entries = changelog_entries(repo)
     latest = latest_known(install, entries)
     pin = scan.pin()
@@ -617,14 +545,14 @@ def _print_changes(entries, have, target):
             print(f"    {line}")
 
 
-def cmd_upgrade(args, cfg):
+def cmd_upgrade(args):
     path = resolve_document(args.file)
     scan = scan_document(path, follow=False)
-    install = installed_goat(cfg)
-    repo = goat_repo(cfg, install)
-    entries = changelog_entries(repo)
+    install = installed_goat()
+    entries = changelog_entries(goat_repo(install))
 
-    target = vtext(args.upgrade) if isinstance(args.upgrade, str) else latest_known(install, entries)
+    target = (vtext(args.upgrade) if isinstance(args.upgrade, str)
+              else latest_known(install, entries))
     if not vkey(target):
         raise Fail(f"'{target}' is not a version number")
     if not scan.uses_goat:
@@ -650,31 +578,26 @@ def cmd_upgrade(args, cfg):
             print(f"   {line}")
         return 0
 
-    backup = None
-    if not args.no_backup:
-        backup = path.with_suffix(path.suffix + ".bak")
-        shutil.copy2(path, backup)
+    # Always keep a backup while rewriting: it is what lets a failed
+    # verification compile leave the document exactly as it was.
+    backup = path.with_suffix(path.suffix + ".bak")
+    shutil.copy2(path, backup)
     path.write_text(updated, encoding="utf-8")
     ok(f"pinned {path.name} to goat {target}")
 
     if args.no_verify:
-        if backup:
-            log(f"backup kept at {backup.name}")
+        log(f"backup kept at {backup.name}")
         return 0
 
     good, output = verify_compile(path)
     if good:
         ok("test compile passed")
-        if backup:
-            backup.unlink(missing_ok=True)
+        backup.unlink(missing_ok=True)
         return 0
 
-    if backup:
-        shutil.copy2(backup, path)
-        backup.unlink(missing_ok=True)
-        err(f"test compile FAILED — {path.name} restored unchanged")
-    else:
-        err(f"test compile FAILED — {path.name} was modified (no backup was kept)")
+    shutil.copy2(backup, path)
+    backup.unlink(missing_ok=True)
+    err(f"test compile FAILED — {path.name} restored unchanged")
     for line in output:
         print(f"   {line}", file=sys.stderr)
     return 1
@@ -720,7 +643,6 @@ def rewrite_pin(text, target, scan):
 
 def _diff_preview(before, after, context=1):
     """Minimal line-level preview of what --upgrade would change."""
-    import difflib
     out = []
     for line in difflib.unified_diff(before.splitlines(), after.splitlines(),
                                      lineterm="", n=context):
@@ -754,10 +676,93 @@ def verify_compile(path):
 
 
 # ---------------------------------------------------------------------------
-# Structure: <root>/<semester>/<course>/<date>-<slug>/
+# The tree: <root>/<N>semester/<course>/<YYYY-MM-DD>-<slug>/
+#
+# No configuration, no marker files: a directory named like "1semester" is the
+# hinge. Everything above it is the root, everything below is a course and its
+# entries. So the root can be called anything, and moving the tree changes
+# nothing.
 # ---------------------------------------------------------------------------
-DANISH_MAP = {"æ": "ae", "ø": "oe", "å": "aa", "Æ": "ae", "Ø": "oe", "Å": "aa",
-              "ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss"}
+SEMESTER_RE = re.compile(r"^\d+semester$")
+ENTRY_RE = re.compile(r"^(?P<date>\d{4}-\d{2}-\d{2})-(?P<slug>.+)$")
+
+LEVELS = ("root", "semester", "course", "entry", "outside")
+
+
+@dataclass
+class Location:
+    """Which level of the tree the current directory sits at."""
+    level: str                    # one of LEVELS
+    cwd: Path
+    root: Path | None = None
+    semester: str | None = None
+    course: str | None = None
+    entry: str | None = None
+
+    @property
+    def semester_dir(self):
+        return self.root / self.semester if self.semester else None
+
+    @property
+    def course_dir(self):
+        sem = self.semester_dir
+        return sem / self.course if sem and self.course else None
+
+    def describe(self):
+        """Where you are, as a path fragment: '1semester/math'."""
+        parts = [p for p in (self.semester, self.course, self.entry) if p]
+        return "/".join(parts)
+
+
+def locate(start=None):
+    """Work out the level from the directory alone.
+
+    Anchored on the nearest "<N>semester" component of the path, so it also
+    works from inside an entry's img/ directory.
+    """
+    cwd = (start or Path.cwd()).resolve()
+    parts = cwd.parts
+
+    index = next((i for i in range(len(parts) - 1, -1, -1)
+                  if SEMESTER_RE.match(parts[i])), None)
+    if index is not None:
+        root = Path(*parts[:index])
+        below = parts[index + 1:]
+        course = below[0] if below else None
+        entry = below[1] if len(below) > 1 and ENTRY_RE.match(below[1]) else None
+        level = "semester" if not course else ("entry" if entry else "course")
+        return Location(level, cwd, root, parts[index], course, entry)
+
+    if semesters_in(cwd):
+        return Location("root", cwd, cwd)
+    return Location("outside", cwd)
+
+
+def semesters_in(root):
+    """Semester directories directly under root, in numeric order."""
+    if not root or not root.is_dir():
+        return []
+    names = [p.name for p in root.iterdir() if p.is_dir() and SEMESTER_RE.match(p.name)]
+    return sorted(names, key=lambda n: int(n.removesuffix("semester")))
+
+
+def courses_in(semester_dir):
+    if not semester_dir or not semester_dir.is_dir():
+        return []
+    return sorted(p.name for p in semester_dir.iterdir()
+                  if p.is_dir() and not p.name.startswith("."))
+
+
+def entries_in(course_dir):
+    """[(date, slug, path)] oldest first."""
+    if not course_dir or not course_dir.is_dir():
+        return []
+    found = []
+    for path in course_dir.iterdir():
+        m = ENTRY_RE.match(path.name)
+        if path.is_dir() and m:
+            found.append((m.group("date"), m.group("slug"), path))
+    return sorted(found)
 
 
 def slugify(text):
@@ -766,7 +771,8 @@ def slugify(text):
     Danish letters are transliterated the way Danes write them in ASCII
     (ø -> oe, not o), so directory names stay readable and shell-safe.
     """
-    for src, dst in DANISH_MAP.items():
+    for src, dst in {"æ": "ae", "ø": "oe", "å": "aa", "Æ": "ae", "Ø": "oe",
+                     "Å": "aa", "ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss"}.items():
         text = text.replace(src, dst)
     text = unicodedata.normalize("NFKD", text)
     text = "".join(c for c in text if not unicodedata.combining(c))
@@ -774,139 +780,175 @@ def slugify(text):
     return re.sub(r"-{2,}", "-", text)
 
 
-def normalize_semester(value):
-    """1, '1', '1semester', '1. semester' -> '1semester'."""
-    text = str(value).strip()
-    m = re.search(r"\d+", text)
-    return f"{int(m.group())}semester" if m else slugify(text)
+def wrong_level(loc, need, what):
+    """The one error message that teaches the hierarchy."""
+    where = {
+        "root": f"the root ({loc.cwd})",
+        "semester": f"a semester ({loc.describe()})",
+        "course": f"a course ({loc.describe()})",
+        "entry": f"an entry ({loc.describe()})",
+        "outside": f"{loc.cwd}, which is not part of a coursework tree",
+    }[loc.level]
+    hints = {
+        "root": "cd .. up to the root",
+        "semester": "cd into a semester first, e.g. cd 1semester",
+        "course": "cd into a course first, e.g. cd math",
+    }
+    hint = hints.get(need, "")
+    msg = f"{what} belongs in {'a ' + need if need != 'root' else 'the root'}, "
+    msg += f"but you are in {where}"
+    return Fail(f"{msg}. {hint}" if hint else msg)
 
 
-@dataclass
-class Context:
-    """Where in the tree we are working."""
-    root: Path
-    semester: str
-    course: str | None
+# ---------------------------------------------------------------------------
+# Actions: building the tree
+# ---------------------------------------------------------------------------
+def cmd_create_semester(args):
+    """In the root: make <N>semester."""
+    loc = locate()
+    if loc.level not in ("root", "outside"):
+        raise wrong_level(loc, "root", "a semester")
 
-    @property
-    def semester_dir(self):
-        return self.root / self.semester
-
-    @property
-    def course_dir(self):
-        return self.semester_dir / self.course if self.course else None
-
-
-SEMESTER_RE = re.compile(r"^\d+semester$")
-
-
-def existing_semesters(root):
-    """Semester directories that actually exist, in numeric order."""
-    if not root.is_dir():
-        return []
-    names = [p.name for p in root.iterdir() if p.is_dir() and SEMESTER_RE.match(p.name)]
-    return sorted(names, key=lambda n: int(n.removesuffix("semester")))
-
-
-def existing_courses(semester_dir):
-    if not semester_dir.is_dir():
-        return []
-    return sorted(p.name for p in semester_dir.iterdir()
-                  if p.is_dir() and not p.name.startswith("."))
-
-
-def resolve_context(args, cfg, interactive=True, require_course=True):
-    """Work out root/semester/course from flags, then the cwd, then config.
-
-    Being inside the tree is the strongest signal: running
-    `gm --create-lecture "..."` from within a course directory files the new
-    entry next to its siblings without any flags.
-    """
-    root = Path(args.root or cfg["academic_root"]).expanduser()
-    semester = course = None
-
-    cwd = Path.cwd().resolve()
-    try:
-        rel = cwd.relative_to(root.resolve())
-    except (ValueError, OSError):
-        rel = None
-    if rel is not None and rel.parts:
-        semester = rel.parts[0]
-        if len(rel.parts) > 1:
-            course = rel.parts[1]
-
-    if args.semester:
-        semester = normalize_semester(args.semester)
-    elif semester is None:
-        semester = normalize_semester(cfg["current_semester"])
-        # A config default should not outvote the only semester on disk: if the
-        # configured one does not exist and exactly one does, that is the one
-        # meant. (Nothing on disk yet -> keep the config value and create it.)
-        if not (root / semester).is_dir():
-            present = existing_semesters(root)
-            if len(present) == 1:
-                semester = present[0]
+    existing = semesters_in(loc.cwd)
+    if args.create_semester:
+        m = re.search(r"\d+", str(args.create_semester))
+        if not m:
+            raise Fail(f"'{args.create_semester}' is not a semester number")
+        number = int(m.group())
     else:
-        semester = normalize_semester(semester)
+        # Next one after the highest that exists, or the first.
+        number = max((int(s.removesuffix("semester")) for s in existing), default=0) + 1
 
-    if args.course:
-        course = resolve_course(args.course, root / semester, cfg)
-        if course is None:
-            options = existing_courses(root / semester)
-            where = (f"existing: {', '.join(options)}" if options
-                     else f"no courses in {root / semester} yet")
-            raise Fail(f"no course matching '{args.course}' ({where}). "
-                       f'Create it with: {INVOKED} --create-course "{args.course}"')
-    elif course is None and cfg.get("current_course"):
-        course = resolve_course(cfg["current_course"], root / semester, cfg)
-        if course is None:
-            # Stale config rather than a typo: say so and carry on to the prompt.
-            warn(f"current_course '{cfg['current_course']}' in {CONFIG_PATH} "
-                 f"does not exist under {semester}")
-
-    if course is None and require_course:
-        options = existing_courses(root / semester)
-        if interactive and sys.stdin.isatty():
-            course = prompt_course(options, root / semester)
-        elif options:
-            raise Fail("no course given. Use -c <course> (available: "
-                       + ", ".join(options) + ")")
-        else:
-            raise Fail(f"no course given and none exist under {root / semester}. "
-                       "Use -c <course> to create the first one.")
-    return Context(root=root, semester=semester, course=course)
+    target = loc.cwd / f"{number}semester"
+    if args.dry_run:
+        log(f"would create {target}")
+        return 0
+    if target.is_dir():
+        ok(f"{target} already exists")
+    else:
+        target.mkdir(parents=True)
+        ok(f"created {target}")
+        if loc.level == "outside":
+            print(f"   {dim(str(loc.cwd))} {dim('is now a coursework root')}")
+    print()
+    log(f"cd {target.name} && {INVOKED} --create-course math")
+    if args.print_path:
+        print(target)
+    return 0
 
 
-def course_initials(course):
-    """beregnelighed-og-logik -> bol (how people actually abbreviate a course)."""
-    return "".join(w[0] for w in course.split("-") if w)
+def cmd_create_course(args):
+    """In a semester: make the course directory."""
+    loc = locate()
+    if loc.level != "semester":
+        raise wrong_level(loc, "semester", "a course")
+
+    name = args.create_course
+    if not name:
+        if not sys.stdin.isatty():
+            raise Fail(f"--create-course needs a name "
+                       f"(example: {INVOKED} --create-course math)")
+        name = prompt("course name")
+        if not name:
+            raise Fail("no course name given")
+
+    slug = args.slug or slugify(name)
+    if not slug:
+        raise Fail(f"'{name}' does not slugify into a directory name")
+
+    target = loc.cwd / slug
+    if args.dry_run:
+        log(f"would create {target}")
+        return 0
+    if target.is_dir():
+        ok(f"{target} already exists")
+    else:
+        target.mkdir()
+        ok(f"created {target}")
+    print()
+    log(f'cd {slug} && {INVOKED} --create-lecture "..."')
+    if args.print_path:
+        print(target)
+    return 0
 
 
-def resolve_course(name, semester_dir, cfg):
-    """Map an alias / abbreviation / partial name to an existing course.
+def cmd_create_entry(kind, title, args):
+    """In a course: make a dated entry with a goat document in it."""
+    loc = locate()
+    if loc.level not in ("course", "entry"):
+        raise wrong_level(loc, "course", f"a {kind}")
+    course_dir = loc.course_dir
+    install = installed_goat()
 
-    Order: [courses] alias, exact name, exact slug, unique prefix, unique
-    substring, unique initials. Returns None when nothing matches -- inventing
-    a directory from an unmatched -c is how you end up with bol/ sitting next
-    to beregnelighed-og-logik/, so creating courses is --create-course's job.
-    """
-    aliases = cfg.get("courses", {})
-    if name in aliases:
-        return aliases[name]
-    options = existing_courses(semester_dir)
-    if name in options:
-        return name
-    slug = slugify(name)
-    if slug in options:
-        return slug
-    for candidates in ([c for c in options if c.startswith(slug)],
-                       [c for c in options if slug in c],
-                       [c for c in options if course_initials(c) == slug]):
-        if len(candidates) == 1:
-            return candidates[0]
-        if len(candidates) > 1:
-            raise Fail(f"'{name}' matches several courses: {', '.join(candidates)}")
-    return None
+    if not title:
+        if not sys.stdin.isatty():
+            raise Fail(f"--create-{kind} needs a title (example: "
+                       f'{INVOKED} --create-{kind} "Writing hello world in Python")')
+        title = prompt(f"{kind} title")
+        if not title:
+            raise Fail("no title given")
+
+    date = args.date or dt.date.today().isoformat()
+    try:
+        dt.date.fromisoformat(date)
+    except ValueError as exc:
+        raise Fail(f"--date must be YYYY-MM-DD, got '{date}'") from exc
+
+    slug = args.slug or slugify(title)
+    if not slug:
+        raise Fail(f"'{title}' does not slugify into a directory name")
+
+    target = course_dir / f"{date}-{slug}"
+    if target.exists() and not args.force:
+        raise Fail(f"{target} already exists (use --force to write into it)")
+
+    template, origin = load_template(kind, install)
+    lang = setting("LANG", "danish").lower()
+    strings = STRINGS.get(lang, STRINGS["english"])
+    studentid = setting("STUDENT_ID")
+    body = render_template(template, {
+        "version": install.version,
+        "title": title,
+        "course": loc.course,
+        "course_title": loc.course.replace("-", " ").replace("_", " "),
+        "author": setting("AUTHOR") or "Your Name",
+        "student_id": studentid,
+        "department": setting("DEPARTMENT"),
+        "date": date,
+        "lang": lang if lang in STRINGS else "danish",
+        "style": setting("STYLE", "au"),
+        "semester": loc.semester,
+        # Emitted live when GOAT_STUDENT_ID is set, commented out when it is not.
+        "studentid_line": (f"\\setgoatstudentid{{{studentid}}}" if studentid
+                           else "% \\setgoatstudentid{}"),
+        **strings,
+    })
+
+    main = target / "main.tex"
+    if args.dry_run:
+        log(f"would create {target}/")
+        for rel in ("main.tex", "img/", ".latexmkrc"):
+            print(f"   {rel}")
+        log(f"template: {origin}")
+        return 0
+
+    target.mkdir(parents=True, exist_ok=True)
+    (target / "img").mkdir(exist_ok=True)
+    if main.exists() and not args.force:
+        raise Fail(f"{main} already exists (use --force to overwrite)")
+    main.write_text(body, encoding="utf-8")
+    latexmkrc = target / ".latexmkrc"
+    if not latexmkrc.exists():
+        latexmkrc.write_text(LATEXMKRC, encoding="utf-8")
+
+    ok(f"created {target}")
+    print(f"   {dim('template')} {origin}")
+    print(f"   {dim('goat')}     {install.version} (pinned in main.tex)")
+    print()
+    log(f"cd {target.name} && latexmk -pdf main.tex")
+    if args.print_path:
+        print(target)
+    return 0
 
 
 def prompt(question, default=""):
@@ -918,23 +960,138 @@ def prompt(question, default=""):
     return answer or default
 
 
-def prompt_course(options, semester_dir):
-    if options:
-        print(f"courses in {semester_dir}:")
-        for i, name in enumerate(options, 1):
-            print(f"  {i}) {name}")
-        answer = prompt("course (number, name, or a new name)")
-        if answer.isdigit() and 1 <= int(answer) <= len(options):
-            return options[int(answer) - 1]
+# ---------------------------------------------------------------------------
+# Actions: looking around
+# ---------------------------------------------------------------------------
+def cmd_status(args):
+    """The bare `gm`: which level you are on, and what is on it."""
+    loc = locate()
+
+    if loc.level == "outside":
+        print(f"{C_BLUE}::{C_RESET} {loc.cwd}")
+        warn("not inside a coursework tree (no <N>semester directory here or above)")
+        log(f"make this directory a root: {INVOKED} --create-semester 1")
+        return 0
+
+    header = {"root": "root", "semester": "semester",
+              "course": "course", "entry": "entry"}[loc.level]
+    print(f"{C_BLUE}::{C_RESET} {loc.cwd}  {dim('(' + header + ')')}")
+    if loc.level != "root":
+        print(f"   {dim('tree:')} {loc.root}  {dim('->')} {loc.describe()}")
+    print()
+
+    if loc.level == "root":
+        names = semesters_in(loc.cwd)
+        width = max((len(n) for n in names), default=0)
+        for name in names:
+            count = len(courses_in(loc.cwd / name))
+            print(f"   {name.ljust(width)}  {count:>3} "
+                  f"{'course' if count == 1 else 'courses':<7}")
+        print()
+        log(f"cd into a semester, or: {INVOKED} --create-semester "
+            f"{max((int(n.removesuffix('semester')) for n in names), default=0) + 1}")
+        return 0
+
+    if loc.level == "semester":
+        names = courses_in(loc.cwd)
+        if not names:
+            warn(f"no courses in {loc.semester} yet")
+            log(f"{INVOKED} --create-course math")
+            return 0
+        width = max(len(n) for n in names)
+        for name in names:
+            found = entries_in(loc.cwd / name)
+            line = (f"   {name.ljust(width)}  {len(found):>3} "
+                    f"{'entry' if len(found) == 1 else 'entries':<7}")
+            if found:
+                date, slug, _p = found[-1]
+                line += f"   {dim('latest')} {date} {slug.replace('-', ' ')}"
+            print(line)
+        print()
+        log(f"cd into a course, or: {INVOKED} --create-course math")
+        return 0
+
+    # course / entry: list the entries, newest last, marking where you are.
+    found = entries_in(loc.course_dir)
+    if not found:
+        warn(f"no entries in {loc.course} yet")
+        log(f'{INVOKED} --create-lecture "..."')
+        return 0
+    for date, slug, path in found:
+        here = "*" if loc.entry == path.name else " "
+        doc = next((n for n in MAIN_CANDIDATES if (path / n).is_file()), None)
+        note = "" if doc else dim("  (no document)")
+        print(f" {here} {date}  {slug.replace('-', ' ')}{note}")
+    print()
+    log(f'{INVOKED} --create-lecture "..."   {dim("(new entry in " + loc.course + ")")}')
+    return 0
+
+
+def cmd_list(args):
+    """Bare names for the current level, one per line, for scripts and pipes."""
+    loc = locate()
+    if loc.level == "outside":
+        raise Fail("not inside a coursework tree")
+    if loc.level == "root":
+        names = semesters_in(loc.cwd)
+    elif loc.level == "semester":
+        names = courses_in(loc.cwd)
     else:
-        answer = prompt(f"no courses yet in {semester_dir}; name the course")
-    if not answer:
-        raise Fail("no course given")
-    return answer if answer in options else slugify(answer)
+        names = [p.name for _d, _s, p in entries_in(loc.course_dir)]
+    for name in names:
+        print(name)
+    return 0
+
+
+def cmd_latest(args):
+    """Path of the newest entry in this course (for `cd "$(gm --latest)"`)."""
+    loc = locate()
+    if loc.level not in ("course", "entry"):
+        raise wrong_level(loc, "course", "--latest")
+    found = entries_in(loc.course_dir)
+    if not found:
+        raise Fail(f"no entries in {loc.course_dir}")
+    print(found[-1][2])
+    return 0
+
+
+def cmd_where(args):
+    """Diagnostics: what gm detected, and which goat it will pin to."""
+    loc = locate()
+    install = installed_goat()
+    repo = goat_repo(install)
+    entries = changelog_entries(repo)
+    rows = [
+        ("goat-manager", f"{TOOL_VERSION}  ({Path(__file__).resolve()})"),
+        ("level", loc.level),
+        ("cwd", str(loc.cwd)),
+        ("root", str(loc.root) if loc.root else "(not in a tree)"),
+        ("semester", loc.semester or "-"),
+        ("course", loc.course or "-"),
+        ("entry", loc.entry or "-"),
+        ("goat installed", f"{install.version} ({install.date})"),
+        ("goat.sty", str(install.path)),
+        ("goat repo", str(repo) if repo else "not found"),
+        ("goat latest", latest_known(install, entries) +
+            ("" if entries else "  (no CHANGELOG.md — using the installed version)")),
+    ]
+    env = [(f"GOAT_{k}", os.environ[f"GOAT_{k}"])
+           for k in ("AUTHOR", "STUDENT_ID", "DEPARTMENT", "LANG", "STYLE")
+           if os.environ.get(f"GOAT_{k}")]
+    rows += env or [("GOAT_* env", "(none set — templates keep their placeholders)")]
+
+    width = max(len(k) for k, _ in rows)
+    for key, value in rows:
+        print(f"{key.ljust(width)}  {value}")
+
+    localbin = Path.home() / ".local/bin"
+    if str(localbin) not in os.environ.get("PATH", "").split(":"):
+        warn(f"{localbin} is not on your PATH — `gm` will not resolve in new shells")
+    return 0
 
 
 # ---------------------------------------------------------------------------
-# Scaffolding
+# Templates
 # ---------------------------------------------------------------------------
 LECTURE_TEMPLATE = """\
 % !goat version = {version}
@@ -1034,25 +1191,21 @@ REPO_TEMPLATES = {"report": "report.tex", "lecture": "lecture.tex",
                   "homework": "homework.tex"}
 
 
-def load_template(kind, cfg, install):
+def load_template(kind, install):
     """Template text for `kind`, and where it came from.
 
-    Order: user override in ~/.config/goat-manager/templates/, then goat's own
-    templates/ directory, then the built-in string. That way improving a
-    template in the goat repo automatically improves scaffolding.
+    goat's own templates/ directory wins over the built-in strings, so
+    improving a template in the goat repo improves scaffolding here.
     """
-    user = CONFIG_PATH.parent / "templates" / f"{kind}.tex"
-    if user.is_file():
-        return user.read_text(encoding="utf-8"), str(user)
-    repo = goat_repo(cfg, install)
+    repo = goat_repo(install)
     if repo:
         candidate = repo / "templates" / REPO_TEMPLATES.get(kind, f"{kind}.tex")
         if candidate.is_file():
             return candidate.read_text(encoding="utf-8"), str(candidate)
     if kind in BUILTIN_TEMPLATES:
         return BUILTIN_TEMPLATES[kind], "built-in"
-    raise Fail(f"no template for '{kind}'. Add one at "
-               f"{CONFIG_PATH.parent / 'templates' / (kind + '.tex')}")
+    raise Fail(f"no template for '{kind}' (goat has no templates/"
+               f"{REPO_TEMPLATES.get(kind, kind + '.tex')})")
 
 
 # \setgoat<field> -> which rendered field supplies its value. Fields whose
@@ -1064,7 +1217,7 @@ SETFIELDS = [
     (re.compile(r"(\\setgoatauthor\s*\{)[^}]*(\})"), "author"),
     (re.compile(r"(\\setgoatcourse\s*\{)[^}]*(\})"), "course_title"),
     (re.compile(r"(\\setgoatdate\s*\{)[^}]*(\})"), "date"),
-    (re.compile(r"(\\setgoatstudentid\s*\{)[^}]*(\})"), "studentid"),
+    (re.compile(r"(\\setgoatstudentid\s*\{)[^}]*(\})"), "student_id"),
     (re.compile(r"(\\setgoatdept\s*\{)[^}]*(\})"), "department"),
 ]
 COMMENT_LINE_RE = re.compile(r"^\s*%")
@@ -1075,7 +1228,7 @@ def render_template(text, fields):
     if "{title}" in text or "{version}" in text:
         return text.format(**fields)
 
-    # A template taken from the goat repo (or a user override). Two things to do:
+    # A template taken from the goat repo. Two things to do:
     lines = text.splitlines()
 
     # 1. Drop the leading instruction block. goat's templates open with "copy me
@@ -1097,7 +1250,7 @@ def render_template(text, fields):
                 if value:
                     line = pattern.sub(
                         lambda m, v=value: m.group(1) + v + m.group(2), line, count=1)
-            # 3. Make the goat options match the configured language and style:
+            # 3. Make the goat options match the requested language and style:
             #    a shared template cannot know which of the two you write in.
             if "{goat}" in line:
                 line = re.sub(r"\blang=\w+", f"lang={fields['lang']}", line)
@@ -1109,293 +1262,6 @@ def render_template(text, fields):
     return header + "\n".join(filled).rstrip("\n") + "\n"
 
 
-def cmd_create(kind, title, args, cfg):
-    install = installed_goat(cfg)
-    ctx = resolve_context(args, cfg)
-
-    interactive = sys.stdin.isatty()
-    if not title:
-        if not interactive:
-            raise Fail(f"--create-{kind} needs a title "
-                       f'(example: {INVOKED} --create-{kind} "Writing hello world in Python")')
-        title = prompt(f"{kind} title")
-        if not title:
-            raise Fail("no title given")
-
-    date = args.date or dt.date.today().isoformat()
-    try:
-        dt.date.fromisoformat(date)
-    except ValueError as exc:
-        raise Fail(f"--date must be YYYY-MM-DD, got '{date}'") from exc
-
-    slug = args.slug or slugify(title)
-    if not slug:
-        raise Fail(f"'{title}' does not slugify into a directory name")
-
-    target = ctx.course_dir / f"{date}-{slug}"
-    if target.exists() and not args.force:
-        raise Fail(f"{target} already exists (use --force to write into it)")
-
-    template, origin = load_template(kind, cfg, install)
-    strings = STRINGS.get(str(cfg["lang"]).lower(), STRINGS["english"])
-    course_title = prettify_course(ctx.course, cfg)
-    studentid = str(cfg.get("student_id", "") or "")
-    body = render_template(template, {
-        "version": install.version,
-        "title": title,
-        "course": ctx.course,
-        "course_title": course_title,
-        "author": cfg["author"] or os.environ.get("USER", ""),
-        "date": date,
-        "lang": cfg["lang"],
-        "style": cfg["style"],
-        "semester": ctx.semester,
-        "studentid": studentid,
-        "department": str(cfg.get("department", "") or ""),
-        # Emitted live when the id is configured, commented out when it is not.
-        "studentid_line": (f"\\setgoatstudentid{{{studentid}}}" if studentid
-                           else "% \\setgoatstudentid{}"),
-        **strings,
-    })
-
-    main = target / "main.tex"
-    if args.dry_run:
-        log(f"would create {target}/")
-        for rel in ("main.tex", "img/", ".latexmkrc"):
-            print(f"   {rel}")
-        log(f"template: {origin}")
-        return 0
-
-    target.mkdir(parents=True, exist_ok=True)
-    (target / "img").mkdir(exist_ok=True)
-    if main.exists() and not args.force:
-        raise Fail(f"{main} already exists (use --force to overwrite)")
-    main.write_text(body, encoding="utf-8")
-    latexmkrc = target / ".latexmkrc"
-    if not latexmkrc.exists():
-        latexmkrc.write_text(LATEXMKRC, encoding="utf-8")
-
-    ok(f"created {target}")
-    print(f"   {dim('template')} {origin}")
-    print(f"   {dim('goat')}     {install.version} (pinned in main.tex)")
-    print()
-    log(f"cd {shell_quote(str(target))} && latexmk -pdf main.tex")
-
-    if args.open or cfg.get("open_editor"):
-        editor = os.environ.get("EDITOR", "vi")
-        subprocess.run([editor, str(main)], cwd=target, check=False)
-    if args.print_path:
-        print(target)
-    return 0
-
-
-def cmd_create_course(name, args, cfg):
-    """Create a course directory under the semester (and the tree, if new)."""
-    ctx = resolve_context(args, cfg, interactive=False, require_course=False)
-
-    if not name:
-        if not sys.stdin.isatty():
-            raise Fail("--create-course needs a name (example: "
-                       f'{INVOKED} --create-course "Introduktion til Programmering")')
-        name = prompt("course name")
-        if not name:
-            raise Fail("no course name given")
-
-    slug = args.slug or slugify(name)
-    if not slug:
-        raise Fail(f"'{name}' does not slugify into a directory name")
-    target = ctx.semester_dir / slug
-
-    if args.dry_run:
-        log(f"would create {target}")
-        return 0
-    if target.is_dir():
-        ok(f"{target} already exists")
-        return 0
-
-    target.mkdir(parents=True)
-    ok(f"created {target}")
-    # An alias makes -c short. The config is stowed from the dotfiles repo, so
-    # this prints the line to add rather than editing the file behind your back.
-    if len(slug) > 6:
-        # Initials for a multi-word course, else a short prefix:
-        # introduktion-til-programmering -> itp, algoritmer -> algo
-        words = slug.split("-")
-        short = "".join(w[0] for w in words) if len(words) > 1 else slug[:4]
-        alias_line = f'{short} = "{slug}"'
-        print(f"   {dim('optional: shorten -c by adding an alias to')} {CONFIG_PATH}")
-        print(f"   {dim('[courses]')}")
-        print(f"   {dim(alias_line)}")
-    print()
-    log(f'{INVOKED} --create-lecture "..." -c {slug}')
-    if args.print_path:
-        print(target)
-    return 0
-
-
-def cmd_status(args, cfg):
-    """The bare `gm`: where the coursework tree is and what is in it."""
-    install = installed_goat(cfg)
-    ctx = resolve_context(args, cfg, interactive=False, require_course=False)
-    root = ctx.root
-    semesters = existing_semesters(root)
-
-    # Nothing exists yet: say that, and do not talk about a semester that only
-    # exists in the config file.
-    if not root.is_dir() or not semesters:
-        print(f"{C_BLUE}::{C_RESET} {root}")
-        warn("no semesters yet" if root.is_dir() else "does not exist yet")
-        log(f'start here: {INVOKED} --create-course "Datalogi 1"')
-        print(f"   {dim('that creates')} {root / ctx.semester}/datalogi-1/"
-              f"{dim(', or use -s N for another semester')}")
-        return 0
-
-    known = ctx.semester in semesters
-    print(f"{C_BLUE}::{C_RESET} {root}  "
-          f"{dim('(' + ctx.semester + ('' if known else ', not created yet') + ')')}")
-
-    # Where the shell currently is, when that is inside the tree.
-    try:
-        rel = Path.cwd().resolve().relative_to(root.resolve())
-        if rel.parts:
-            print(f"   {dim('you are here:')} {'/'.join(rel.parts)}")
-    except (ValueError, OSError):
-        pass
-    if len(semesters) > 1:
-        print(f"   {dim('semesters:')} {', '.join(semesters)}")
-
-    courses = existing_courses(ctx.semester_dir)
-    if not courses:
-        print()
-        warn(f"no courses in {ctx.semester_dir}")
-        if not known:
-            log(f"semesters that exist: {', '.join(semesters)} "
-                f"(use -s N, or set current_semester in {CONFIG_PATH})")
-        else:
-            log(f'add one: {INVOKED} --create-course "Datalogi 1"')
-        return 0
-
-    # Courses, with how much is in each and when it was last touched. Columns
-    # are padded on the plain text, since dim() wraps it in escape codes that
-    # ljust would count as visible width.
-    print()
-    aliases = {v: k for k, v in cfg.get("courses", {}).items()}
-    cw = max(len(c) for c in courses)
-    aw = max((len(aliases[c]) + 2 for c in courses if c in aliases), default=0)
-    for course in courses:
-        entries = course_entries(ctx.semester_dir / course)
-        alias = f"({aliases[course]})".ljust(aw) if course in aliases else " " * aw
-        count = f"{len(entries):>3} {'entry' if len(entries) == 1 else 'entries':<7}"
-        line = f"   {course.ljust(cw)}  {dim(alias)}  {count}"
-        if entries:
-            date, slug, _path = entries[-1]
-            line += f"   {dim('latest')} {date} {slug.replace('-', ' ')}"
-        print(line)
-
-    print()
-    log(f"goat {install.version} installed. {INVOKED} --help for commands")
-    return 0
-
-
-def prettify_course(course, cfg):
-    """Directory name -> something printable on a title page.
-
-    Reverses the alias map when possible ('algo' -> the full directory name),
-    then turns dashes into spaces. Course directories are usually squashed
-    ("introtoprogramming"), which cannot be un-squashed reliably — the title
-    page is meant to be edited anyway.
-    """
-    if not course:
-        return ""
-    for alias, target in cfg.get("courses", {}).items():
-        if target == course and len(alias) > len(course):
-            course = alias
-    return course.replace("-", " ").replace("_", " ")
-
-
-def shell_quote(text):
-    return text if re.fullmatch(r"[\w@%+=:,./-]+", text) else "'" + text.replace("'", "'\\''") + "'"
-
-
-# ---------------------------------------------------------------------------
-# Actions: browsing the tree
-# ---------------------------------------------------------------------------
-ENTRY_RE = re.compile(r"^(?P<date>\d{4}-\d{2}-\d{2})-(?P<slug>.+)$")
-
-
-def course_entries(course_dir):
-    if not course_dir or not course_dir.is_dir():
-        return []
-    entries = []
-    for path in course_dir.iterdir():
-        m = ENTRY_RE.match(path.name)
-        if path.is_dir() and m:
-            entries.append((m.group("date"), m.group("slug"), path))
-    return sorted(entries)
-
-
-def cmd_list(args, cfg):
-    ctx = resolve_context(args, cfg, interactive=False, require_course=False)
-    if ctx.course is None:
-        courses = existing_courses(ctx.semester_dir)
-        if not courses:
-            raise Fail(f"nothing under {ctx.semester_dir} yet — "
-                       f'start with: {INVOKED} --create-lecture "..."')
-        print(f"{ctx.semester_dir}:")
-        for name in courses:
-            count = len(course_entries(ctx.semester_dir / name))
-            print(f"  {name} {dim(f'({count} entries)')}")
-        return 0
-
-    entries = course_entries(ctx.course_dir)
-    if not entries:
-        raise Fail(f"no entries in {ctx.course_dir}")
-    print(f"{ctx.course_dir}:")
-    for date, slug, path in entries:
-        doc = next((n for n in MAIN_CANDIDATES if (path / n).is_file()), None)
-        mark = "" if doc else dim("  (no document)")
-        print(f"  {date}  {slug.replace('-', ' ')}{mark}")
-    return 0
-
-
-def cmd_latest(args, cfg):
-    ctx = resolve_context(args, cfg, interactive=False, require_course=False)
-    if ctx.course is None:
-        raise Fail("--latest needs a course (use -c, or run it inside one)")
-    entries = course_entries(ctx.course_dir)
-    if not entries:
-        raise Fail(f"no entries in {ctx.course_dir}")
-    print(entries[-1][2])
-    return 0
-
-
-def cmd_where(args, cfg):
-    install = installed_goat(cfg)
-    repo = goat_repo(cfg, install)
-    ctx = resolve_context(args, cfg, interactive=False, require_course=False)
-    entries = changelog_entries(repo)
-    rows = [
-        ("goat-manager", f"{TOOL_VERSION}  ({Path(__file__).resolve()})"),
-        ("config", f"{CONFIG_PATH}{'' if CONFIG_PATH.is_file() else '  (missing — run --init-config)'}"),
-        ("goat installed", f"{install.version} ({install.date})"),
-        ("goat.sty", str(install.path)),
-        ("goat repo", str(repo) if repo else "not found"),
-        ("goat latest", latest_known(install, entries) +
-            ("" if entries else "  (no CHANGELOG.md — using the installed version)")),
-        ("academic root", f"{ctx.root}{'' if ctx.root.is_dir() else '  (does not exist yet)'}"),
-        ("semester", ctx.semester),
-        ("course", ctx.course or "(none resolved here)"),
-    ]
-    width = max(len(k) for k, _ in rows)
-    for key, value in rows:
-        print(f"{key.ljust(width)}  {value}")
-
-    localbin = Path.home() / ".local/bin"
-    if str(localbin) not in os.environ.get("PATH", "").split(":"):
-        warn(f"{localbin} is not on your PATH — `gm` will not resolve in new shells")
-    return 0
-
-
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
@@ -1404,17 +1270,22 @@ def build_parser():
         prog=INVOKED,
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description="Manage goat LaTeX documents and the coursework tree.",
-        epilog="""examples:
-  gm                                where the tree is and which courses exist
+        epilog="""the tree, one level at a time (cd between levels):
+
+  <root>/<N>semester/<course>/<YYYY-MM-DD>-<slug>/main.tex
+
+  in the root      gm --create-semester 1
+  in a semester    gm --create-course math
+  in a course      gm --create-lecture "Writing hello world in Python"
+
+examples:
+  gm                                where you are, and what is on this level
+  gm --list                         bare names on this level, for scripts
+  cd "$(gm --latest)"               jump to the newest entry in this course
   gm main.tex --get-version         which goat release this document targets
   gm main.tex --check-upgrade       is a newer goat available?
   gm main.tex --upgrade             re-pin to the newest goat, then test-compile
-  gm --create-course "Introduktion til Programmering"
-  gm --create-lecture "Writing hello world in Python"
-  gm --create-homework "Week 3" -c algo
-  gm --list                         entries in the current course
-  cd "$(gm --latest -c algo)"       jump to the newest entry
-  gm --where                        show what is configured and detected
+  gm --where                        what gm detected
 
 exit codes:
   0 success / nothing to do   10 an upgrade is available
@@ -1433,35 +1304,28 @@ exit codes:
     g.add_argument("--upgrade", nargs="?", const=True, metavar="VERSION",
                    help="record VERSION (default: the newest goat) in FILE, "
                         "then verify it still compiles")
-    g.add_argument("--create-lecture", nargs="?", const="", metavar="TITLE",
-                   help="scaffold a lecture-notes entry in the coursework tree")
-    g.add_argument("--create-homework", nargs="?", const="", metavar="TITLE",
-                   help="scaffold a homework entry")
-    g.add_argument("--create-report", nargs="?", const="", metavar="TITLE",
-                   help="scaffold a report entry (uses goat's templates/report.tex)")
+    g.add_argument("--create-semester", nargs="?", const="", metavar="N",
+                   help="in the root: create <N>semester (default: the next one)")
     g.add_argument("--create-course", nargs="?", const="", metavar="NAME",
-                   help="create a course directory in the current semester")
+                   help="in a semester: create the course directory")
+    g.add_argument("--create-lecture", nargs="?", const="", metavar="TITLE",
+                   help="in a course: scaffold a lecture-notes entry")
+    g.add_argument("--create-homework", nargs="?", const="", metavar="TITLE",
+                   help="in a course: scaffold a homework entry")
+    g.add_argument("--create-report", nargs="?", const="", metavar="TITLE",
+                   help="in a course: scaffold a report (goat's templates/report.tex)")
     g.add_argument("--list", action="store_true",
-                   help="list entries in the current course, or the courses")
+                   help="bare names on this level, one per line")
     g.add_argument("--latest", action="store_true",
-                   help="print the path of the newest entry")
+                   help="print the path of the newest entry in this course")
     g.add_argument("--where", action="store_true",
-                   help="show resolved configuration, paths and versions")
-    g.add_argument("--init-config", action="store_true",
-                   help=f"write a starter {CONFIG_PATH}")
-
-    loc = p.add_argument_group("location")
-    loc.add_argument("-c", "--course", metavar="NAME",
-                     help="course directory, alias, or prefix")
-    loc.add_argument("-s", "--semester", metavar="N",
-                     help="semester (1, or 1semester)")
-    loc.add_argument("--root", metavar="DIR", help="override the coursework root")
-    loc.add_argument("--date", metavar="YYYY-MM-DD",
-                     help="entry date (default: today)")
-    loc.add_argument("--slug", metavar="SLUG",
-                     help="directory slug (default: derived from the title)")
+                   help="show the detected level, paths and goat version")
 
     beh = p.add_argument_group("behaviour")
+    beh.add_argument("--date", metavar="YYYY-MM-DD",
+                     help="entry date (default: today)")
+    beh.add_argument("--slug", metavar="SLUG",
+                     help="directory name (default: derived from the title)")
     beh.add_argument("-n", "--dry-run", action="store_true",
                      help="print what would happen, change nothing")
     beh.add_argument("-q", "--quiet", action="store_true",
@@ -1469,15 +1333,11 @@ exit codes:
     beh.add_argument("--json", action="store_true",
                      help="machine-readable output where it applies")
     beh.add_argument("--force", action="store_true",
-                     help="overwrite an existing entry or config")
-    beh.add_argument("--open", action="store_true",
-                     help="open $EDITOR on the new document")
+                     help="write into an entry that already exists")
     beh.add_argument("--print-path", action="store_true",
                      help="print the created directory as the last line")
     beh.add_argument("--no-verify", action="store_true",
                      help="skip the verification compile after --upgrade")
-    beh.add_argument("--no-backup", action="store_true",
-                     help="do not keep a .bak file during --upgrade")
     beh.add_argument("--version", action="version",
                      version=f"{PROG} {TOOL_VERSION}")
     return p
@@ -1487,55 +1347,51 @@ def main(argv):
     parser = build_parser()
     args = parser.parse_args(argv[1:])
 
-    # A create action takes a title, which may also be sitting in `file` when
+    # An entry action takes a title, which may also be sitting in `file` when
     # it was written as: gm --create-lecture "Some title"
-    creates = [("lecture", args.create_lecture),
+    entries = [("lecture", args.create_lecture),
                ("homework", args.create_homework),
                ("report", args.create_report)]
-    creates = [(kind, title) for kind, title in creates if title is not None]
+    entries = [(kind, title) for kind, title in entries if title is not None]
 
     try:
-        cfg = load_config()
-        if args.init_config:
-            return cmd_init_config(args)
+        if args.create_semester is not None:
+            if not args.create_semester and args.file:
+                args.create_semester, args.file = args.file, None
+            return cmd_create_semester(args)
         if args.create_course is not None:
-            name = args.create_course
-            if not name and args.file:
-                name, args.file = args.file, None
-            return cmd_create_course(name, args, cfg)
-        if creates:
-            kind, title = creates[0]
+            if not args.create_course and args.file:
+                args.create_course, args.file = args.file, None
+            return cmd_create_course(args)
+        if entries:
+            kind, title = entries[0]
             if not title and args.file:
                 title, args.file = args.file, None
-            return cmd_create(kind, title, args, cfg)
+            return cmd_create_entry(kind, title, args)
         if args.get_version:
-            return cmd_get_version(args, cfg)
+            return cmd_get_version(args)
         if args.check_upgrade:
-            return cmd_check_upgrade(args, cfg)
+            return cmd_check_upgrade(args)
         if args.upgrade is not None:
-            return cmd_upgrade(args, cfg)
+            return cmd_upgrade(args)
         if args.list:
-            return cmd_list(args, cfg)
+            return cmd_list(args)
         if args.latest:
-            return cmd_latest(args, cfg)
+            return cmd_latest(args)
         if args.where:
-            return cmd_where(args, cfg)
+            return cmd_where(args)
+
+        # No action given: `gm file.tex` is most usefully the version query, and
+        # a bare `gm` is "where am I, and what is here".
+        if args.file:
+            return cmd_get_version(args)
+        return cmd_status(args)
     except Fail as exc:
         err(str(exc))
         return 1
     except KeyboardInterrupt:
         print()
         return 130
-
-    # No action given: `gm file.tex` is most usefully the version query, and a
-    # bare `gm` is "where am I, and what have I got".
-    try:
-        if args.file:
-            return cmd_get_version(args, cfg)
-        return cmd_status(args, cfg)
-    except Fail as exc:
-        err(str(exc))
-        return 1
 
 
 if __name__ == "__main__":

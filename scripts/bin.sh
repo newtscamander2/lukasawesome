@@ -13,6 +13,7 @@ load_config
 
 SRC="$DOTFILES_DIR/bin"
 LOCALBIN="$HOME/.local/bin"
+COMPDIR="${XDG_DATA_HOME:-$HOME/.local/share}/bash-completion/completions"
 
 # Short aliases: "<link> <target>" pairs.
 ALIASES=(
@@ -39,6 +40,18 @@ for pair in "${ALIASES[@]}"; do
         ok "$link -> $target"
     fi
 done
+
+# Bash completion for those tools, linked into the user completion directory
+# (bash-completion loads a file when a command of the same name is completed).
+if [ -d "$DOTFILES_DIR/completions" ]; then
+    run mkdir -p "$COMPDIR"
+    for comp in "$DOTFILES_DIR"/completions/*; do
+        [ -e "$comp" ] || continue
+        name="$(basename "$comp")"
+        run ln -sfn "$comp" "$COMPDIR/$name"
+        ok "completion: $name"
+    done
+fi
 
 # The PATH entry itself comes from the stowed bash/.bashrc; warn when this
 # shell has not picked it up yet (a fresh install, before re-login).

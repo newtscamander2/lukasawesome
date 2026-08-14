@@ -1,0 +1,37 @@
+# bash completion for goat-manager / gm.
+#
+# Only actions and flags need completing: gm takes its location from the
+# directory you are in, so there is nothing to look up. The positional argument
+# is a .tex file (or a directory holding one).
+
+_goat_manager() {
+    local cur prev
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    local actions="--get-version --check-upgrade --upgrade --create-semester
+                   --create-course --create-lecture --create-homework
+                   --create-report --list --latest --where"
+    local opts="--date --slug -n --dry-run -q --quiet --json --force
+                --print-path --no-verify -h --help --version"
+
+    case "$prev" in
+        --date)
+            mapfile -t COMPREPLY < <(compgen -W "$(date +%F)" -- "$cur")
+            return ;;
+        --create-course)
+            # Courses that already exist in this semester, in case you are
+            # re-running the command; otherwise a new name is free text.
+            mapfile -t COMPREPLY < <(compgen -d -- "$cur")
+            return ;;
+    esac
+
+    if [[ $cur == -* ]]; then
+        mapfile -t COMPREPLY < <(compgen -W "$actions $opts" -- "$cur")
+        return
+    fi
+
+    mapfile -t COMPREPLY < <(compgen -f -X '!*.tex' -- "$cur"; compgen -d -- "$cur")
+}
+
+complete -F _goat_manager goat-manager gm
