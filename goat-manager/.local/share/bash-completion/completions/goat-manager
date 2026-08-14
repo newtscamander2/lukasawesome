@@ -38,8 +38,8 @@ _goat_manager() {
     prev="${COMP_WORDS[COMP_CWORD-1]}"
 
     local actions="--get-version --check-upgrade --upgrade --create-lecture
-                   --create-homework --create-report --list --latest --where
-                   --init-config"
+                   --create-homework --create-report --create-course --list
+                   --latest --where --init-config"
     local opts="-c --course -s --semester --root --date --slug -n --dry-run
                 -q --quiet --json --force --open --print-path --no-verify
                 --no-backup -h --help --version"

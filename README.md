@@ -144,12 +144,27 @@ Coursework is kept in one predictable tree:
 ```
 
 ```bash
+gm                                         # the tree, and every course in it
+gm --create-course "Introduktion til Programmering"
 gm --create-lecture "Writing hello world in Python"
 gm --create-homework "Week 3" -c algo      # -c takes an alias, prefix or dir name
 gm --create-report "Sorting benchmark"     # built from goat's templates/report.tex
 gm --list                                  # entries in the current course
 cd "$(gm --latest -c algo)"                # jump to the newest entry
 gm --where                                 # what is configured and detected
+```
+
+Typed on its own, `gm` is a status view: which coursework root and semester are
+in effect, where in the tree the shell currently is, and every course with its
+entry count and newest entry.
+
+```
+:: /home/lukas/aarhusuni  (1semester)
+   you are here: 1semester/introduktion-til-programmering
+
+   algo                                     0 entries
+   datastrukturer-og-algoritmer             1 entry     latest 2026-08-14 uge 3
+   introduktion-til-programmering  (itp)    2 entries   latest 2026-08-20 lister og loekker
 ```
 
 Run from inside a course directory, `--create-*` files the new entry next to its
