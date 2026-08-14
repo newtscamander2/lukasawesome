@@ -5,7 +5,7 @@ SHELL  := /bin/bash
 INSTALL := scripts/install.sh
 
 .DEFAULT_GOAL := help
-.PHONY: help configure plan install yay packages drivers services stow apps repos protondrive check-system repair-display
+.PHONY: help configure plan install yay packages drivers services stow bin apps repos protondrive check-system repair-display
 
 help: ## Show this help
 	@echo "lukasawesome bootstrap targets:"
@@ -35,6 +35,9 @@ services: ## Enable display manager, docker, virtualbox
 
 stow: ## Symlink config packages into $$HOME
 	@bash $(INSTALL) stow
+
+bin: ## Link bin/ CLI tools (goat-manager, gm) into ~/.local/bin
+	@bash $(INSTALL) bin
 
 apps: ## Apply VSCode settings (no network credentials needed)
 	@bash $(INSTALL) apps

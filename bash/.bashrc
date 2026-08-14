@@ -46,6 +46,15 @@ __dotfiles_prompt() {
 }
 PROMPT_COMMAND=__dotfiles_prompt
 
+# --- PATH ---
+# Personal CLI tools (this repo's bin/, installed by 'make bin') and anything
+# else that installs into ~/.local/bin, e.g. goat's goat-img / goat-lint.
+case ":$PATH:" in
+    *":$HOME/.local/bin:"*) ;;
+    *) PATH="$HOME/.local/bin:$PATH" ;;
+esac
+export PATH
+
 # --- Tooling env ---
 [ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
 export NVM_DIR="$HOME/.nvm"

@@ -1,0 +1,1389 @@
+#!/usr/bin/env python3
+"""goat-manager (gm) -- manage goat LaTeX documents and the coursework tree.
+
+Two jobs:
+
+1. Versions. Report which goat release a document was written against, whether
+   a newer one is installed, and record/upgrade that pin -- so a document
+   written today still compiles years from now.
+
+       gm main.tex --get-version
+       gm main.tex --check-upgrade
+       gm main.tex --upgrade            # rewrite the pin, then test-compile
+
+2. Structure. Keep coursework in one predictable tree and scaffold into it:
+
+       <root>/<semester>/<course>/<YYYY-MM-DD>-<slug>/main.tex
+       ~/aarhusuni/1semester/introtoprogramming/2026-10-05-writing-hello-world-in-python/
+
+       gm --create-lecture "Writing hello world in Python"
+       gm --create-homework "Week 3"
+       gm --create-report "Sorting benchmark"
+       gm --list                        # entries in the current course
+       gm --latest                      # path of the newest entry (for cd)
+
+Configuration lives in ~/.config/goat-manager/config.toml (see --init-config);
+every value can be overridden per invocation with a flag.
+
+Exit codes: 0 nothing to do / success, 1 error, 10 an upgrade is available,
+11 the document needs a newer goat than the one installed.
+
+Stdlib only: needs Python 3.11+, and TeX Live only for the optional
+post-upgrade verification compile.
+"""
+
+import argparse
+import datetime as dt
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+import tomllib
+import unicodedata
+from dataclasses import dataclass, field
+from pathlib import Path
+
+TOOL_VERSION = "1.0.0"
+PROG = "goat-manager"            # canonical name: config dir, --version
+INVOKED = Path(sys.argv[0]).name or PROG   # what the user typed: usage, hints
+
+# ---------------------------------------------------------------------------
+# Output helpers. Same glyph vocabulary as the dotfiles installer (lib.sh) so
+# the two tools read alike in a terminal.
+# ---------------------------------------------------------------------------
+if sys.stdout.isatty():
+    C_BLUE, C_GREEN, C_YELLOW, C_RED, C_DIM, C_RESET = (
+        "\033[1;34m", "\033[1;32m", "\033[1;33m", "\033[1;31m", "\033[2m", "\033[0m")
+else:
+    C_BLUE = C_GREEN = C_YELLOW = C_RED = C_DIM = C_RESET = ""
+
+
+def log(msg):
+    print(f"{C_BLUE}::{C_RESET} {msg}")
+
+
+def ok(msg):
+    print(f"{C_GREEN} ok{C_RESET} {msg}")
+
+
+def warn(msg):
+    sys.stdout.flush()   # keep stderr interleaved in order when piped
+    print(f"{C_YELLOW}  ! {C_RESET}{msg}", file=sys.stderr)
+
+
+def err(msg):
+    sys.stdout.flush()
+    print(f"{C_RED}  x {C_RESET}{msg}", file=sys.stderr)
+
+
+def dim(text):
+    return f"{C_DIM}{text}{C_RESET}"
+
+
+class Fail(Exception):
+    """A user-facing error: reported via err() and turned into exit code 1."""
+
+
+# ---------------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------------
+CONFIG_PATH = Path(
+    os.environ.get("GOAT_MANAGER_CONFIG",
+                   Path.home() / ".config" / PROG / "config.toml"))
+
+DEFAULT_CONFIG = {
+    "academic_root": "~/aarhusuni",
+    "current_semester": 1,
+    "current_course": "",
+    "author": "",
+    "student_id": "",
+    "department": "",
+    "lang": "danish",
+    "style": "au",
+    "goat_repo": "~/projects/goat",
+    "open_editor": False,
+    "courses": {},
+}
+
+CONFIG_TEMPLATE = '''\
+# goat-manager configuration.
+#
+# Written by `goat-manager --init-config`. Every setting here can be overridden
+# per invocation by the matching flag (--root, --semester, --course, ...).
+
+# Root of the coursework tree. Entries are created as
+#   <academic_root>/<semester>/<course>/<YYYY-MM-DD>-<slug>/
+academic_root = "{academic_root}"
+
+# Which semester new entries go into. A bare number is fine: 1 -> "1semester".
+current_semester = {current_semester}
+
+# Default course when the command is run from outside the tree. Use a directory
+# name or one of the [courses] aliases below.
+current_course = "{current_course}"
+
+# Written into scaffolded documents as \\setgoatauthor{{...}} etc. Leave a value
+# empty to keep the template's own placeholder, so you notice it needs filling.
+author = "{author}"
+student_id = "{student_id}"
+department = "{department}"
+
+# Passed to \\usepackage[...]{{goat}} in scaffolded documents.
+lang = "{lang}"    # danish | english
+style = "{style}"        # au | plain
+
+# Where the goat repo is checked out. Only a fallback: goat is normally located
+# with kpsewhich, so this matters just when TeX Live cannot find it.
+goat_repo = "{goat_repo}"
+
+# Open $EDITOR on the new file right after --create-*.
+open_editor = {open_editor}
+
+# Short aliases for long course directory names, so `gm -c algo ...` works.
+# The value is the directory name under <academic_root>/<semester>/.
+[courses]
+# algo = "algorithmsanddatastructures"
+# ip   = "introduktiontilprogrammering"
+'''
+
+
+def load_config():
+    """Read config.toml over the built-in defaults. Missing file is fine."""
+    cfg = dict(DEFAULT_CONFIG)
+    if CONFIG_PATH.is_file():
+        try:
+            with CONFIG_PATH.open("rb") as fh:
+                cfg.update(tomllib.load(fh))
+        except (OSError, tomllib.TOMLDecodeError) as exc:
+            raise Fail(f"cannot read {CONFIG_PATH}: {exc}") from exc
+    # Environment wins over the file; flags (applied by the caller) win overall.
+    if os.environ.get("GOAT_ACADEMIC_ROOT"):
+        cfg["academic_root"] = os.environ["GOAT_ACADEMIC_ROOT"]
+    cfg.setdefault("courses", {})
+    return cfg
+
+
+def cmd_init_config(args):
+    if CONFIG_PATH.exists() and not args.force:
+        raise Fail(f"{CONFIG_PATH} already exists (use --force to overwrite)")
+    body = CONFIG_TEMPLATE.format(
+        **{k: ("true" if v is True else "false" if v is False else v)
+           for k, v in DEFAULT_CONFIG.items() if k != "courses"})
+    if args.dry_run:
+        log(f"would write {CONFIG_PATH}")
+        return 0
+    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    CONFIG_PATH.write_text(body, encoding="utf-8")
+    ok(f"wrote {CONFIG_PATH}")
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Versions
+# ---------------------------------------------------------------------------
+def vkey(text):
+    """'v0.1' -> (0, 1, 0). None when text is not a recognisable version.
+
+    Padded to three components so a two-component release ("0.1", as written by
+    goat today) compares correctly against a three-component one ("0.1.4").
+    """
+    if not text:
+        return None
+    m = re.match(r"^v?(\d+(?:\.\d+){0,3})", text.strip())
+    if not m:
+        return None
+    parts = [int(p) for p in m.group(1).split(".")]
+    while len(parts) < 3:
+        parts.append(0)
+    return tuple(parts[:4])
+
+
+def vtext(text):
+    """Normalised display form of a version string ('v0.1' -> '0.1')."""
+    return text.strip().lstrip("vV") if text else text
+
+
+@dataclass
+class Pin:
+    """How (and where) a document records the goat release it targets."""
+    version: str | None          # None for a date pin we cannot map to a version
+    kind: str                    # comment | rollback | date | projectfile
+    where: str                   # "main.tex:1" or a project file path
+    raw: str = ""                # the line/value as written
+
+    def describe(self):
+        kinds = {
+            "comment": "magic comment",
+            "rollback": "LaTeX rollback pin",
+            "date": "LaTeX date pin",
+            "projectfile": "project file",
+        }
+        return f"{kinds.get(self.kind, self.kind)}, {self.where}"
+
+
+@dataclass
+class GoatInstall:
+    """The goat release installed on this machine."""
+    version: str
+    date: str
+    path: Path
+
+
+def kpsewhich(name):
+    """Absolute path of a TeX file, or None. Same lookup goat's tools use."""
+    if not shutil.which("kpsewhich"):
+        return None
+    try:
+        out = subprocess.run(["kpsewhich", name], capture_output=True,
+                             text=True, timeout=20)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    first = out.stdout.strip().splitlines()
+    if out.returncode != 0 or not first:
+        return None
+    p = Path(first[0])
+    return p if p.is_file() else None
+
+
+PROVIDES_RE = re.compile(
+    r"\\ProvidesPackage\s*\{goat\}\s*\[\s*"
+    r"(?P<date>\d{4}[/-]\d{2}[/-]\d{2})\s+v?(?P<ver>[0-9][\w.\-]*)")
+
+
+def installed_goat(cfg):
+    """Locate goat.sty and read its \\ProvidesPackage version and date."""
+    candidates = []
+    found = kpsewhich("goat.sty")
+    if found:
+        candidates.append(found)
+    candidates += [
+        Path.home() / "texmf/tex/latex/goat/goat.sty",
+        Path(cfg["goat_repo"]).expanduser() / "goat" / "goat.sty",
+    ]
+    for path in candidates:
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        m = PROVIDES_RE.search(text)
+        if m:
+            return GoatInstall(vtext(m.group("ver")), m.group("date"), path)
+        # goat.sty exists but has no parsable version line: still report it.
+        return GoatInstall("unknown", "unknown", path)
+    raise Fail("no goat installation found. Run goat's install.sh, then check "
+               "`kpsewhich goat.sty`.")
+
+
+def goat_repo(cfg, install=None):
+    """The goat checkout, resolved through the texmf symlink when possible.
+
+    install.sh symlinks <repo>/goat into ~/texmf/tex/latex/goat, so resolving
+    the real path of goat.sty and walking up two levels lands in the repo.
+    """
+    if install is not None:
+        real = install.path.resolve()
+        for parent in list(real.parents)[:4]:
+            if (parent / "install.sh").is_file() and (parent / "goat").is_dir():
+                return parent
+    repo = Path(cfg["goat_repo"]).expanduser()
+    return repo if repo.is_dir() else None
+
+
+CHANGELOG_HEADING_RE = re.compile(
+    r"^##\s*\[?v?(?P<ver>\d+(?:\.\d+){1,3})\]?\s*(?:[-–]\s*(?P<date>[\d/-]+))?")
+
+
+def changelog_entries(repo):
+    """[(version, date, [body lines])] newest first, from goat's CHANGELOG.md.
+
+    Optional: goat has no CHANGELOG.md yet, in which case this returns [] and
+    --check-upgrade simply omits the "what changed" section.
+    """
+    if repo is None:
+        return []
+    path = repo / "CHANGELOG.md"
+    if not path.is_file():
+        return []
+    entries, current = [], None
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        m = CHANGELOG_HEADING_RE.match(line)
+        if m:
+            current = (vtext(m.group("ver")), m.group("date") or "", [])
+            entries.append(current)
+        elif current is not None and line.strip():
+            current[2].append(line.rstrip())
+    return entries
+
+
+def latest_known(install, entries):
+    """Newest version this machine knows about: installed vs. CHANGELOG top."""
+    best, best_key = install.version, vkey(install.version) or (0, 0, 0)
+    for version, _date, _body in entries:
+        key = vkey(version)
+        if key and key > best_key:
+            best, best_key = version, key
+    return best
+
+
+# ---------------------------------------------------------------------------
+# Reading a document's pin
+# ---------------------------------------------------------------------------
+# `% !goat version = 0.1.4`, `%!goat 0.1.4`, `% !goat-version: 0.1.4`
+MAGIC_RE = re.compile(
+    r"^\s*%+\s*!\s*goat(?:[ _-]*version)?\s*[:=]?\s*v?(?P<ver>\d[\w.\-]*)", re.I)
+USEPKG_RE = re.compile(
+    r"\\(?:usepackage|RequirePackage)\s*(?:\[(?P<opts>[^\]]*)\])?\s*"
+    r"\{(?P<pkgs>[^}]*)\}(?:\s*\[(?P<pin>[^\]]*)\])?")
+INPUT_RE = re.compile(r"\\(?:input|include)\s*\{(?P<path>[^}]+)\}")
+DATE_PIN_RE = re.compile(r"^\d{4}[/-]\d{2}[/-]\d{2}$")
+
+PROJECT_FILES = (".goat-version", "goat.toml")
+MAIN_CANDIDATES = ("main.tex", "report.tex", "notes.tex", "homework.tex")
+
+
+def strip_comment(line):
+    """Drop a trailing LaTeX comment, respecting \\%. (Same rule as goat-lint.)"""
+    out, esc = [], False
+    for ch in line:
+        if ch == "%" and not esc:
+            break
+        out.append(ch)
+        esc = (ch == "\\") and not esc
+    return "".join(out)
+
+
+@dataclass
+class DocScan:
+    """What we learned from reading a .tex file (and its \\input children)."""
+    path: Path
+    uses_goat: bool = False
+    usepackage_line: int | None = None
+    pins: list = field(default_factory=list)
+
+    def pin(self):
+        """The effective pin, highest precedence first.
+
+        A rollback pin wins because it is what LaTeX actually acts on; the magic
+        comment is next because it is what this tool writes; a bare date pin and
+        a project file are weaker records.
+        """
+        order = {"rollback": 0, "comment": 1, "date": 2, "projectfile": 3}
+        return min(self.pins, key=lambda p: order.get(p.kind, 9), default=None)
+
+
+def scan_document(path, follow=True):
+    """Read a document, and one level of \\input children, for goat pins."""
+    scan = DocScan(path=path)
+    try:
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError as exc:
+        raise Fail(f"cannot read {path}: {exc}") from exc
+
+    children = []
+    for lineno, raw in enumerate(lines, 1):
+        m = MAGIC_RE.match(raw)
+        if m:
+            scan.pins.append(Pin(vtext(m.group("ver")), "comment",
+                                 f"{path.name}:{lineno}", raw.strip()))
+        code = strip_comment(raw)
+        for um in USEPKG_RE.finditer(code):
+            pkgs = [p.strip() for p in um.group("pkgs").split(",")]
+            if "goat" not in pkgs:
+                continue
+            scan.uses_goat = True
+            if scan.usepackage_line is None:
+                scan.usepackage_line = lineno
+            arg = (um.group("pin") or "").strip()
+            if arg.startswith("="):
+                scan.pins.append(Pin(vtext(arg[1:]), "rollback",
+                                     f"{path.name}:{lineno}", arg))
+            elif DATE_PIN_RE.match(arg):
+                scan.pins.append(Pin(None, "date",
+                                     f"{path.name}:{lineno}", arg))
+        for im in INPUT_RE.finditer(code):
+            children.append(im.group("path").strip())
+
+    # The pin may live in a preamble that main.tex \inputs.
+    if follow and not scan.pins:
+        for rel in children:
+            child = (path.parent / rel)
+            if child.suffix != ".tex":
+                child = child.with_suffix(".tex")
+            if child.is_file():
+                sub = scan_document(child, follow=False)
+                scan.uses_goat = scan.uses_goat or sub.uses_goat
+                scan.pins.extend(sub.pins)
+
+    if not scan.pins:
+        found = project_pin(path.parent)
+        if found:
+            scan.pins.append(found)
+    return scan
+
+
+def project_pin(start):
+    """Look for .goat-version / goat.toml in this directory or an ancestor."""
+    home = Path.home()
+    for directory in [start, *start.parents]:
+        for name in PROJECT_FILES:
+            path = directory / name
+            if not path.is_file():
+                continue
+            try:
+                text = path.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            if name == ".goat-version":
+                version = text.strip().splitlines()[0].strip() if text.strip() else ""
+            else:
+                try:
+                    data = tomllib.loads(text)
+                except tomllib.TOMLDecodeError:
+                    continue
+                version = data.get("version") or data.get("goat", {}).get("version", "")
+            if vkey(version):
+                return Pin(vtext(version), "projectfile", str(path), text.strip())
+        if directory == home:
+            break
+    return None
+
+
+def resolve_document(arg):
+    """Turn a CLI argument (file, directory, or nothing) into a .tex path."""
+    start = Path(arg).expanduser() if arg else Path.cwd()
+    if start.is_file():
+        return start
+    if not start.exists() and not start.suffix:
+        guess = start.with_suffix(".tex")
+        if guess.is_file():
+            return guess
+    if not start.exists():
+        raise Fail(f"{start}: no such file or directory")
+    if not start.is_dir():
+        raise Fail(f"{start}: not a file or directory")
+
+    for name in MAIN_CANDIDATES:
+        if (start / name).is_file():
+            return start / name
+    roots = []
+    for p in sorted(start.glob("*.tex")):
+        try:
+            if "\\documentclass" in p.read_text(encoding="utf-8", errors="replace"):
+                roots.append(p)
+        except OSError:
+            continue
+    if len(roots) == 1:
+        return roots[0]
+    if not roots:
+        raise Fail(f"{start}: no .tex document found here "
+                   f"(looked for {', '.join(MAIN_CANDIDATES)} and any \\documentclass file)")
+    names = ", ".join(p.name for p in roots)
+    raise Fail(f"{start}: several documents found ({names}) — name one explicitly")
+
+
+# ---------------------------------------------------------------------------
+# Actions: versions
+# ---------------------------------------------------------------------------
+def cmd_get_version(args, cfg):
+    path = resolve_document(args.file)
+    scan = scan_document(path)
+    install = installed_goat(cfg)
+    pin = scan.pin()
+
+    if args.json:
+        print(json.dumps({
+            "file": str(path),
+            "uses_goat": scan.uses_goat,
+            "version": pin.version if pin else None,
+            "pinned": pin is not None,
+            "pin_kind": pin.kind if pin else None,
+            "pin_where": pin.where if pin else None,
+            "installed": install.version,
+            "installed_date": install.date,
+        }, indent=2))
+        return 0
+
+    if not scan.uses_goat and pin is None:
+        raise Fail(f"{path.name}: not a goat document "
+                   f"(no \\usepackage{{goat}}, no version pin)")
+
+    if pin is None:
+        if args.quiet:
+            print(install.version)
+        else:
+            print(f"{path.name}: goat {install.version} "
+                  f"{dim('(not pinned — whatever goat is installed)')}")
+            log(f"pin it with: {INVOKED} {path.name} --upgrade")
+        return 0
+
+    if pin.version is None:          # a date pin we could not map to a version
+        if args.quiet:
+            print(pin.raw)
+        else:
+            print(f"{path.name}: goat release dated {pin.raw} "
+                  f"{dim('(' + pin.describe() + ')')}")
+        return 0
+
+    if args.quiet:
+        print(pin.version)
+    else:
+        print(f"{path.name}: goat {pin.version} {dim('(' + pin.describe() + ')')}")
+    return 0
+
+
+def cmd_check_upgrade(args, cfg):
+    path = resolve_document(args.file)
+    scan = scan_document(path)
+    install = installed_goat(cfg)
+    repo = goat_repo(cfg, install)
+    entries = changelog_entries(repo)
+    latest = latest_known(install, entries)
+    pin = scan.pin()
+
+    if not scan.uses_goat and pin is None:
+        raise Fail(f"{path.name}: not a goat document "
+                   f"(no \\usepackage{{goat}}, no version pin)")
+
+    have = pin.version if pin and pin.version else None
+    have_key = vkey(have)
+    latest_key = vkey(latest)
+    if have_key is None:
+        state = "unpinned"
+    elif latest_key is None or have_key == latest_key:
+        state = "current"
+    elif have_key < latest_key:
+        state = "upgradable"
+    else:
+        state = "ahead"
+
+    if args.json:
+        print(json.dumps({
+            "file": str(path),
+            "version": have,
+            "pinned": pin is not None,
+            "pin_kind": pin.kind if pin else None,
+            "installed": install.version,
+            "latest": latest,
+            "state": state,
+        }, indent=2))
+    else:
+        if pin and have:
+            print(f"{path.name}: pinned to goat {have} {dim('(' + pin.describe() + ')')}")
+        elif pin:
+            print(f"{path.name}: pinned to the release dated {pin.raw} "
+                  f"{dim('(' + pin.describe() + ')')}")
+        else:
+            print(f"{path.name}: {C_YELLOW}no goat version recorded{C_RESET}")
+        print(f"installed:  goat {install.version} ({install.date}) {dim(install.path)}")
+        if vkey(latest) and vkey(latest) != vkey(install.version):
+            source = str(repo / "CHANGELOG.md") if repo else "CHANGELOG.md"
+            print(f"latest:     goat {latest} {dim('(from ' + source + ')')}")
+        print()
+
+        if state == "current":
+            ok(f"up to date — {path.name} already targets the latest goat ({latest})")
+        elif state == "upgradable":
+            print(f"is able to upgrade to the latest version of goat, "
+                  f"which is version {latest}")
+            _print_changes(entries, have, latest)
+            log(f"apply with: {INVOKED} {path.name} --upgrade")
+        elif state == "ahead":
+            warn(f"{path.name} targets goat {have}, but only {latest} is available here")
+            log("update the library first: cd ~/projects/goat && git pull && ./install.sh")
+        else:
+            print(f"nothing is recorded yet; the latest version of goat is {latest}")
+            log(f"record it with: {INVOKED} {path.name} --upgrade")
+
+    return {"current": 0, "upgradable": 10, "unpinned": 10, "ahead": 11}[state]
+
+
+def _print_changes(entries, have, target):
+    """Print CHANGELOG bodies strictly between the pinned and target versions."""
+    have_key, target_key = vkey(have), vkey(target)
+    shown = False
+    for version, date, body in entries:
+        key = vkey(version)
+        if not key or key <= (have_key or (0, 0, 0)) or key > target_key:
+            continue
+        if not shown:
+            print("\nchanges:")
+            shown = True
+        header = f"  {version}" + (f" ({date})" if date else "")
+        print(header)
+        for line in body[:12]:
+            print(f"    {line}")
+
+
+def cmd_upgrade(args, cfg):
+    path = resolve_document(args.file)
+    scan = scan_document(path, follow=False)
+    install = installed_goat(cfg)
+    repo = goat_repo(cfg, install)
+    entries = changelog_entries(repo)
+
+    target = vtext(args.upgrade) if isinstance(args.upgrade, str) else latest_known(install, entries)
+    if not vkey(target):
+        raise Fail(f"'{target}' is not a version number")
+    if not scan.uses_goat:
+        raise Fail(f"{path.name}: not a goat document (no \\usepackage{{goat}} here)")
+
+    pin = scan.pin()
+    if pin and pin.version and vkey(pin.version) == vkey(target):
+        ok(f"{path.name} already targets goat {target} — nothing to do")
+        return 0
+    if pin and pin.kind == "projectfile":
+        warn(f"the current pin lives in {pin.where}; writing a document-level "
+             f"pin into {path.name} which takes precedence")
+
+    original = path.read_text(encoding="utf-8", errors="replace")
+    updated, note = rewrite_pin(original, target, scan)
+    if updated == original:
+        ok(f"{path.name} already targets goat {target} — nothing to do")
+        return 0
+
+    if args.dry_run:
+        log(f"would {note} in {path.name}")
+        for line in _diff_preview(original, updated):
+            print(f"   {line}")
+        return 0
+
+    backup = None
+    if not args.no_backup:
+        backup = path.with_suffix(path.suffix + ".bak")
+        shutil.copy2(path, backup)
+    path.write_text(updated, encoding="utf-8")
+    ok(f"pinned {path.name} to goat {target}")
+
+    if args.no_verify:
+        if backup:
+            log(f"backup kept at {backup.name}")
+        return 0
+
+    good, output = verify_compile(path)
+    if good:
+        ok("test compile passed")
+        if backup:
+            backup.unlink(missing_ok=True)
+        return 0
+
+    if backup:
+        shutil.copy2(backup, path)
+        backup.unlink(missing_ok=True)
+        err(f"test compile FAILED — {path.name} restored unchanged")
+    else:
+        err(f"test compile FAILED — {path.name} was modified (no backup was kept)")
+    for line in output:
+        print(f"   {line}", file=sys.stderr)
+    return 1
+
+
+def rewrite_pin(text, target, scan):
+    """Return (new text, description) with the goat pin set to `target`.
+
+    Updates a pin that is already there, in place; otherwise inserts a magic
+    comment just above the \\usepackage{goat} line. Any LaTeX rollback pin is
+    kept in sync, since that is the one LaTeX itself acts on.
+    """
+    lines = text.splitlines(keepends=True)
+    changed, notes = False, []
+
+    for i, raw in enumerate(lines):
+        m = MAGIC_RE.match(raw)
+        if m:
+            lines[i] = raw[:m.start("ver")] + target + raw[m.end("ver"):]
+            changed = True
+            notes.append("update the magic comment")
+            break
+
+    for i, raw in enumerate(lines):
+        code = strip_comment(raw)
+        for um in USEPKG_RE.finditer(code):
+            if "goat" not in [p.strip() for p in um.group("pkgs").split(",")]:
+                continue
+            arg = (um.group("pin") or "").strip()
+            if arg.startswith("="):
+                start, end = um.span("pin")
+                lines[i] = raw[:start] + "=" + target + raw[end:]
+                changed = True
+                notes.append("update the rollback pin")
+
+    if not changed:
+        insert_at = (scan.usepackage_line - 1) if scan.usepackage_line else 0
+        lines.insert(insert_at, f"% !goat version = {target}\n")
+        notes.append("add a version pin")
+
+    return "".join(lines), " and ".join(notes)
+
+
+def _diff_preview(before, after, context=1):
+    """Minimal line-level preview of what --upgrade would change."""
+    import difflib
+    out = []
+    for line in difflib.unified_diff(before.splitlines(), after.splitlines(),
+                                     lineterm="", n=context):
+        if line.startswith(("---", "+++", "@@")):
+            continue
+        out.append(line)
+    return out[:12]
+
+
+def verify_compile(path):
+    """Compile the document into a temp directory. Returns (ok, log tail)."""
+    if not shutil.which("latexmk"):
+        warn("latexmk not found — skipping the verification compile")
+        return True, []
+    with tempfile.TemporaryDirectory(prefix="gm-verify-") as tmp:
+        cmd = ["latexmk", "-pdf", "-interaction=nonstopmode", "-halt-on-error",
+               "-shell-escape", f"-outdir={tmp}", path.name]
+        try:
+            proc = subprocess.run(cmd, cwd=path.parent, capture_output=True,
+                                  text=True, timeout=300)
+        except subprocess.TimeoutExpired:
+            return False, ["latexmk timed out after 300s"]
+        except OSError as exc:
+            return False, [f"could not run latexmk: {exc}"]
+        if proc.returncode == 0:
+            return True, []
+        combined = (proc.stdout + proc.stderr).splitlines()
+        interesting = [l for l in combined
+                       if l.startswith("!") or ".tex:" in l or "Error" in l]
+        return False, (interesting or combined)[-15:]
+
+
+# ---------------------------------------------------------------------------
+# Structure: <root>/<semester>/<course>/<date>-<slug>/
+# ---------------------------------------------------------------------------
+DANISH_MAP = {"æ": "ae", "ø": "oe", "å": "aa", "Æ": "ae", "Ø": "oe", "Å": "aa",
+              "ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss"}
+
+
+def slugify(text):
+    """'Writing hello world in Python!' -> 'writing-hello-world-in-python'.
+
+    Danish letters are transliterated the way Danes write them in ASCII
+    (ø -> oe, not o), so directory names stay readable and shell-safe.
+    """
+    for src, dst in DANISH_MAP.items():
+        text = text.replace(src, dst)
+    text = unicodedata.normalize("NFKD", text)
+    text = "".join(c for c in text if not unicodedata.combining(c))
+    text = re.sub(r"[^A-Za-z0-9]+", "-", text).strip("-").lower()
+    return re.sub(r"-{2,}", "-", text)
+
+
+def normalize_semester(value):
+    """1, '1', '1semester', '1. semester' -> '1semester'."""
+    text = str(value).strip()
+    m = re.search(r"\d+", text)
+    return f"{int(m.group())}semester" if m else slugify(text)
+
+
+@dataclass
+class Context:
+    """Where in the tree we are working."""
+    root: Path
+    semester: str
+    course: str | None
+
+    @property
+    def semester_dir(self):
+        return self.root / self.semester
+
+    @property
+    def course_dir(self):
+        return self.semester_dir / self.course if self.course else None
+
+
+def existing_courses(semester_dir):
+    if not semester_dir.is_dir():
+        return []
+    return sorted(p.name for p in semester_dir.iterdir()
+                  if p.is_dir() and not p.name.startswith("."))
+
+
+def resolve_context(args, cfg, interactive=True, require_course=True):
+    """Work out root/semester/course from flags, then the cwd, then config.
+
+    Being inside the tree is the strongest signal: running
+    `gm --create-lecture "..."` from within a course directory files the new
+    entry next to its siblings without any flags.
+    """
+    root = Path(args.root or cfg["academic_root"]).expanduser()
+    semester = course = None
+
+    cwd = Path.cwd().resolve()
+    try:
+        rel = cwd.relative_to(root.resolve())
+    except (ValueError, OSError):
+        rel = None
+    if rel is not None and rel.parts:
+        semester = rel.parts[0]
+        if len(rel.parts) > 1:
+            course = rel.parts[1]
+
+    if args.semester:
+        semester = normalize_semester(args.semester)
+    elif semester is None:
+        semester = normalize_semester(cfg["current_semester"])
+    else:
+        semester = normalize_semester(semester)
+
+    if args.course:
+        course = resolve_course(args.course, root / semester, cfg)
+    elif course is None and cfg.get("current_course"):
+        course = resolve_course(cfg["current_course"], root / semester, cfg)
+
+    if course is None and require_course:
+        options = existing_courses(root / semester)
+        if interactive and sys.stdin.isatty():
+            course = prompt_course(options, root / semester)
+        elif options:
+            raise Fail("no course given. Use -c <course> (available: "
+                       + ", ".join(options) + ")")
+        else:
+            raise Fail(f"no course given and none exist under {root / semester}. "
+                       "Use -c <course> to create the first one.")
+    return Context(root=root, semester=semester, course=course)
+
+
+def resolve_course(name, semester_dir, cfg):
+    """Map an alias / partial name to a course directory name.
+
+    Order: [courses] alias, exact directory, unique prefix or substring match,
+    then fall back to a slug of what was typed (a new course).
+    """
+    aliases = cfg.get("courses", {})
+    if name in aliases:
+        return aliases[name]
+    options = existing_courses(semester_dir)
+    if name in options:
+        return name
+    slug = slugify(name)
+    if slug in options:
+        return slug
+    hits = [c for c in options if c.startswith(slug)] or \
+           [c for c in options if slug in c]
+    if len(hits) == 1:
+        return hits[0]
+    if len(hits) > 1:
+        raise Fail(f"'{name}' matches several courses: {', '.join(hits)}")
+    return slug
+
+
+def prompt(question, default=""):
+    suffix = f" [{default}]" if default else ""
+    try:
+        answer = input(f"{C_BLUE}?{C_RESET} {question}{suffix} ").strip()
+    except EOFError:
+        answer = ""
+    return answer or default
+
+
+def prompt_course(options, semester_dir):
+    if options:
+        print(f"courses in {semester_dir}:")
+        for i, name in enumerate(options, 1):
+            print(f"  {i}) {name}")
+        answer = prompt("course (number, name, or a new name)")
+        if answer.isdigit() and 1 <= int(answer) <= len(options):
+            return options[int(answer) - 1]
+    else:
+        answer = prompt(f"no courses yet in {semester_dir}; name the course")
+    if not answer:
+        raise Fail("no course given")
+    return answer if answer in options else slugify(answer)
+
+
+# ---------------------------------------------------------------------------
+# Scaffolding
+# ---------------------------------------------------------------------------
+LECTURE_TEMPLATE = """\
+% !goat version = {version}
+\\documentclass[12pt]{{article}}
+\\usepackage[style={style}, lang={lang}]{{goat}}
+
+\\setgoattitle{{{title}}}
+\\setgoatsubtitle{{{course_title}}}
+\\setgoatauthor{{{author}}}
+\\setgoatcourse{{{course_title}}}
+\\setgoatdate{{{date}}}
+\\goatheader
+
+\\begin{{document}}
+
+\\section{{{s_overview}}}
+
+\\section{{{s_notes}}}
+
+% \\begin{{gnote}}
+%   {t_note}
+% \\end{{gnote}}
+
+% \\begin{{gcode}}{{python}}
+% print("hello world")
+% \\end{{gcode}}
+
+% \\gimage[caption={{{t_caption}}}, label=sketch]{{img/sketch.png}}
+% goat-img -c "{t_caption}"   copies the newest phone photo into img/
+
+\\section{{{s_exercises}}}
+
+\\end{{document}}
+"""
+
+HOMEWORK_TEMPLATE = """\
+% !goat version = {version}
+\\documentclass[12pt]{{article}}
+\\usepackage[style={style}, lang={lang}, frontpage]{{goat}}
+
+\\setgoattitle{{{title}}}
+\\setgoatauthor{{{author}}}
+\\setgoatcourse{{{course_title}}}
+\\setgoatdate{{{date}}}
+{studentid_line}
+
+\\begin{{document}}
+
+\\begin{{qs}}{{{t_problem} 1}}
+  {t_restate}
+\\end{{qs}}
+
+{t_answer}
+
+% \\begin{{gcode}}{{python}}
+% def solve(xs):
+%     ...
+% \\end{{gcode}}
+
+\\begin{{qs}}{{{t_problem} 2}}
+  {t_restate}
+\\end{{qs}}
+
+{t_answer}
+
+\\end{{document}}
+"""
+
+STRINGS = {
+    "danish": {
+        "s_overview": "Overblik", "s_notes": "Noter", "s_exercises": "Opgaver",
+        "t_note": "Noget underviseren understregede.",
+        "t_caption": "Tavle: skitse", "t_problem": "Opgave",
+        "t_restate": "Gengiv opgaveteksten her.",
+        "t_answer": "Skriv svaret her.",
+    },
+    "english": {
+        "s_overview": "Overview", "s_notes": "Notes", "s_exercises": "Exercises",
+        "t_note": "Something the lecturer stressed.",
+        "t_caption": "Whiteboard: sketch", "t_problem": "Problem",
+        "t_restate": "Restate the problem here.",
+        "t_answer": "Write the answer here.",
+    },
+}
+
+LATEXMKRC = """\
+# Build config for this document (latexmk picks it up automatically).
+$pdf_mode = 1;      # pdflatex
+$bibtex_use = 2;    # run biber when the document cites anything
+# -shell-escape so a goat document using code=minted compiles as-is.
+set_tex_cmds('-shell-escape -synctex=1 -interaction=nonstopmode -file-line-error %O %S');
+"""
+
+BUILTIN_TEMPLATES = {"lecture": LECTURE_TEMPLATE, "homework": HOMEWORK_TEMPLATE}
+# --create-report prefers goat's own templates/report.tex when it is available.
+REPO_TEMPLATES = {"report": "report.tex", "lecture": "lecture.tex",
+                  "homework": "homework.tex"}
+
+
+def load_template(kind, cfg, install):
+    """Template text for `kind`, and where it came from.
+
+    Order: user override in ~/.config/goat-manager/templates/, then goat's own
+    templates/ directory, then the built-in string. That way improving a
+    template in the goat repo automatically improves scaffolding.
+    """
+    user = CONFIG_PATH.parent / "templates" / f"{kind}.tex"
+    if user.is_file():
+        return user.read_text(encoding="utf-8"), str(user)
+    repo = goat_repo(cfg, install)
+    if repo:
+        candidate = repo / "templates" / REPO_TEMPLATES.get(kind, f"{kind}.tex")
+        if candidate.is_file():
+            return candidate.read_text(encoding="utf-8"), str(candidate)
+    if kind in BUILTIN_TEMPLATES:
+        return BUILTIN_TEMPLATES[kind], "built-in"
+    raise Fail(f"no template for '{kind}'. Add one at "
+               f"{CONFIG_PATH.parent / 'templates' / (kind + '.tex')}")
+
+
+# \setgoat<field> -> which rendered field supplies its value. Fields whose
+# value is empty are left exactly as the template had them, so goat's own
+# placeholders ("Supervisor name") stay visible as prompts to fill in.
+SETFIELDS = [
+    (re.compile(r"(\\setgoattitle\s*\{)[^}]*(\})"), "title"),
+    (re.compile(r"(\\setgoatsubtitle\s*\{)[^}]*(\})"), "course_title"),
+    (re.compile(r"(\\setgoatauthor\s*\{)[^}]*(\})"), "author"),
+    (re.compile(r"(\\setgoatcourse\s*\{)[^}]*(\})"), "course_title"),
+    (re.compile(r"(\\setgoatdate\s*\{)[^}]*(\})"), "date"),
+    (re.compile(r"(\\setgoatstudentid\s*\{)[^}]*(\})"), "studentid"),
+    (re.compile(r"(\\setgoatdept\s*\{)[^}]*(\})"), "department"),
+]
+COMMENT_LINE_RE = re.compile(r"^\s*%")
+
+
+def render_template(text, fields):
+    """Fill a template: {placeholders} for our own, \\setgoat... for goat's."""
+    if "{title}" in text or "{version}" in text:
+        return text.format(**fields)
+
+    # A template taken from the goat repo (or a user override). Two things to do:
+    lines = text.splitlines()
+
+    # 1. Drop the leading instruction block. goat's templates open with "copy me
+    #    out of the repo like this" notes that are wrong once they *have* been
+    #    copied; everything from \documentclass on is the actual document.
+    for i, line in enumerate(lines):
+        if line.lstrip().startswith("\\documentclass"):
+            lines = lines[i:]
+            break
+
+    # 2. Fill the field values -- but only on lines that are not commented out,
+    #    or we would helpfully update a commented-out example instead of the
+    #    real setting (goat's report.tex has both \setgoatdate forms).
+    filled = []
+    for line in lines:
+        if not COMMENT_LINE_RE.match(line):
+            for pattern, key in SETFIELDS:
+                value = fields.get(key)
+                if value:
+                    line = pattern.sub(
+                        lambda m, v=value: m.group(1) + v + m.group(2), line, count=1)
+            # 3. Make the goat options match the configured language and style:
+            #    a shared template cannot know which of the two you write in.
+            if "{goat}" in line:
+                line = re.sub(r"\blang=\w+", f"lang={fields['lang']}", line)
+                line = re.sub(r"\bstyle=[\w:]+", f"style={fields['style']}", line)
+        filled.append(line)
+
+    header = (f"% !goat version = {fields['version']}\n"
+              f"% {fields['title']} - {fields['course_title']}, {fields['date']}\n")
+    return header + "\n".join(filled).rstrip("\n") + "\n"
+
+
+def cmd_create(kind, title, args, cfg):
+    install = installed_goat(cfg)
+    ctx = resolve_context(args, cfg)
+
+    interactive = sys.stdin.isatty()
+    if not title:
+        if not interactive:
+            raise Fail(f"--create-{kind} needs a title "
+                       f'(example: {INVOKED} --create-{kind} "Writing hello world in Python")')
+        title = prompt(f"{kind} title")
+        if not title:
+            raise Fail("no title given")
+
+    date = args.date or dt.date.today().isoformat()
+    try:
+        dt.date.fromisoformat(date)
+    except ValueError as exc:
+        raise Fail(f"--date must be YYYY-MM-DD, got '{date}'") from exc
+
+    slug = args.slug or slugify(title)
+    if not slug:
+        raise Fail(f"'{title}' does not slugify into a directory name")
+
+    target = ctx.course_dir / f"{date}-{slug}"
+    if target.exists() and not args.force:
+        raise Fail(f"{target} already exists (use --force to write into it)")
+
+    template, origin = load_template(kind, cfg, install)
+    strings = STRINGS.get(str(cfg["lang"]).lower(), STRINGS["english"])
+    course_title = prettify_course(ctx.course, cfg)
+    studentid = str(cfg.get("student_id", "") or "")
+    body = render_template(template, {
+        "version": install.version,
+        "title": title,
+        "course": ctx.course,
+        "course_title": course_title,
+        "author": cfg["author"] or os.environ.get("USER", ""),
+        "date": date,
+        "lang": cfg["lang"],
+        "style": cfg["style"],
+        "semester": ctx.semester,
+        "studentid": studentid,
+        "department": str(cfg.get("department", "") or ""),
+        # Emitted live when the id is configured, commented out when it is not.
+        "studentid_line": (f"\\setgoatstudentid{{{studentid}}}" if studentid
+                           else "% \\setgoatstudentid{}"),
+        **strings,
+    })
+
+    main = target / "main.tex"
+    if args.dry_run:
+        log(f"would create {target}/")
+        for rel in ("main.tex", "img/", ".latexmkrc"):
+            print(f"   {rel}")
+        log(f"template: {origin}")
+        return 0
+
+    target.mkdir(parents=True, exist_ok=True)
+    (target / "img").mkdir(exist_ok=True)
+    if main.exists() and not args.force:
+        raise Fail(f"{main} already exists (use --force to overwrite)")
+    main.write_text(body, encoding="utf-8")
+    latexmkrc = target / ".latexmkrc"
+    if not latexmkrc.exists():
+        latexmkrc.write_text(LATEXMKRC, encoding="utf-8")
+
+    ok(f"created {target}")
+    print(f"   {dim('template')} {origin}")
+    print(f"   {dim('goat')}     {install.version} (pinned in main.tex)")
+    print()
+    log(f"cd {shell_quote(str(target))} && latexmk -pdf main.tex")
+
+    if args.open or cfg.get("open_editor"):
+        editor = os.environ.get("EDITOR", "vi")
+        subprocess.run([editor, str(main)], cwd=target, check=False)
+    if args.print_path:
+        print(target)
+    return 0
+
+
+def prettify_course(course, cfg):
+    """Directory name -> something printable on a title page.
+
+    Reverses the alias map when possible ('algo' -> the full directory name),
+    then turns dashes into spaces. Course directories are usually squashed
+    ("introtoprogramming"), which cannot be un-squashed reliably — the title
+    page is meant to be edited anyway.
+    """
+    if not course:
+        return ""
+    for alias, target in cfg.get("courses", {}).items():
+        if target == course and len(alias) > len(course):
+            course = alias
+    return course.replace("-", " ").replace("_", " ")
+
+
+def shell_quote(text):
+    return text if re.fullmatch(r"[\w@%+=:,./-]+", text) else "'" + text.replace("'", "'\\''") + "'"
+
+
+# ---------------------------------------------------------------------------
+# Actions: browsing the tree
+# ---------------------------------------------------------------------------
+ENTRY_RE = re.compile(r"^(?P<date>\d{4}-\d{2}-\d{2})-(?P<slug>.+)$")
+
+
+def course_entries(course_dir):
+    if not course_dir or not course_dir.is_dir():
+        return []
+    entries = []
+    for path in course_dir.iterdir():
+        m = ENTRY_RE.match(path.name)
+        if path.is_dir() and m:
+            entries.append((m.group("date"), m.group("slug"), path))
+    return sorted(entries)
+
+
+def cmd_list(args, cfg):
+    ctx = resolve_context(args, cfg, interactive=False, require_course=False)
+    if ctx.course is None:
+        courses = existing_courses(ctx.semester_dir)
+        if not courses:
+            raise Fail(f"nothing under {ctx.semester_dir} yet — "
+                       f'start with: {INVOKED} --create-lecture "..."')
+        print(f"{ctx.semester_dir}:")
+        for name in courses:
+            count = len(course_entries(ctx.semester_dir / name))
+            print(f"  {name} {dim(f'({count} entries)')}")
+        return 0
+
+    entries = course_entries(ctx.course_dir)
+    if not entries:
+        raise Fail(f"no entries in {ctx.course_dir}")
+    print(f"{ctx.course_dir}:")
+    for date, slug, path in entries:
+        doc = next((n for n in MAIN_CANDIDATES if (path / n).is_file()), None)
+        mark = "" if doc else dim("  (no document)")
+        print(f"  {date}  {slug.replace('-', ' ')}{mark}")
+    return 0
+
+
+def cmd_latest(args, cfg):
+    ctx = resolve_context(args, cfg, interactive=False, require_course=False)
+    if ctx.course is None:
+        raise Fail("--latest needs a course (use -c, or run it inside one)")
+    entries = course_entries(ctx.course_dir)
+    if not entries:
+        raise Fail(f"no entries in {ctx.course_dir}")
+    print(entries[-1][2])
+    return 0
+
+
+def cmd_where(args, cfg):
+    install = installed_goat(cfg)
+    repo = goat_repo(cfg, install)
+    ctx = resolve_context(args, cfg, interactive=False, require_course=False)
+    entries = changelog_entries(repo)
+    rows = [
+        ("goat-manager", f"{TOOL_VERSION}  ({Path(__file__).resolve()})"),
+        ("config", f"{CONFIG_PATH}{'' if CONFIG_PATH.is_file() else '  (missing — run --init-config)'}"),
+        ("goat installed", f"{install.version} ({install.date})"),
+        ("goat.sty", str(install.path)),
+        ("goat repo", str(repo) if repo else "not found"),
+        ("goat latest", latest_known(install, entries) +
+            ("" if entries else "  (no CHANGELOG.md — using the installed version)")),
+        ("academic root", f"{ctx.root}{'' if ctx.root.is_dir() else '  (does not exist yet)'}"),
+        ("semester", ctx.semester),
+        ("course", ctx.course or "(none resolved here)"),
+    ]
+    width = max(len(k) for k, _ in rows)
+    for key, value in rows:
+        print(f"{key.ljust(width)}  {value}")
+
+    localbin = Path.home() / ".local/bin"
+    if str(localbin) not in os.environ.get("PATH", "").split(":"):
+        warn(f"{localbin} is not on your PATH — `gm` will not resolve in new shells")
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+def build_parser():
+    p = argparse.ArgumentParser(
+        prog=INVOKED,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description="Manage goat LaTeX documents and the coursework tree.",
+        epilog="""examples:
+  gm main.tex --get-version         which goat release this document targets
+  gm main.tex --check-upgrade       is a newer goat available?
+  gm main.tex --upgrade             re-pin to the newest goat, then test-compile
+  gm --create-lecture "Writing hello world in Python"
+  gm --create-homework "Week 3" -c algo
+  gm --list                         entries in the current course
+  cd "$(gm --latest -c algo)"       jump to the newest entry
+  gm --where                        show what is configured and detected
+
+exit codes:
+  0 success / nothing to do   10 an upgrade is available
+  1 error                     11 document needs a newer goat than is installed
+""")
+    p.add_argument("file", nargs="?", metavar="FILE",
+                   help="a .tex file, or a directory containing one "
+                        "(default: the document in the current directory)")
+
+    actions = p.add_argument_group("actions (pick one)")
+    g = actions.add_mutually_exclusive_group()
+    g.add_argument("--get-version", action="store_true",
+                   help="print the goat version FILE was written against")
+    g.add_argument("--check-upgrade", action="store_true",
+                   help="report whether FILE can move to a newer goat")
+    g.add_argument("--upgrade", nargs="?", const=True, metavar="VERSION",
+                   help="record VERSION (default: the newest goat) in FILE, "
+                        "then verify it still compiles")
+    g.add_argument("--create-lecture", nargs="?", const="", metavar="TITLE",
+                   help="scaffold a lecture-notes entry in the coursework tree")
+    g.add_argument("--create-homework", nargs="?", const="", metavar="TITLE",
+                   help="scaffold a homework entry")
+    g.add_argument("--create-report", nargs="?", const="", metavar="TITLE",
+                   help="scaffold a report entry (uses goat's templates/report.tex)")
+    g.add_argument("--list", action="store_true",
+                   help="list entries in the current course, or the courses")
+    g.add_argument("--latest", action="store_true",
+                   help="print the path of the newest entry")
+    g.add_argument("--where", action="store_true",
+                   help="show resolved configuration, paths and versions")
+    g.add_argument("--init-config", action="store_true",
+                   help=f"write a starter {CONFIG_PATH}")
+
+    loc = p.add_argument_group("location")
+    loc.add_argument("-c", "--course", metavar="NAME",
+                     help="course directory, alias, or prefix")
+    loc.add_argument("-s", "--semester", metavar="N",
+                     help="semester (1, or 1semester)")
+    loc.add_argument("--root", metavar="DIR", help="override the coursework root")
+    loc.add_argument("--date", metavar="YYYY-MM-DD",
+                     help="entry date (default: today)")
+    loc.add_argument("--slug", metavar="SLUG",
+                     help="directory slug (default: derived from the title)")
+
+    beh = p.add_argument_group("behaviour")
+    beh.add_argument("-n", "--dry-run", action="store_true",
+                     help="print what would happen, change nothing")
+    beh.add_argument("-q", "--quiet", action="store_true",
+                     help="print bare values, for scripts")
+    beh.add_argument("--json", action="store_true",
+                     help="machine-readable output where it applies")
+    beh.add_argument("--force", action="store_true",
+                     help="overwrite an existing entry or config")
+    beh.add_argument("--open", action="store_true",
+                     help="open $EDITOR on the new document")
+    beh.add_argument("--print-path", action="store_true",
+                     help="print the created directory as the last line")
+    beh.add_argument("--no-verify", action="store_true",
+                     help="skip the verification compile after --upgrade")
+    beh.add_argument("--no-backup", action="store_true",
+                     help="do not keep a .bak file during --upgrade")
+    beh.add_argument("--version", action="version",
+                     version=f"{PROG} {TOOL_VERSION}")
+    return p
+
+
+def main(argv):
+    parser = build_parser()
+    args = parser.parse_args(argv[1:])
+
+    # A create action takes a title, which may also be sitting in `file` when
+    # it was written as: gm --create-lecture "Some title"
+    creates = [("lecture", args.create_lecture),
+               ("homework", args.create_homework),
+               ("report", args.create_report)]
+    creates = [(kind, title) for kind, title in creates if title is not None]
+
+    try:
+        cfg = load_config()
+        if args.init_config:
+            return cmd_init_config(args)
+        if creates:
+            kind, title = creates[0]
+            if not title and args.file:
+                title, args.file = args.file, None
+            return cmd_create(kind, title, args, cfg)
+        if args.get_version:
+            return cmd_get_version(args, cfg)
+        if args.check_upgrade:
+            return cmd_check_upgrade(args, cfg)
+        if args.upgrade is not None:
+            return cmd_upgrade(args, cfg)
+        if args.list:
+            return cmd_list(args, cfg)
+        if args.latest:
+            return cmd_latest(args, cfg)
+        if args.where:
+            return cmd_where(args, cfg)
+    except Fail as exc:
+        err(str(exc))
+        return 1
+    except KeyboardInterrupt:
+        print()
+        return 130
+
+    # No action: a bare `gm file.tex` is most usefully the version query.
+    if args.file:
+        try:
+            return cmd_get_version(args, cfg)
+        except Fail as exc:
+            err(str(exc))
+            return 1
+    parser.print_help()
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

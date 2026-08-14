@@ -4,7 +4,7 @@
 #   install.sh configure   # interactive questionnaire -> install.conf
 #   install.sh plan        # dry-run: print every action, change nothing
 #   install.sh install     # questionnaire (if needed) -> plan -> confirm -> run
-#   install.sh <step>      # run a single step: yay|packages|drivers|services|stow|apps
+#   install.sh <step>      # run a single step: yay|packages|drivers|services|stow|bin|apps
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$HERE/lib.sh"
@@ -42,7 +42,7 @@ questionnaire() {
 GPU=$gpu
 LAPTOP=$laptop
 DISPLAY_MANAGER=$dm
-STOW_PACKAGES="$(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash rclone clang-format cava qt")"
+STOW_PACKAGES="$(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash rclone clang-format cava qt goat-manager")"
 THEMES="$(cfg THEMES "dr460nized arch ubuntu windows7 win11")"
 INSTALL_BASE=$base
 INSTALL_DEV=$dev
@@ -69,6 +69,7 @@ run_all_steps() {
     bash "$HERE/drivers.sh"
     bash "$HERE/services.sh"
     bash "$HERE/stow.sh"
+    bash "$HERE/bin.sh"
     bash "$HERE/apps.sh"
 }
 
@@ -106,6 +107,7 @@ case "${1:-install}" in
     drivers)   bash "$HERE/drivers.sh" ;;
     services)  bash "$HERE/services.sh" ;;
     stow)      bash "$HERE/stow.sh" ;;
+    bin)       bash "$HERE/bin.sh" ;;
     apps)      bash "$HERE/apps.sh" ;;
     repos)     bash "$HERE/repos.sh" ;;
     protondrive) bash "$HERE/protondrive.sh" ;;

@@ -1,0 +1,71 @@
+# bash completion for goat-manager / gm.
+#
+# Completes actions and flags, .tex files for the positional argument, and real
+# course directory names after -c/--course (read from the coursework tree, plus
+# the aliases in config.toml).
+
+_goat_manager_root() {
+    local cfg="${GOAT_MANAGER_CONFIG:-$HOME/.config/goat-manager/config.toml}"
+    local root=""
+    [ -f "$cfg" ] && root="$(sed -n 's/^[[:space:]]*academic_root[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' "$cfg" | head -1)"
+    root="${root:-${GOAT_ACADEMIC_ROOT:-$HOME/aarhusuni}}"
+    printf '%s' "${root/#\~/$HOME}"
+}
+
+_goat_manager_semester() {
+    local cfg="${GOAT_MANAGER_CONFIG:-$HOME/.config/goat-manager/config.toml}"
+    local n=""
+    [ -f "$cfg" ] && n="$(sed -n 's/^[[:space:]]*current_semester[[:space:]]*=[[:space:]]*\([0-9]\+\).*/\1/p' "$cfg" | head -1)"
+    printf '%ssemester' "${n:-1}"
+}
+
+_goat_manager_courses() {
+    local root semester cfg
+    root="$(_goat_manager_root)"
+    semester="$(_goat_manager_semester)"
+    cfg="${GOAT_MANAGER_CONFIG:-$HOME/.config/goat-manager/config.toml}"
+    # Directory names under the current semester...
+    [ -d "$root/$semester" ] && (cd "$root/$semester" && ls -d */ 2>/dev/null | tr -d '/')
+    # ...plus the alias keys from the [courses] table.
+    if [ -f "$cfg" ]; then
+        sed -n '/^\[courses\]/,$ s/^[[:space:]]*\([A-Za-z0-9_-]\+\)[[:space:]]*=.*/\1/p' "$cfg"
+    fi
+}
+
+_goat_manager() {
+    local cur prev
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    local actions="--get-version --check-upgrade --upgrade --create-lecture
+                   --create-homework --create-report --list --latest --where
+                   --init-config"
+    local opts="-c --course -s --semester --root --date --slug -n --dry-run
+                -q --quiet --json --force --open --print-path --no-verify
+                --no-backup -h --help --version"
+
+    case "$prev" in
+        -c|--course)
+            mapfile -t COMPREPLY < <(compgen -W "$(_goat_manager_courses)" -- "$cur")
+            return ;;
+        -s|--semester)
+            mapfile -t COMPREPLY < <(compgen -W "1 2 3 4 5 6 7 8 9 10" -- "$cur")
+            return ;;
+        --root)
+            mapfile -t COMPREPLY < <(compgen -d -- "$cur")
+            return ;;
+        --date)
+            mapfile -t COMPREPLY < <(compgen -W "$(date +%F)" -- "$cur")
+            return ;;
+    esac
+
+    if [[ $cur == -* ]]; then
+        mapfile -t COMPREPLY < <(compgen -W "$actions $opts" -- "$cur")
+        return
+    fi
+
+    # Positional: a .tex file or a directory holding one.
+    mapfile -t COMPREPLY < <(compgen -f -X '!*.tex' -- "$cur"; compgen -d -- "$cur")
+}
+
+complete -F _goat_manager goat-manager gm

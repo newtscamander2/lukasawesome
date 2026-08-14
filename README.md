@@ -59,6 +59,7 @@ make packages    # install package groups
 make drivers     # GPU drivers + multi-monitor / projector tooling
 make services    # display manager, docker, virtualbox
 make stow        # symlink config packages into $HOME (GNU Stow)
+make bin         # link bin/ CLI tools (goat-manager, gm) into ~/.local/bin
 make apps        # VSCode settings + clone cv/goat into ~/projects
 make check-system # verify packages, services, audio and symlinks
 ```
@@ -107,8 +108,56 @@ packages; `make stow` symlinks each into `$HOME`:
 | `nvim/`      | `~/.config/nvim`       |
 | `tmux/`      | `~/.config/tmux`       |
 | `alacritty/` | `~/.config/alacritty`  |
+| `goat-manager/` | `~/.config/goat-manager` + bash completion |
 
-`scripts/` holds the installer; `vscode/` holds settings applied by `make apps`.
+`scripts/` holds the installer; `vscode/` holds settings applied by `make apps`;
+`bin/` holds personal CLI tools installed by `make bin`.
+
+## goat-manager (`gm`)
+
+`bin/goat-manager` manages [goat](https://gitlab.com/newtscamander/goat) LaTeX
+documents: which release of the library a document targets, and where coursework
+lives on disk. `make bin` links it into `~/.local/bin` as both `goat-manager`
+and `gm`; `make stow` installs its config and bash completion.
+
+```bash
+gm main.tex --get-version      # which goat release this document targets
+gm main.tex --check-upgrade    # is a newer goat available? (exit 10 if yes)
+gm main.tex --upgrade          # re-pin to the newest goat, then test-compile
+```
+
+The version a document targets is recorded as a magic comment on its first line
+(`% !goat version = 0.1.4`), so it survives being copied, mailed or opened on
+Overleaf. A LaTeX rollback pin (`\usepackage{goat}[=0.1.4]`), a bare date pin,
+and a project-level `.goat-version`/`goat.toml` are also recognised, in that
+order of precedence. `--upgrade` keeps a `.bak`, rewrites the pin, compiles the
+document in a temp directory, and restores the original if that compile fails —
+so upgrading can never silently break a hand-in.
+
+Coursework is kept in one predictable tree:
+
+```
+~/aarhusuni/1semester/introtoprogramming/2026-10-05-writing-hello-world-in-python/
+└── main.tex        # goat preamble, fields filled in, version pinned
+    img/            # goat's \gimage / goat-img drop images here
+    .latexmkrc      # pdflatex + biber + shell-escape
+```
+
+```bash
+gm --create-lecture "Writing hello world in Python"
+gm --create-homework "Week 3" -c algo      # -c takes an alias, prefix or dir name
+gm --create-report "Sorting benchmark"     # built from goat's templates/report.tex
+gm --list                                  # entries in the current course
+cd "$(gm --latest -c algo)"                # jump to the newest entry
+gm --where                                 # what is configured and detected
+```
+
+Run from inside a course directory, `--create-*` files the new entry next to its
+siblings with no flags at all. Outside the tree it falls back to
+`current_semester`/`current_course` from `~/.config/goat-manager/config.toml`
+(this repo's `goat-manager/` package) and asks when it still cannot tell.
+Edit that file to set your author name, student id, department, language, style
+and course aliases; `gm --where` shows what is in effect.
 
 ## AwesomeWM themes
 

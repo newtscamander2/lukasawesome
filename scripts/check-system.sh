@@ -145,6 +145,8 @@ for pkg_name in $(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash
         clang-format) target="$HOME/.clang-format" ;;
         cava)      target="$HOME/.config/cava" ;;
         qt)        target="$HOME/.local/share/color-schemes/Dr460nized.colors" ;;
+        # The directory itself is the symlink (stow folds it), not the file.
+        goat-manager) target="$HOME/.config/goat-manager" ;;
         *)         target="" ;;
     esac
     [ -z "$target" ] && continue
@@ -154,6 +156,23 @@ for pkg_name in $(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash
         note "$pkg_name exists but is not a symlink into the repo"
     else
         miss "$pkg_name not linked ($target)"
+    fi
+done
+
+log "Personal CLI tools (~/.local/bin)"
+case ":$PATH:" in
+    *":$HOME/.local/bin:"*) pass "~/.local/bin on \$PATH" ;;
+    # Not critical: the PATH entry comes from the stowed .bashrc, so it only
+    # shows up in shells started after 'make stow'.
+    *) note "~/.local/bin not on \$PATH in this shell (open a new terminal)" ;;
+esac
+for tool in "$DOTFILES_DIR"/bin/*; do
+    [ -f "$tool" ] || continue
+    name="$(basename "$tool")"
+    if [ -L "$HOME/.local/bin/$name" ]; then
+        pass "$name linked"
+    else
+        miss "$name not linked (run 'make bin')"
     fi
 done
 
