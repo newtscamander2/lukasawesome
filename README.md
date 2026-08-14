@@ -166,12 +166,40 @@ cd math             && gm --create-lecture "Writing hello world in Python"
                        gm --create-report "Sorteringsbenchmark"
 ```
 
-Ask for the wrong level and it says so rather than guessing:
+In a course, each `--create-*` makes the dated directory and copies one of
+goat's templates into it as `main.tex`. `gm --templates` lists what is
+available and `--template NAME` picks one, so the action and the template are
+independent — lecture notes from the report skeleton is
+`gm --create-lecture "Eksamensnoter" --template report`.
+
+```
+$ gm --templates
+:: templates for --template, and the default of each --create-* action
+   goat_documentation  ~/projects/goat/templates/goat_documentation.tex
+   homework            built-in  (default for --create-homework)
+   lecture             built-in  (default for --create-lecture)
+   report              ~/projects/goat/templates/report.tex  (default for --create-report)
+```
+
+A `.tex` file in goat's `templates/` wins over a built-in of the same name, so
+adding `templates/lecture.tex` to goat replaces the built-in lecture skeleton
+without touching this tool.
+
+Inside an entry there is nothing to create — that is where you write. `gm` there
+reports the document and its pinned goat version instead.
+
+Ask for the wrong level and it says so rather than guessing, naming the level you
+are on and the `cd` that fixes it — counted from where the shell actually is, so
+it is right even from an entry's `img/`:
 
 ```
 $ cd ~/aarhusuni && gm --create-course math
   x a course belongs in a semester, but you are in the root
     (/home/lukas/aarhusuni). cd into a semester first, e.g. cd 1semester
+
+$ cd ~/aarhusuni/1semester/math/2026-08-14-lister/img && gm --create-lecture "X"
+  x a lecture belongs in a course, but you are in an entry
+    (1semester/math/2026-08-14-lister). cd ../.. up to the course
 ```
 
 ### Looking around

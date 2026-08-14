@@ -17,6 +17,10 @@ level down at a time, the same way you would do it by hand:
     in a course        gm --create-lecture "Writing hello world in Python"
                        gm --create-homework "Uge 3"
                        gm --create-report "Sorteringsbenchmark"
+    in an entry        nothing: this is where you write
+
+Each --create-* in a course makes the dated directory and copies one of goat's
+templates into it as main.tex (gm --templates lists them, --template picks one).
 
 You move between levels with cd. Typed on its own, gm says where you are and
 what is there.
@@ -780,6 +784,9 @@ def slugify(text):
     return re.sub(r"-{2,}", "-", text)
 
 
+DEPTH = {"root": 0, "semester": 1, "course": 2, "entry": 3}
+
+
 def wrong_level(loc, need, what):
     """The one error message that teaches the hierarchy."""
     where = {
@@ -789,15 +796,24 @@ def wrong_level(loc, need, what):
         "entry": f"an entry ({loc.describe()})",
         "outside": f"{loc.cwd}, which is not part of a coursework tree",
     }[loc.level]
-    hints = {
-        "root": "cd .. up to the root",
-        "semester": "cd into a semester first, e.g. cd 1semester",
-        "course": "cd into a course first, e.g. cd math",
-    }
-    hint = hints.get(need, "")
-    msg = f"{what} belongs in {'a ' + need if need != 'root' else 'the root'}, "
-    msg += f"but you are in {where}"
-    return Fail(f"{msg}. {hint}" if hint else msg)
+
+    # Point at the way out. When the directory you need is an ancestor, give the
+    # exact relative path -- the shell may be deeper than the level itself, e.g.
+    # inside an entry's img/, where "cd .." would land one short.
+    target = {"root": loc.root, "semester": loc.semester_dir,
+              "course": loc.course_dir}.get(need)
+    if target and target.is_dir() and loc.cwd.is_relative_to(target):
+        hint = f"cd {os.path.relpath(target, loc.cwd)} up to the {need}"
+    elif loc.level == "outside":
+        hint = f"cd into a {need} inside a coursework tree"
+    else:
+        examples = {"semester": "cd 1semester", "course": "cd math"}
+        hint = f"cd into a {need} first"
+        if need in examples:
+            hint += f", e.g. {examples[need]}"
+
+    place = "the root" if need == "root" else f"a {need}"
+    return Fail(f"{what} belongs in {place}, but you are in {where}. {hint}")
 
 
 # ---------------------------------------------------------------------------
@@ -873,9 +889,13 @@ def cmd_create_course(args):
 
 
 def cmd_create_entry(kind, title, args):
-    """In a course: make a dated entry with a goat document in it."""
+    """In a course: make a dated entry holding main.tex from a goat template.
+
+    Only in a course: an entry is where you write, so from inside one the answer
+    is cd .. rather than nesting another entry underneath it.
+    """
     loc = locate()
-    if loc.level not in ("course", "entry"):
+    if loc.level != "course":
         raise wrong_level(loc, "course", f"a {kind}")
     course_dir = loc.course_dir
     install = installed_goat()
@@ -902,7 +922,7 @@ def cmd_create_entry(kind, title, args):
     if target.exists() and not args.force:
         raise Fail(f"{target} already exists (use --force to write into it)")
 
-    template, origin = load_template(kind, install)
+    template, origin = load_template(args.template or DEFAULT_TEMPLATE[kind], install)
     lang = setting("LANG", "danish").lower()
     strings = STRINGS.get(lang, STRINGS["english"])
     studentid = setting("STUDENT_ID")
@@ -1011,20 +1031,56 @@ def cmd_status(args):
         log(f"cd into a course, or: {INVOKED} --create-course math")
         return 0
 
-    # course / entry: list the entries, newest last, marking where you are.
+    # An entry is where you write: report the document, not ways to make more.
+    if loc.level == "entry":
+        entry_dir = loc.course_dir / loc.entry
+        doc = next((entry_dir / n for n in MAIN_CANDIDATES
+                    if (entry_dir / n).is_file()), None)
+        if doc is None:
+            warn("no document in this entry")
+            log(f"{INVOKED} is not able to add one here; "
+                f"cd .. and use --create-lecture, or copy a template by hand")
+            return 0
+        print(f"   {dim('document:')} {doc.name}  {describe_pin(doc)}")
+        print()
+        log(f"latexmk -pdf {doc.name}")
+        log(f"{INVOKED} {doc.name} --check-upgrade")
+        log(f"cd ..   {dim('to see the rest of ' + loc.course)}")
+        return 0
+
+    # course: the entries, newest last.
     found = entries_in(loc.course_dir)
     if not found:
         warn(f"no entries in {loc.course} yet")
         log(f'{INVOKED} --create-lecture "..."')
         return 0
     for date, slug, path in found:
-        here = "*" if loc.entry == path.name else " "
         doc = next((n for n in MAIN_CANDIDATES if (path / n).is_file()), None)
         note = "" if doc else dim("  (no document)")
-        print(f" {here} {date}  {slug.replace('-', ' ')}{note}")
+        print(f"   {date}  {slug.replace('-', ' ')}{note}")
     print()
-    log(f'{INVOKED} --create-lecture "..."   {dim("(new entry in " + loc.course + ")")}')
+    log(f'{INVOKED} --create-lecture "..."   '
+        f'{dim("new entry with main.tex from a goat template")}')
     return 0
+
+
+def describe_pin(doc):
+    """'goat 0.1 (magic comment, main.tex:1)' for the status view."""
+    try:
+        scan = scan_document(doc)
+    except Fail:
+        return dim("(unreadable)")
+    pin = scan.pin()
+    if pin and pin.version:
+        return f"goat {pin.version} {dim('(' + pin.describe() + ')')}"
+    if pin:
+        return f"goat release dated {pin.raw} {dim('(' + pin.describe() + ')')}"
+    if not scan.uses_goat:
+        return dim("(does not use goat)")
+    try:
+        return f"goat {installed_goat().version} {dim('(not pinned)')}"
+    except Fail:
+        return dim("(not pinned)")
 
 
 def cmd_list(args):
@@ -1186,26 +1242,61 @@ set_tex_cmds('-shell-escape -synctex=1 -interaction=nonstopmode -file-line-error
 """
 
 BUILTIN_TEMPLATES = {"lecture": LECTURE_TEMPLATE, "homework": HOMEWORK_TEMPLATE}
-# --create-report prefers goat's own templates/report.tex when it is available.
-REPO_TEMPLATES = {"report": "report.tex", "lecture": "lecture.tex",
-                  "homework": "homework.tex"}
+# Which template each --create-* action uses unless --template says otherwise.
+DEFAULT_TEMPLATE = {"lecture": "lecture", "homework": "homework",
+                    "report": "report"}
 
 
-def load_template(kind, install):
-    """Template text for `kind`, and where it came from.
+def available_templates(install):
+    """{name: origin} -- every .tex in goat's templates/, plus the built-ins.
 
-    goat's own templates/ directory wins over the built-in strings, so
-    improving a template in the goat repo improves scaffolding here.
+    A file in the goat repo wins over a built-in of the same name, so adding
+    templates/lecture.tex to goat replaces the built-in lecture skeleton here
+    without touching this tool.
     """
+    found = {}
     repo = goat_repo(install)
-    if repo:
-        candidate = repo / "templates" / REPO_TEMPLATES.get(kind, f"{kind}.tex")
-        if candidate.is_file():
-            return candidate.read_text(encoding="utf-8"), str(candidate)
-    if kind in BUILTIN_TEMPLATES:
-        return BUILTIN_TEMPLATES[kind], "built-in"
-    raise Fail(f"no template for '{kind}' (goat has no templates/"
-               f"{REPO_TEMPLATES.get(kind, kind + '.tex')})")
+    if repo and (repo / "templates").is_dir():
+        for path in sorted((repo / "templates").glob("*.tex")):
+            found[path.stem] = str(path)
+    for name in BUILTIN_TEMPLATES:
+        found.setdefault(name, "built-in")
+    return found
+
+
+def load_template(name, install):
+    """Template text for `name`, and where it came from."""
+    templates = available_templates(install)
+    if name not in templates:
+        raise Fail(f"no template '{name}'. Available: "
+                   f"{', '.join(sorted(templates))} ({INVOKED} --templates)")
+    origin = templates[name]
+    if origin == "built-in":
+        return BUILTIN_TEMPLATES[name], origin
+    try:
+        return Path(origin).read_text(encoding="utf-8"), origin
+    except OSError as exc:
+        raise Fail(f"cannot read template {origin}: {exc}") from exc
+
+
+def cmd_templates(args):
+    """List what --template accepts, and where each one comes from."""
+    install = installed_goat()
+    templates = available_templates(install)
+    if args.quiet:
+        for name in sorted(templates):
+            print(name)
+        return 0
+    log("templates for --template, and the default of each --create-* action")
+    width = max(len(n) for n in templates)
+    kinds = {v: k for k, v in DEFAULT_TEMPLATE.items()}
+    for name in sorted(templates):
+        default_for = kinds.get(name)
+        note = dim(f"  (default for --create-{default_for})") if default_for else ""
+        print(f"   {name.ljust(width)}  {templates[name]}{note}")
+    print()
+    log(f'in a course: {INVOKED} --create-lecture "Title" --template report')
+    return 0
 
 
 # \setgoat<field> -> which rendered field supplies its value. Fields whose
@@ -1277,8 +1368,11 @@ def build_parser():
   in the root      gm --create-semester 1
   in a semester    gm --create-course math
   in a course      gm --create-lecture "Writing hello world in Python"
+  in an entry      nothing: this is where you write
 
 examples:
+  gm --templates                    which goat templates can become main.tex
+  gm --create-report "Bench" --template goat_documentation
   gm                                where you are, and what is on this level
   gm --list                         bare names on this level, for scripts
   cd "$(gm --latest)"               jump to the newest entry in this course
@@ -1314,6 +1408,8 @@ exit codes:
                    help="in a course: scaffold a homework entry")
     g.add_argument("--create-report", nargs="?", const="", metavar="TITLE",
                    help="in a course: scaffold a report (goat's templates/report.tex)")
+    g.add_argument("--templates", action="store_true",
+                   help="list the templates --template accepts")
     g.add_argument("--list", action="store_true",
                    help="bare names on this level, one per line")
     g.add_argument("--latest", action="store_true",
@@ -1322,6 +1418,9 @@ exit codes:
                    help="show the detected level, paths and goat version")
 
     beh = p.add_argument_group("behaviour")
+    beh.add_argument("--template", metavar="NAME",
+                     help="which goat template becomes main.tex "
+                          f"({INVOKED} --templates to list them)")
     beh.add_argument("--date", metavar="YYYY-MM-DD",
                      help="entry date (default: today)")
     beh.add_argument("--slug", metavar="SLUG",
@@ -1374,6 +1473,8 @@ def main(argv):
             return cmd_check_upgrade(args)
         if args.upgrade is not None:
             return cmd_upgrade(args)
+        if args.templates:
+            return cmd_templates(args)
         if args.list:
             return cmd_list(args)
         if args.latest:
