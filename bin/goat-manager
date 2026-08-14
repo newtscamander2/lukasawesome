@@ -19,9 +19,14 @@ level down at a time, the same way you would do it by hand:
                        gm --create-report "Sorteringsbenchmark"
     in an entry        nothing: this is where you write
 
-Each --create-* in a course makes the dated directory and copies one of goat's
-templates into it as main.tex (gm --templates lists them, --template picks one).
-Nothing is ever overwritten: if the document is already there, gm refuses.
+Each --create-* in a course makes the dated directory and writes a main.tex from
+one of three templates -- lecture, homework, report (gm --templates, --template
+picks one) -- plus an img/ directory and a .latexmkrc that keeps .aux/.log/.bbl
+and the rest in a latex_debug_files/ subdirectory. Nothing is ever overwritten:
+if the document is already there, gm refuses.
+
+A course may hold a .gm file (JSON: professor, brightspace link, anything else)
+which gm shows when you run it there. You write that file by hand; gm only reads.
 
 You move between levels with cd. Typed on its own, gm says where you are and
 what is there; gm --help offers only what this level can actually do.
@@ -38,7 +43,7 @@ Optional environment variables, for filling in scaffolded documents:
     GOAT_AUTHOR      name for \\setgoatauthor
     GOAT_STUDENT_ID  \\setgoatstudentid
     GOAT_DEPARTMENT  \\setgoatdept
-    GOAT_LANG        danish (default) | english
+    GOAT_LANG        english (default) | danish
     GOAT_STYLE       au (default) | plain
 
 Exit codes: 0 success / nothing to do, 1 error, 10 an upgrade is available,
@@ -590,10 +595,6 @@ def cmd_upgrade(args):
     path.write_text(updated, encoding="utf-8")
     ok(f"pinned {path.name} to goat {target}")
 
-    if args.no_verify:
-        log(f"backup kept at {backup.name}")
-        return 0
-
     good, output = verify_compile(path)
     if good:
         ok("test compile passed")
@@ -663,8 +664,11 @@ def verify_compile(path):
         warn("latexmk not found — skipping the verification compile")
         return True, []
     with tempfile.TemporaryDirectory(prefix="gm-verify-") as tmp:
+        # -auxdir as well as -outdir: the document's own .latexmkrc sets
+        # $aux_dir, and without overriding it the check would write into the
+        # real build directory instead of staying in the temp one.
         cmd = ["latexmk", "-pdf", "-interaction=nonstopmode", "-halt-on-error",
-               "-shell-escape", f"-outdir={tmp}", path.name]
+               "-shell-escape", f"-outdir={tmp}", f"-auxdir={tmp}", path.name]
         try:
             proc = subprocess.run(cmd, cwd=path.parent, capture_output=True,
                                   text=True, timeout=300)
@@ -756,6 +760,31 @@ def courses_in(semester_dir):
         return []
     return sorted(p.name for p in semester_dir.iterdir()
                   if p.is_dir() and not p.name.startswith("."))
+
+
+COURSE_FILE = ".gm"
+
+
+def course_meta(course_dir):
+    """Read the course's .gm file: {"professor": ..., "brightspace": ...}.
+
+    Yours to write and edit by hand -- gm only ever reads it. Any keys are
+    allowed and shown as they are, so it can hold whatever a course needs.
+    """
+    if not course_dir:
+        return {}
+    path = course_dir / COURSE_FILE
+    if not path.is_file():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        warn(f"{path} is not valid JSON ({exc}); ignoring it")
+        return {}
+    if not isinstance(data, dict):
+        warn(f"{path} should hold a JSON object; ignoring it")
+        return {}
+    return data
 
 
 def entries_in(course_dir):
@@ -918,26 +947,31 @@ def cmd_create_entry(kind, title, args, loc):
     if target.exists() and not target.is_dir():
         raise Fail(f"{target} exists and is not a directory")
 
-    template, origin = load_template(args.template or DEFAULT_TEMPLATE[kind], install)
-    lang = setting("LANG", "danish").lower()
-    strings = STRINGS.get(lang, STRINGS["english"])
+    name = args.template or DEFAULT_TEMPLATE[kind]
+    template = load_template(name)
+    lang = setting("LANG", "english").lower()
+    if lang not in STRINGS:
+        warn(f"GOAT_LANG='{lang}' is not danish or english; using english")
+        lang = "english"
     studentid = setting("STUDENT_ID")
+    department = setting("DEPARTMENT")
     body = render_template(template, {
         "version": install.version,
         "title": title,
         "course": loc.course,
         "course_title": loc.course.replace("-", " ").replace("_", " "),
         "author": setting("AUTHOR") or "Your Name",
-        "student_id": studentid,
-        "department": setting("DEPARTMENT"),
         "date": date,
-        "lang": lang if lang in STRINGS else "danish",
+        "lang": lang,
         "style": setting("STYLE", "au"),
         "semester": loc.semester,
-        # Emitted live when GOAT_STUDENT_ID is set, commented out when it is not.
+        # Emitted live when the GOAT_* variable is set, commented out when not,
+        # so an unfilled field is visible in the document rather than silent.
         "studentid_line": (f"\\setgoatstudentid{{{studentid}}}" if studentid
                            else "% \\setgoatstudentid{}"),
-        **strings,
+        "department_line": (f"\\setgoatdept{{{department}}}" if department
+                           else "% \\setgoatdept{}"),
+        **STRINGS[lang],
     })
 
     main = target / "main.tex"
@@ -945,7 +979,7 @@ def cmd_create_entry(kind, title, args, loc):
         log(f"would create {target}/")
         for rel in ("main.tex", "img/", ".latexmkrc"):
             print(f"   {rel}")
-        log(f"template: {origin}")
+        log(f"template: {name}")
         return 0
 
     target.mkdir(parents=True, exist_ok=True)
@@ -956,8 +990,9 @@ def cmd_create_entry(kind, title, args, loc):
         latexmkrc.write_text(LATEXMKRC, encoding="utf-8")
 
     ok(f"created {target}")
-    print(f"   {dim('template')} {origin}")
+    print(f"   {dim('template')} {name} ({lang})")
     print(f"   {dim('goat')}     {install.version} (pinned in main.tex)")
+    print(f"   {dim('build')}    aux files go to {AUX_DIR}/")
     print()
     log(f"cd {target.name} && latexmk -pdf main.tex")
     return 0
@@ -1036,7 +1071,15 @@ def cmd_status(args, loc):
         log(f"cd ..   {dim('to see the rest of ' + loc.course)}")
         return 0
 
-    # course: the entries, newest last.
+    # course: whatever the .gm file says about it, then the entries.
+    meta = course_meta(loc.course_dir)
+    if meta:
+        width = max(len(k) for k in meta)
+        for key, value in meta.items():
+            shown = value if isinstance(value, str) else json.dumps(value)
+            print(f"   {dim(key.ljust(width))}  {shown}")
+        print()
+
     found = entries_in(loc.course_dir)
     if not found:
         warn(f"no entries in {loc.course} yet")
@@ -1069,40 +1112,6 @@ def describe_pin(doc):
         return f"goat {installed_goat().version} {dim('(not pinned)')}"
     except Fail:
         return dim("(not pinned)")
-
-
-def cmd_where(args, loc):
-    """Diagnostics: what gm detected, and which goat it will pin to."""
-    install = installed_goat()
-    repo = goat_repo(install)
-    entries = changelog_entries(repo)
-    rows = [
-        ("goat-manager", f"{TOOL_VERSION}  ({Path(__file__).resolve()})"),
-        ("level", loc.level),
-        ("cwd", str(loc.cwd)),
-        ("root", str(loc.root) if loc.root else "(not in a tree)"),
-        ("semester", loc.semester or "-"),
-        ("course", loc.course or "-"),
-        ("entry", loc.entry or "-"),
-        ("goat installed", f"{install.version} ({install.date})"),
-        ("goat.sty", str(install.path)),
-        ("goat repo", str(repo) if repo else "not found"),
-        ("goat latest", latest_known(install, entries) +
-            ("" if entries else "  (no CHANGELOG.md — using the installed version)")),
-    ]
-    env = [(f"GOAT_{k}", os.environ[f"GOAT_{k}"])
-           for k in ("AUTHOR", "STUDENT_ID", "DEPARTMENT", "LANG", "STYLE")
-           if os.environ.get(f"GOAT_{k}")]
-    rows += env or [("GOAT_* env", "(none set — templates keep their placeholders)")]
-
-    width = max(len(k) for k, _ in rows)
-    for key, value in rows:
-        print(f"{key.ljust(width)}  {value}")
-
-    localbin = Path.home() / ".local/bin"
-    if str(localbin) not in os.environ.get("PATH", "").split(":"):
-        warn(f"{localbin} is not on your PATH — `gm` will not resolve in new shells")
-    return 0
 
 
 # ---------------------------------------------------------------------------
@@ -1175,6 +1184,57 @@ HOMEWORK_TEMPLATE = """\
 \\end{{document}}
 """
 
+REPORT_TEMPLATE = """\
+% !goat version = {version}
+\\documentclass[12pt]{{article}}
+\\usepackage[style={style}, lang={lang}, frontpage]{{goat}}
+
+\\setgoattitle{{{title}}}
+\\setgoatauthor{{{author}}}
+\\setgoatcourse{{{course_title}}}
+\\setgoatdate{{{date}}}
+{studentid_line}
+{department_line}
+% \\setgoatsupervisor{{}}
+\\setgoatabstract{{{t_abstract}}}
+
+\\goatheader
+
+\\begin{{document}}
+
+\\tableofcontents
+\\newpage
+
+\\section{{{s_intro}}}
+{t_intro}
+
+\\section{{{s_method}}}
+{t_method}
+
+% \\begin{{gcode}}{{python}}
+% def solve(xs):
+%     ...
+% \\end{{gcode}}
+
+\\section{{{s_results}}}
+{t_results}
+
+% \\gtable[caption={{{t_table}}}, label=timings]{{lrr}}{{
+%   \\toprule {t_input} & A & B \\\\ \\midrule
+%   1000 & 12 & 3 \\\\ \\bottomrule
+% }}
+
+\\section{{{s_discussion}}}
+{t_discussion}
+
+\\section{{{s_conclusion}}}
+{t_conclusion}
+
+\\printbibliography[heading=bibnumbered]
+
+\\end{{document}}
+"""
+
 STRINGS = {
     "danish": {
         "s_overview": "Overblik", "s_notes": "Noter", "s_exercises": "Opgaver",
@@ -1182,6 +1242,15 @@ STRINGS = {
         "t_caption": "Tavle: skitse", "t_problem": "Opgave",
         "t_restate": "Gengiv opgaveteksten her.",
         "t_answer": "Skriv svaret her.",
+        "s_intro": "Introduktion", "s_method": "Metode", "s_results": "Resultater",
+        "s_discussion": "Diskussion", "s_conclusion": "Konklusion",
+        "t_abstract": "Kort resume af hvad rapporten gor, og hvad den konkluderer.",
+        "t_intro": "Beskriv problemet, hvorfor det er vigtigt, og rapportens opbygning.",
+        "t_method": "Beskriv fremgangsmaden: data, algoritmer, forsogsopstilling.",
+        "t_results": "Fremlaeg det, du malte eller beviste.",
+        "t_discussion": "Fortolk resultaterne, og vaer aerlig om begraensningerne.",
+        "t_conclusion": "Svar paa sporgsmalet fra introduktionen.",
+        "t_table": "Koretider i millisekunder.", "t_input": "Input",
     },
     "english": {
         "s_overview": "Overview", "s_notes": "Notes", "s_exercises": "Exercises",
@@ -1189,127 +1258,87 @@ STRINGS = {
         "t_caption": "Whiteboard: sketch", "t_problem": "Problem",
         "t_restate": "Restate the problem here.",
         "t_answer": "Write the answer here.",
+        "s_intro": "Introduction", "s_method": "Method", "s_results": "Results",
+        "s_discussion": "Discussion", "s_conclusion": "Conclusion",
+        "t_abstract": "One paragraph on what the report does and what it concludes.",
+        "t_intro": "State the problem, why it matters, and how the report is structured.",
+        "t_method": "Describe the approach: data, algorithms, experimental setup.",
+        "t_results": "Present what you measured or proved.",
+        "t_discussion": "Interpret the results, and state the limitations honestly.",
+        "t_conclusion": "Answer the question posed in the introduction.",
+        "t_table": "Running times in milliseconds.", "t_input": "Input",
     },
 }
 
-LATEXMKRC = """\
+AUX_DIR = "latex_debug_files"
+
+LATEXMKRC = f"""\
 # Build config for this document (latexmk picks it up automatically).
 $pdf_mode = 1;      # pdflatex
 $bibtex_use = 2;    # run biber when the document cites anything
+
+# Keep .aux/.log/.bbl/.bcf/.fls and friends out of the way: only main.tex and
+# main.pdf stay here. $aux_dir alone (not $out_dir) means the PDF is still
+# written next to the source, so the viewer finds it where it expects.
+# VimTeX reads this file and follows aux_dir, so its quickfix list still finds
+# the log.
+$aux_dir = '{AUX_DIR}';
+
 # -shell-escape so a goat document using code=minted compiles as-is.
 set_tex_cmds('-shell-escape -synctex=1 -interaction=nonstopmode -file-line-error %O %S');
 """
 
-BUILTIN_TEMPLATES = {"lecture": LECTURE_TEMPLATE, "homework": HOMEWORK_TEMPLATE}
+TEMPLATES = {"lecture": LECTURE_TEMPLATE, "homework": HOMEWORK_TEMPLATE,
+             "report": REPORT_TEMPLATE}
 # Which template each --create-* action uses unless --template says otherwise.
 DEFAULT_TEMPLATE = {"lecture": "lecture", "homework": "homework",
                     "report": "report"}
 
-
-def available_templates(install):
-    """{name: origin} -- every .tex in goat's templates/, plus the built-ins.
-
-    A file in the goat repo wins over a built-in of the same name, so adding
-    templates/lecture.tex to goat replaces the built-in lecture skeleton here
-    without touching this tool.
-    """
-    found = {}
-    repo = goat_repo(install)
-    if repo and (repo / "templates").is_dir():
-        for path in sorted((repo / "templates").glob("*.tex")):
-            found[path.stem] = str(path)
-    for name in BUILTIN_TEMPLATES:
-        found.setdefault(name, "built-in")
-    return found
+# One line each, for --templates and for --help in a course.
+TEMPLATE_SUMMARY = {
+    "lecture": "running notes: header, sections, commented gcode/gnote/gimage",
+    "homework": "hand-in: front page, numbered question boxes to answer",
+    "report": "report: front page, abstract, contents, intro..conclusion, bibliography",
+}
 
 
-def load_template(name, install):
-    """Template text for `name`, and where it came from."""
-    templates = available_templates(install)
-    if name not in templates:
+def load_template(name):
+    """Template text for `name`."""
+    if name not in TEMPLATES:
         raise Fail(f"no template '{name}'. Available: "
-                   f"{', '.join(sorted(templates))} ({INVOKED} --templates)")
-    origin = templates[name]
-    if origin == "built-in":
-        return BUILTIN_TEMPLATES[name], origin
-    try:
-        return Path(origin).read_text(encoding="utf-8"), origin
-    except OSError as exc:
-        raise Fail(f"cannot read template {origin}: {exc}") from exc
+                   f"{', '.join(sorted(TEMPLATES))} ({INVOKED} --templates)")
+    return TEMPLATES[name]
 
 
 def cmd_templates(args):
-    """List what --template accepts, and where each one comes from."""
-    install = installed_goat()
-    templates = available_templates(install)
+    """List what --template accepts."""
     if args.quiet:
-        for name in sorted(templates):
+        for name in sorted(TEMPLATES):
             print(name)
         return 0
-    log("templates for --template, and the default of each --create-* action")
-    width = max(len(n) for n in templates)
-    kinds = {v: k for k, v in DEFAULT_TEMPLATE.items()}
-    for name in sorted(templates):
-        default_for = kinds.get(name)
-        note = dim(f"  (default for --create-{default_for})") if default_for else ""
-        print(f"   {name.ljust(width)}  {templates[name]}{note}")
+    log("templates for --template")
+    for line in template_lines():
+        print(f"   {line}")
     print()
     log(f'in a course: {INVOKED} --create-lecture "Title" --template report')
     return 0
 
 
-# \setgoat<field> -> which rendered field supplies its value. Fields whose
-# value is empty are left exactly as the template had them, so goat's own
-# placeholders ("Supervisor name") stay visible as prompts to fill in.
-SETFIELDS = [
-    (re.compile(r"(\\setgoattitle\s*\{)[^}]*(\})"), "title"),
-    (re.compile(r"(\\setgoatsubtitle\s*\{)[^}]*(\})"), "course_title"),
-    (re.compile(r"(\\setgoatauthor\s*\{)[^}]*(\})"), "author"),
-    (re.compile(r"(\\setgoatcourse\s*\{)[^}]*(\})"), "course_title"),
-    (re.compile(r"(\\setgoatdate\s*\{)[^}]*(\})"), "date"),
-    (re.compile(r"(\\setgoatstudentid\s*\{)[^}]*(\})"), "student_id"),
-    (re.compile(r"(\\setgoatdept\s*\{)[^}]*(\})"), "department"),
-]
-COMMENT_LINE_RE = re.compile(r"^\s*%")
+def template_lines():
+    """['lecture    running notes: ...', ...] shared by --templates and --help."""
+    width = max(len(n) for n in TEMPLATES)
+    kinds = {v: k for k, v in DEFAULT_TEMPLATE.items()}
+    out = []
+    for name in sorted(TEMPLATES):
+        default_for = kinds.get(name)
+        note = f"  (--create-{default_for})" if default_for else ""
+        out.append(f"{name.ljust(width)}  {TEMPLATE_SUMMARY.get(name, '')}{note}")
+    return out
 
 
 def render_template(text, fields):
-    """Fill a template: {placeholders} for our own, \\setgoat... for goat's."""
-    if "{title}" in text or "{version}" in text:
-        return text.format(**fields)
-
-    # A template taken from the goat repo. Two things to do:
-    lines = text.splitlines()
-
-    # 1. Drop the leading instruction block. goat's templates open with "copy me
-    #    out of the repo like this" notes that are wrong once they *have* been
-    #    copied; everything from \documentclass on is the actual document.
-    for i, line in enumerate(lines):
-        if line.lstrip().startswith("\\documentclass"):
-            lines = lines[i:]
-            break
-
-    # 2. Fill the field values -- but only on lines that are not commented out,
-    #    or we would helpfully update a commented-out example instead of the
-    #    real setting (goat's report.tex has both \setgoatdate forms).
-    filled = []
-    for line in lines:
-        if not COMMENT_LINE_RE.match(line):
-            for pattern, key in SETFIELDS:
-                value = fields.get(key)
-                if value:
-                    line = pattern.sub(
-                        lambda m, v=value: m.group(1) + v + m.group(2), line, count=1)
-            # 3. Make the goat options match the requested language and style:
-            #    a shared template cannot know which of the two you write in.
-            if "{goat}" in line:
-                line = re.sub(r"\blang=\w+", f"lang={fields['lang']}", line)
-                line = re.sub(r"\bstyle=[\w:]+", f"style={fields['style']}", line)
-        filled.append(line)
-
-    header = (f"% !goat version = {fields['version']}\n"
-              f"% {fields['title']} - {fields['course_title']}, {fields['date']}\n")
-    return header + "\n".join(filled).rstrip("\n") + "\n"
+    """Fill a template's {placeholders}."""
+    return text.format(**fields)
 
 
 # ---------------------------------------------------------------------------
@@ -1319,7 +1348,8 @@ ANY_LEVEL = ("root", "semester", "course", "entry", "outside")
 
 # Everything still parses at every level -- being at the wrong one is an error
 # that explains itself, not an unknown flag. This only decides what --help
-# offers you here, so the help stays as short as the level is.
+# offers you here, so the help stays as short as the level is. "document" is not
+# a level: it means the current directory holds a .tex document.
 VISIBLE_AT = {
     "create_semester": ("root", "outside"),
     "create_course": ("semester",),
@@ -1329,84 +1359,77 @@ VISIBLE_AT = {
     "templates": ("course",),
     "template": ("course",),
     "slug": ("semester", "course"),
-    # A document can live anywhere, so the version actions are always offered.
-    "get_version": ANY_LEVEL,
-    "check_upgrade": ANY_LEVEL,
-    "upgrade": ANY_LEVEL,
-    "where": ANY_LEVEL,
+    "get_version": ("document",),
+    "check_upgrade": ("document",),
+    "upgrade": ("document",),
 }
 
 
-def epilog_for(loc, with_templates):
+def has_document(directory):
+    """True when this directory holds a .tex document you could act on."""
+    if any((directory / n).is_file() for n in MAIN_CANDIDATES):
+        return True
+    try:
+        return any("\\documentclass" in p.read_text(encoding="utf-8", errors="replace")
+                   for p in sorted(directory.glob("*.tex")))
+    except OSError:
+        return False
+
+
+def epilog_for(loc, in_document):
     """The part of --help that depends on where you are."""
-    version_block = (
-        "any document, anywhere:\n"
-        "  gm FILE --get-version       which goat release it targets\n"
-        "  gm FILE --check-upgrade     is a newer goat available?\n"
-        "  gm FILE --upgrade           re-pin, then verify it still compiles\n")
-    codes = ("\nexit codes:\n"
-             "  0 success / nothing to do   10 an upgrade is available\n"
-             "  1 error                     11 document needs a newer goat\n")
+    document_block = ""
+    if in_document:
+        document_block = (
+            "the document here:\n"
+            "  gm main.tex --get-version     which goat release it targets\n"
+            "  gm main.tex --check-upgrade   is a newer goat available?\n"
+            "  gm main.tex --upgrade         re-pin, then check it still compiles\n")
 
     if loc.level == "outside":
         here = ("here: not inside a coursework tree\n\n"
-                "  gm --create-semester 1      make this directory a root\n\n"
+                "  gm --create-semester 1        make this directory a root\n\n"
                 "the tree is <root>/<N>semester/<course>/<date>-<slug>/main.tex,\n"
-                "and you move between the levels with cd\n\n")
+                "and you move between the levels with cd\n")
     elif loc.level == "root":
         nxt = max((int(n.removesuffix("semester"))
                    for n in semesters_in(loc.cwd)), default=0) + 1
         here = (f"here: the root of the tree\n\n"
                 f"  gm --create-semester {nxt}\n\n"
-                f"then: cd {nxt}semester && gm --create-course math\n\n")
+                f"then: cd {nxt}semester && gm --create-course math\n")
     elif loc.level == "semester":
         here = (f"here: {loc.semester}\n\n"
                 f"  gm --create-course math\n\n"
-                f"then: cd math && gm --create-lecture \"...\"\n\n")
+                f"then: cd math && gm --create-lecture \"...\"\n")
     elif loc.level == "course":
         here = (f"here: the course {loc.course}. Each of these makes a dated\n"
-                f"directory with one of goat's templates in it as main.tex:\n\n"
+                f"directory with a main.tex from the named template:\n\n"
                 f"  gm --create-lecture \"Writing hello world in Python\"\n"
                 f"  gm --create-homework \"Uge 3\"\n"
-                f"  gm --create-report \"Sorteringsbenchmark\"\n\n")
-        if with_templates:
-            here += template_block()
+                f"  gm --create-report \"Sorteringsbenchmark\"\n\n"
+                f"templates, for --template:\n"
+                + "".join(f"  {line}\n" for line in template_lines()))
     else:  # entry
         here = (f"here: {loc.entry}. This is where you write, so there is\n"
                 f"nothing to create:\n\n"
                 f"  latexmk -pdf main.tex\n"
-                f"  cd ..                       back to {loc.course}\n\n")
-    return here + version_block + codes
+                f"  cd ..                         back to {loc.course}\n")
+    return here + ("\n" + document_block if document_block else "")
 
 
-def template_block():
-    """The template table, for --help in a course."""
-    try:
-        templates = available_templates(installed_goat())
-    except Fail:
-        return ""
-    width = max(len(n) for n in templates)
-    kinds = {v: k for k, v in DEFAULT_TEMPLATE.items()}
-    home = str(Path.home())
-    out = ["templates for --template:"]
-    for name in sorted(templates):
-        origin = templates[name].replace(home, "~")
-        default_for = kinds.get(name)
-        note = f"  (default for --create-{default_for})" if default_for else ""
-        out.append(f"  {name.ljust(width)}  {origin}{note}")
-    return "\n".join(out) + "\n\n"
+def build_parser(loc, in_document=False):
+    levels = (loc.level, "document") if in_document else (loc.level,)
 
-
-def build_parser(loc, with_templates=False):
     def shown(name, text):
         """Help text, or hidden when this level cannot use the option."""
-        return text if loc.level in VISIBLE_AT.get(name, ANY_LEVEL) else argparse.SUPPRESS
+        allowed = VISIBLE_AT.get(name, ANY_LEVEL)
+        return text if any(l in allowed for l in levels) else argparse.SUPPRESS
 
     p = argparse.ArgumentParser(
         prog=INVOKED,
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description="Manage goat LaTeX documents and the coursework tree.",
-        epilog=epilog_for(loc, with_templates))
+        epilog=epilog_for(loc, in_document))
     p.add_argument("file", nargs="?", metavar="FILE",
                    help="a .tex file, or a directory containing one "
                         "(default: the document in the current directory)")
@@ -1436,8 +1459,6 @@ def build_parser(loc, with_templates=False):
                    help=shown("create_report", "new entry from the report template"))
     g.add_argument("--templates", action="store_true",
                    help=shown("templates", "list the templates --template accepts"))
-    g.add_argument("--where", action="store_true",
-                   help=shown("where", "show the detected level, paths and goat version"))
 
     beh = p.add_argument_group("behaviour")
     beh.add_argument("--template", metavar="NAME",
@@ -1450,8 +1471,6 @@ def build_parser(loc, with_templates=False):
                      help="print bare values, for scripts")
     beh.add_argument("--json", action="store_true",
                      help="machine-readable output where it applies")
-    beh.add_argument("--no-verify", action="store_true",
-                     help="skip the verification compile after --upgrade")
     beh.add_argument("--version", action="version",
                      version=f"{PROG} {TOOL_VERSION}")
     return p
@@ -1461,8 +1480,7 @@ def main(argv):
     # Where we are decides what --help offers, so locate first. (Cheap: it only
     # looks at the path, and lists the root's directories.)
     loc = locate()
-    wants_help = any(a in ("-h", "--help") for a in argv[1:])
-    parser = build_parser(loc, with_templates=wants_help)
+    parser = build_parser(loc, in_document=has_document(loc.cwd))
     args = parser.parse_args(argv[1:])
 
     # An entry action takes a title, which may also be sitting in `file` when
@@ -1494,8 +1512,6 @@ def main(argv):
             return cmd_upgrade(args)
         if args.templates:
             return cmd_templates(args)
-        if args.where:
-            return cmd_where(args, loc)
 
         # No action given: `gm file.tex` is most usefully the version query, and
         # a bare `gm` is "where am I, and what is here".

@@ -11,9 +11,9 @@ _goat_manager() {
 
     local actions="--get-version --check-upgrade --upgrade --create-semester
                    --create-course --create-lecture --create-homework
-                   --create-report --templates --where"
+                   --create-report --templates"
     local opts="--template --slug -n --dry-run -q --quiet --json
-                --no-verify -h --help --version"
+                -h --help --version"
 
     case "$prev" in
         --template)

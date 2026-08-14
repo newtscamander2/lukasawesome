@@ -145,15 +145,38 @@ Three levels, and the root can be called anything:
 ~/aarhusuni/                                      root
 └── 1semester/                                    semester
     └── math/                                     course
+        ├── .gm                 optional, yours: professor, Brightspace link, ...
         └── 2026-10-05-writing-hello-world-in-python/
             ├── main.tex        goat preamble, fields filled in, version pinned
+            ├── main.pdf
             ├── img/            \gimage and goat-img put images here
-            └── .latexmkrc      pdflatex + biber + shell-escape
+            ├── latex_debug_files/   .aux .log .bbl .bcf .fls .run.xml ...
+            └── .latexmkrc      pdflatex + biber + shell-escape + aux_dir
 ```
 
 There are no marker or config files: a directory named `<N>semester` is the
 hinge, so everything above it is the root and everything below is a course and
 its entries. Moving or renaming the tree changes nothing.
+
+Build debris stays out of the way. The generated `.latexmkrc` sets
+`$aux_dir = 'latex_debug_files'` but leaves `$out_dir` alone, so `main.pdf` is
+still written next to `main.tex` while everything else lands in the
+subdirectory. VimTeX reads the file and follows `aux_dir`, so its quickfix list
+still finds the log and zathura still opens the PDF where it expects it.
+
+### The `.gm` course file
+
+A course may hold a `.gm` file in JSON. `gm` reads it and shows it when you run
+`gm` in that course; it never writes to it, and no flag touches it — it is
+yours to edit. Any keys are allowed and shown in the order you wrote them:
+
+```json
+{
+  "professor": "Gerth Stolting Brodal",
+  "brightspace": "https://brightspace.au.dk/d2l/home/123456",
+  "ects": 10
+}
+```
 
 You create one level at a time, from the level above, and move between them with
 `cd` — the same way you would do it by hand:
@@ -166,24 +189,18 @@ cd math             && gm --create-lecture "Writing hello world in Python"
                        gm --create-report "Sorteringsbenchmark"
 ```
 
-In a course, each `--create-*` makes the dated directory and copies one of
-goat's templates into it as `main.tex`. `gm --templates` lists what is
-available and `--template NAME` picks one, so the action and the template are
-independent — lecture notes from the report skeleton is
+In a course, each `--create-*` makes the dated directory and writes `main.tex`
+from one of three built-in templates. The action and the template are
+independent, so lecture notes from the report skeleton is
 `gm --create-lecture "Eksamensnoter" --template report`.
 
 ```
 $ gm --templates
-:: templates for --template, and the default of each --create-* action
-   goat_documentation  ~/projects/goat/templates/goat_documentation.tex
-   homework            built-in  (default for --create-homework)
-   lecture             built-in  (default for --create-lecture)
-   report              ~/projects/goat/templates/report.tex  (default for --create-report)
+:: templates for --template
+   homework  hand-in: front page, numbered question boxes to answer  (--create-homework)
+   lecture   running notes: header, sections, commented gcode/gnote/gimage  (--create-lecture)
+   report    report: front page, abstract, contents, intro..conclusion, bibliography  (--create-report)
 ```
-
-A `.tex` file in goat's `templates/` wins over a built-in of the same name, so
-adding `templates/lecture.tex` to goat replaces the built-in lecture skeleton
-without touching this tool.
 
 Nothing is ever overwritten. Running the same command twice refuses rather than
 replacing your work, and there is no flag to force it:
@@ -227,10 +244,25 @@ $ cd ~/aarhusuni/1semester && gm
 :: cd into a course, or: gm --create-course math
 ```
 
-`gm --help` is also level-aware: it lists only the actions that work where you
-are (in a course, that includes the table of available templates; in an entry,
-only the document commands), so it stays short enough to read. `gm --where`
-prints the detected level and which goat a new document would be pinned to.
+In a course it also prints whatever the `.gm` file says:
+
+```
+$ cd math && gm
+:: /home/lukas/aarhusuni/1semester/math  (course)
+
+   professor    Gerth Stolting Brodal
+   brightspace  https://brightspace.au.dk/d2l/home/123456
+
+   2026-08-14  lister og loekker
+
+:: gm --create-lecture "..."   new entry with main.tex from a goat template
+```
+
+`gm --help` is level-aware the same way: it lists only the actions that work
+where you are — the three `--create-*` and the template table in a course, just
+`--create-course` in a semester, and the `--get-version`/`--check-upgrade`/
+`--upgrade` trio only when the current directory actually holds a document. So
+it stays short enough to read.
 
 ### Filling in documents
 
@@ -243,12 +275,12 @@ placeholder visible, so you notice it needs filling in.
 | `GOAT_AUTHOR` | `\setgoatauthor` |
 | `GOAT_STUDENT_ID` | `\setgoatstudentid` |
 | `GOAT_DEPARTMENT` | `\setgoatdept` |
-| `GOAT_LANG` | `lang=` (default `danish`) |
+| `GOAT_LANG` | `lang=`, and the section headings (default `english`) |
 | `GOAT_STYLE` | `style=` (default `au`) |
 
-Export them from `bash/.bashrc` if you want them permanently. `--create-report`
-is built from goat's own `templates/report.tex` when that exists, so improving
-the template there improves scaffolding here.
+Export them from `bash/.bashrc` if you want them permanently. `GOAT_LANG` also
+picks the language of the scaffolded section headings and placeholder sentences
+(`english` or `danish`).
 
 ## AwesomeWM themes
 
