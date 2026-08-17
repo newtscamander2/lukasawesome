@@ -61,6 +61,7 @@ make services    # display manager, docker, virtualbox
 make stow        # symlink config packages into $HOME (GNU Stow)
 make bin         # link bin/ CLI tools (goat-manager, gm) into ~/.local/bin
 make apps        # VSCode settings + clone cv/goat into ~/projects
+make notes       # ~/aarhusuni as a worktree repo + the 5-minute snapshot timer
 make check-system # verify packages, services, audio and symlinks
 ```
 
@@ -108,6 +109,7 @@ packages; `make stow` symlinks each into `$HOME`:
 | `nvim/`      | `~/.config/nvim`       |
 | `tmux/`      | `~/.config/tmux`       |
 | `alacritty/` | `~/.config/alacritty`  |
+| `notes/`     | `~/.config/systemd/user` (goat-autosave timer) |
 
 `scripts/` holds the installer; `vscode/` holds settings applied by `make apps`;
 `bin/` holds personal CLI tools and `completions/` their bash completion, both

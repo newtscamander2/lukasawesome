@@ -62,12 +62,13 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import tomllib
 import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 
-TOOL_VERSION = "2.0.0"
+TOOL_VERSION = "2.1.0"
 PROG = "goat-manager"                       # canonical name, for --version
 INVOKED = Path(sys.argv[0]).name or PROG    # what you typed, for hints
 
@@ -853,6 +854,15 @@ def cmd_create_semester(args, loc):
     """In the root: make <N>semester."""
     if loc.level not in ("root", "outside"):
         raise wrong_level(loc, "root", "a semester")
+    # At the top of the notes repository this would create a directory that sits
+    # outside every worktree: untracked, unbacked-up, and invisible to git.
+    # Semesters belong inside a worktree.
+    if loc.level == "outside" and notes_root_above(loc.cwd):
+        raise Fail(f"{loc.cwd} is the notes repository, not a coursework tree. "
+                   f"A semester created here would sit outside every worktree, "
+                   f"where nothing tracks or backs it up.\n"
+                   f"   Open a course instead:  class math\n"
+                   f"   Or work in the merged tree:  cd main")
 
     existing = semesters_in(loc.cwd)
     if args.create_semester:
@@ -998,10 +1008,19 @@ def cmd_create_entry(kind, title, args, loc):
     return 0
 
 
-def prompt(question, default=""):
+def prompt(question, default="", stream=None):
+    """Ask a question. `stream` sends it somewhere other than stdout.
+
+    That matters for --quiet: the `class` shell function captures stdout to cd
+    into it, so a question printed there would be swallowed by the capture and
+    gm would sit waiting for an answer to something you never saw.
+    """
     suffix = f" [{default}]" if default else ""
+    out = stream or sys.stdout
     try:
-        answer = input(f"{C_BLUE}?{C_RESET} {question}{suffix} ").strip()
+        print(f"{C_BLUE}?{C_RESET} {question}{suffix} ", end="", file=out,
+              flush=True)
+        answer = input().strip()
     except EOFError:
         answer = ""
     return answer or default
@@ -1013,6 +1032,13 @@ def prompt(question, default=""):
 def cmd_status(args, loc):
     """The bare `gm`: which level you are on, and what is on it."""
     if loc.level == "outside":
+        # Standing in the repository itself (~/aarhusuni) rather than in one of
+        # its worktrees. There is no coursework tree here and there should not
+        # be: the trees live one level down, inside main/ and course/<name>/.
+        # Saying "not inside a coursework tree" would be true and useless, and
+        # the offer to --create-semester here would be actively wrong.
+        if notes_root_above(loc.cwd):
+            return cmd_classes(args)
         print(f"{C_BLUE}::{C_RESET} {loc.cwd}")
         warn("not inside a coursework tree (no <N>semester directory here or above)")
         log(f"make this directory a root: {INVOKED} --create-semester 1")
@@ -1342,6 +1368,1613 @@ def render_template(text, fields):
 
 
 # ---------------------------------------------------------------------------
+# Git: one repository, one working directory per course
+#
+#     <notes>/.bare/           the only copy of the history
+#     <notes>/.git             one line: "gitdir: ./.bare"
+#     <notes>/main/            branch main -- every course, merged
+#     <notes>/course/math/     branch course/math
+#
+# Two invariants make a merge conflict impossible, and every command here
+# exists to keep them true:
+#
+#   1. a course branch only ever touches <N>semester/<its own course>/, so two
+#      course branches never edit the same file. Enforced by .githooks/pre-commit,
+#      which derives the allowed prefix from the branch name -- so the rule
+#      cannot rot as courses come and go.
+#   2. main is only ever written by merging a course branch into it, and each
+#      course branch is fast-forwarded back up to main straight afterwards. A
+#      course branch is therefore always an ancestor of main, and --ff-only is
+#      always enough. Nothing ever diverges, so nothing ever needs resolving.
+#
+# Snapshots (--save) are the exception that proves the rule: they write a commit
+# object straight into the store and move a ref under wip/<host>/, which nothing
+# ever merges from and no working tree is ever checked out to. Your index, your
+# working tree and your real branches are never touched.
+# ---------------------------------------------------------------------------
+BARE_DIR = ".bare"
+MAIN_BRANCH = "main"
+COURSE_NS = "course"        # branch namespace and worktree directory
+WIP_NS = "wip"              # branch namespace for snapshots, never merged
+NESTED_FILE = ".gm-nested"  # registry of repos-inside-the-repo, tracked
+# Names that mean something else in this layout. A course called "main" would
+# make a branch course/main and a worktree course/main sitting next to the real
+# main -- and, worse, would then be listed as a course and offered by tab
+# completion, so the mistake invites itself again.
+RESERVED_COURSES = {"main", "master", "wip", "course", "restore", "head", "git"}
+# Recovered snapshots are checked out as <notes>/restore-<course>. The prefix is
+# the marking: a recovered copy of danish must not be mistakable for danish, in
+# a listing or in a prompt, because acting on the wrong one loses work.
+RESTORE_PREFIX = "restore-"
+NOTES_FALLBACK = "~/aarhusuni"
+STATE_FILE = "goat-autosave.json"   # inside .bare/, deliberately untracked
+BIG_FILE_MB = 20
+
+
+def git(*args, cwd=None, check=True, env=None, strip=True):
+    """Run git and return its stdout, stripped unless told otherwise.
+
+    strip=False matters for `status --porcelain`, whose first two characters are
+    the status columns -- for an unstaged change the first is a space, and
+    stripping it shifts every path along by one.
+
+    Every git call in this file goes through here so that a failure becomes a
+    Fail (reported like any other gm error) rather than a traceback, and so the
+    command that failed is always visible in the message.
+    """
+    extra = None
+    if env:
+        extra = {**os.environ, **env}
+    try:
+        proc = subprocess.run(["git", *args], cwd=cwd, text=True,
+                              capture_output=True, env=extra)
+    except OSError as exc:
+        # cwd has been deleted -- `rm -rf` on a worktree, most likely. This
+        # raises inside subprocess before git ever runs, so it cannot be caught
+        # by looking at a return code, and it took the whole tool down with a
+        # traceback. A missing directory is an ordinary answer here: the caller
+        # gets a failure and decides what it means.
+        if check:
+            raise Fail(f"git {' '.join(args)} could not run in {cwd}: {exc}")
+        return ""
+    if check and proc.returncode != 0:
+        detail = (proc.stderr or proc.stdout).strip()
+        raise Fail(f"git {' '.join(args)} failed: {detail}")
+    return proc.stdout.strip() if strip else proc.stdout
+
+
+def git_net(*args, cwd=None, check=True, timeout=120):
+    """A git command that talks to GitLab: fetch, push, ls-remote.
+
+    Never let one of these wait for a human who is not there. ssh will sit
+    forever at a passphrase prompt -- and the autosave timer freezing means the
+    backups stop without a word.
+
+    But when you ARE there, being asked for your passphrase is the correct
+    behaviour, not a failure: `gm --wrap-up` at the keyboard should work exactly
+    as `git push` does. So the terminal decides. With one, ssh may ask and the
+    time limit is generous; without one, BatchMode turns a prompt into an
+    immediate error that --pending can explain.
+    """
+    interactive = sys.stdin.isatty()
+    env = {**os.environ, "GIT_SSH_COMMAND": "ssh -o ConnectTimeout=10"}
+    if not interactive:
+        env["GIT_SSH_COMMAND"] = "ssh -o BatchMode=yes -o ConnectTimeout=10"
+        env["GIT_TERMINAL_PROMPT"] = "0"
+    try:
+        proc = subprocess.run(
+            ["git", *args], cwd=cwd, text=True, capture_output=True,
+            timeout=timeout * 3 if interactive else timeout,
+            stdin=None if interactive else subprocess.DEVNULL, env=env)
+    except subprocess.TimeoutExpired:
+        if check:
+            raise Fail(f"git {' '.join(args)} gave up after {timeout}s -- "
+                       f"GitLab is not answering")
+        return False, f"timed out after {timeout}s"
+    except OSError as exc:          # cwd deleted underneath us
+        if check:
+            raise Fail(f"git {' '.join(args)} could not run in {cwd}: {exc}")
+        return False, str(exc)
+    if proc.returncode != 0:
+        detail = (proc.stderr or proc.stdout).strip()
+        if check:
+            raise Fail(f"git {' '.join(args)} failed: {detail}")
+        return False, detail
+    return True, proc.stdout.strip()
+
+
+def git_ok(*args, cwd=None):
+    """True when the command succeeds. For questions, not actions."""
+    proc = subprocess.run(["git", *args], cwd=cwd, text=True,
+                          capture_output=True)
+    return proc.returncode == 0
+
+
+def note(msg, args, kind=log):
+    """log/ok/warn that steps aside in --quiet mode.
+
+    `class` captures stdout to cd into it, so under -q everything that is not
+    the answer has to go to stderr -- you still see what happened, the shell
+    function still gets a clean path.
+    """
+    if not getattr(args, "quiet", False):
+        kind(msg)
+        return
+    text = {log: "::", ok: " ok", warn: "  !"}.get(kind, "::")
+    print(f"{text} {msg}", file=sys.stderr)
+
+
+# ---------------------------------------------------------------------------
+# Finding the notes repository
+# ---------------------------------------------------------------------------
+def notes_root_above(start=None):
+    """The notes repository this directory is inside, or None.
+
+    Deliberately never falls back to $GOAT_NOTES: this answers "where am I",
+    not "where are the notes". Being in /tmp must not look like being in the
+    repository.
+    """
+    here = (start or Path.cwd()).resolve()
+    for directory in (here, *here.parents):
+        if (directory / BARE_DIR).is_dir():
+            return directory
+    return None
+
+
+def find_notes_root(start=None, required=True):
+    """The directory holding .bare/ -- the top of the worktree layout.
+
+    Walks up from where you are, so it works from inside any worktree at any
+    depth. Falls back to $GOAT_NOTES and then ~/aarhusuni, so the autosave timer
+    (which runs from no particular directory) finds it too. No config file:
+    the layout on disk is the configuration.
+    """
+    found = notes_root_above(start)
+    if found:
+        return found
+
+    candidate = Path(setting("NOTES") or NOTES_FALLBACK).expanduser()
+    if (candidate / BARE_DIR).is_dir():
+        return candidate.resolve()
+
+    if not required:
+        return None
+    raise Fail(f"no notes repository here or at {candidate} "
+               f"(no {BARE_DIR}/ directory). Set it up with: make notes")
+
+
+@dataclass
+class Worktree:
+    """One checked-out directory of the notes repository."""
+    path: Path
+    branch: str | None          # None when detached, e.g. a --restore worktree
+    head: str
+    prunable: bool = False
+
+    @property
+    def name(self):
+        """'main', or 'math' for course/math -- what you call it out loud."""
+        if not self.branch:
+            return self.path.name
+        if self.branch.startswith(f"{COURSE_NS}/"):
+            return self.branch[len(COURSE_NS) + 1:]
+        return self.branch
+
+    @property
+    def is_course(self):
+        return (bool(self.branch and self.branch.startswith(f"{COURSE_NS}/"))
+                and not self.is_restore)
+
+    @property
+    def is_restore(self):
+        """A recovered snapshot: detached, disposable, never worked in."""
+        return self.path.name.startswith(RESTORE_PREFIX)
+
+
+def worktrees(root, courses_only=False):
+    """Every worktree of the notes repository, bare entry excluded.
+
+    Deleting a worktree with `rm -rf` leaves git's registration behind, and
+    every later command then tries to work in a directory that is not there.
+    That is a normal thing to do to a directory, so clean up after it rather
+    than carrying a broken entry around: git decides what is prunable, and
+    prune only ever removes bookkeeping for a directory that is already gone.
+    """
+    listing = git("worktree", "list", "--porcelain", cwd=root)
+    if "\nprunable" in listing or listing.startswith("prunable"):
+        git("worktree", "prune", cwd=root, check=False)
+        listing = git("worktree", "list", "--porcelain", cwd=root)
+
+    out = []
+    current = {}
+    for line in listing.splitlines() + [""]:
+        if not line:
+            if current.get("worktree") and "bare" not in current:
+                branch = current.get("branch", "")
+                out.append(Worktree(
+                    path=Path(current["worktree"]),
+                    branch=branch.removeprefix("refs/heads/") or None,
+                    head=current.get("HEAD", ""),
+                    prunable="prunable" in current))
+            current = {}
+            continue
+        key, _, value = line.partition(" ")
+        current[key] = value
+    if courses_only:
+        out = [w for w in out if w.is_course]
+    return sorted(out, key=lambda w: (not w.branch == MAIN_BRANCH, str(w.path)))
+
+
+def worktree_for(root, branch):
+    return next((w for w in worktrees(root) if w.branch == branch), None)
+
+
+def course_branch(slug):
+    return f"{COURSE_NS}/{slug}"
+
+
+def hostname():
+    """This machine, as a ref-name-safe slug: snapshots are namespaced by it."""
+    raw = os.uname().nodename or "unknown"
+    return re.sub(r"[^A-Za-z0-9._-]+", "-", raw).strip("-.") or "unknown"
+
+
+def wip_branch(branch):
+    """wip/<host>/course/math -- per machine, so two computers cannot clobber
+    each other's snapshots even when both are editing the same course."""
+    return f"{WIP_NS}/{hostname()}/{branch}"
+
+
+# ---------------------------------------------------------------------------
+# State: what the last snapshot did. Kept in .bare/, never committed -- it is
+# about this machine's backup, not about the notes.
+# ---------------------------------------------------------------------------
+def read_state(root):
+    path = root / BARE_DIR / STATE_FILE
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def write_state(root, state):
+    path = root / BARE_DIR / STATE_FILE
+    try:
+        path.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
+    except OSError as exc:
+        warn(f"could not record autosave state ({exc})")
+
+
+def ago(timestamp):
+    """'4 min ago' from an epoch seconds value."""
+    if not timestamp:
+        return "never"
+    seconds = int(time.time() - timestamp)
+    if seconds < 90:
+        return f"{max(seconds, 0)}s ago"
+    if seconds < 5400:
+        return f"{seconds // 60} min ago"
+    if seconds < 172800:
+        return f"{seconds // 3600}h ago"
+    return f"{seconds // 86400}d ago"
+
+
+# ---------------------------------------------------------------------------
+# Reading a worktree's state
+# ---------------------------------------------------------------------------
+@dataclass
+class Standing:
+    """How far a worktree is from being safely on GitLab."""
+    worktree: Worktree
+    dirty: int = 0              # files changed, staged or untracked
+    ahead: int = 0              # commits not pushed
+    behind: int = 0             # commits on origin not here
+    diverged: bool = False
+    tracked: bool = True        # does origin/<branch> exist at all
+    snapshot_at: float = 0.0    # when the snapshot was last pushed
+    snapshot_error: str = ""
+    paths: list = field(default_factory=list)   # every uncommitted file
+    unmerged: int = 0           # commits not yet in main
+
+    @property
+    def clean(self):
+        # "Clean" has to mean finished, not merely committed. A course branch
+        # that is committed and pushed but not merged is still work only you can
+        # see: it is not in main, so it is not in any other course's worktree
+        # and not in the tree you read across courses from.
+        return (not self.dirty and not self.ahead and not self.diverged
+                and not self.unmerged)
+
+
+def uncommitted_paths(wt):
+    """Every uncommitted file in this worktree, one entry per file.
+
+    -uall because plain `git status --porcelain` collapses a whole new directory
+    into a single line: a brand new lecture reads as "1 uncommitted", which
+    sounds like one file and is really a directory of them. -z because course
+    names here contain æ, ø and å, and git quotes non-ASCII paths otherwise.
+    """
+    out = git("status", "--porcelain", "-uall", "-z", cwd=wt.path, check=False,
+              strip=False)
+    paths = []
+    for record in out.split("\0"):
+        if len(record) > 3:
+            paths.append(record[3:])
+    return paths
+
+
+def entries_touched(paths):
+    """Uncommitted work grouped into the things you think in.
+
+    Returns [(label, files, is_entry)], entries first. An entry -- one lecture,
+    homework or report -- is the unit that matters: "1 uncommitted lecture,
+    2026-08-15-introduktiontilkarenblixen" is something you can act on, where
+    "2 uncommitted files" is not. Anything that is not part of an entry (a
+    course's .gm file, an ignore rule, a stray file) keeps its path and is
+    counted apart, so it cannot hide among the lectures.
+    """
+    grouped = {}
+    for path in paths:
+        parts = Path(path).parts
+        # <N>semester/<course>/<date>-<slug>/...
+        entry = (len(parts) > 3 and SEMESTER_RE.match(parts[0])
+                 and ENTRY_RE.match(parts[2]))
+        key = (parts[2], True) if entry else (path, False)
+        grouped[key] = grouped.get(key, 0) + 1
+    return [(label, count, is_entry)
+            for (label, is_entry), count
+            in sorted(grouped.items(), key=lambda kv: (not kv[0][1], kv[0][0]))]
+
+
+def dirty_summary(touched):
+    """['2 uncommitted lectures', '1 other file'] -- the headline, coloured."""
+    entries = sum(1 for _, _, is_entry in touched if is_entry)
+    others = sum(1 for _, _, is_entry in touched if not is_entry)
+    bits = []
+    if entries:
+        word = "entry" if entries == 1 else "entries"
+        bits.append(f"{C_YELLOW}{entries} uncommitted {word}{C_RESET}")
+    if others:
+        word = "file" if others == 1 else "files"
+        bits.append(f"{C_YELLOW}{others} other {word}{C_RESET}")
+    return bits
+
+
+def touched_lines(touched):
+    """['2026-08-15-induction-proofs  (2 files)', ...] for either listing."""
+    return [f"{label}{'' if count == 1 else '  ' + dim(f'({count} files)')}"
+            for label, count, _is_entry in touched]
+
+
+def standing(root, wt, state=None):
+    """Everything --pending needs to say about one worktree."""
+    state = read_state(root) if state is None else state
+    st = Standing(worktree=wt)
+
+    st.paths = uncommitted_paths(wt)
+    st.dirty = len(st.paths)
+
+    if wt.branch:
+        upstream = f"origin/{wt.branch}"
+        if git_ok("rev-parse", "--verify", "--quiet", upstream, cwd=wt.path):
+            counts = git("rev-list", "--left-right", "--count",
+                         f"{upstream}...HEAD", cwd=wt.path, check=False)
+            parts = counts.split()
+            if len(parts) == 2:
+                st.behind, st.ahead = int(parts[0]), int(parts[1])
+                st.diverged = bool(st.behind and st.ahead)
+        else:
+            # No branch of this name on GitLab yet. What matters is not how
+            # many commits it has, but how many are on GitLab nowhere at all --
+            # a course branch just made from main has none, and saying "1
+            # unpushed commit" about it would be a lie that trains you to
+            # ignore --pending.
+            st.tracked = False
+            st.ahead = int(git("rev-list", "--count", "HEAD", "--not",
+                               "--remotes=origin", cwd=wt.path,
+                               check=False) or 0)
+
+        entry = state.get(wt.branch, {})
+        st.snapshot_at = entry.get("pushed_at", 0)
+        st.snapshot_error = entry.get("error", "")
+
+        if wt.is_course:
+            st.unmerged = int(git("rev-list", "--count", f"{MAIN_BRANCH}..HEAD",
+                                  cwd=wt.path, check=False) or 0)
+    return st
+
+
+# ---------------------------------------------------------------------------
+# Actions: worktrees
+# ---------------------------------------------------------------------------
+def cmd_class(name, args):
+    """Open a course: make sure its branch, worktree and directory exist.
+
+    Prints the course directory -- not the worktree root -- because that is
+    where you actually want to be standing: it is the level `gm
+    --create-lecture` works at. The `class` shell function cds to it.
+    """
+    root = find_notes_root()
+    if not name:
+        return cmd_classes(args)
+
+    slug = args.slug or slugify(name)
+    if not slug:
+        raise Fail(f"'{name}' does not slugify into a course directory name")
+    # A name that belongs to something already here. You get these by reading a
+    # directory name off the disk and typing it back -- which is exactly what
+    # anyone does, so it must explain rather than quietly make a second thing
+    # with a confusing name.
+    taken = next((w for w in worktrees(root)
+                  if w.path.name == slug and w.is_restore), None)
+    if taken is not None or slug.startswith(RESTORE_PREFIX):
+        real = slug[len(RESTORE_PREFIX):] if slug.startswith(RESTORE_PREFIX) else slug
+        where = taken.path if taken is not None else root / slug
+        raise Fail(
+            f"'{slug}' is a recovered snapshot, not a course.\n"
+            f"   It is a read-only copy at {where}\n"
+            f"   -- take what you need out of it, then delete it:\n"
+            f"      git -C {root} worktree remove {slug}\n"
+            f"   The course itself:  class {real}")
+    # `class course-danish`, typed from the old directory layout or from muscle
+    # memory. The course is the part after the prefix.
+    if slug.startswith(f"{COURSE_NS}-"):
+        raise Fail(f"'{slug}' looks like a directory name, not a course name. "
+                   f"Try: class {slug[len(COURSE_NS) + 1:]}")
+    if slug.lower() in RESERVED_COURSES:
+        raise Fail(
+            f"'{slug}' is not available as a course name: it already means "
+            f"something here.\n"
+            f"   {MAIN_BRANCH} is the branch holding every course merged "
+            f"together.\n"
+            f"   To read across all your courses:   cd {root / MAIN_BRANCH}\n"
+            f"   To open a course:                  class <its name>")
+    branch = course_branch(slug)
+
+    wt = worktree_for(root, branch)
+    made_worktree = False
+    made_branch = False
+
+    # The directory is there but checked out to something else -- you switched
+    # branches inside it. That is a legitimate thing to do, so open it anyway;
+    # but say so, because the pre-commit guardrail keys on the branch name, and
+    # on any branch that is not course/<name> it does not apply at all.
+    if wt is None:
+        elsewhere = next((w for w in worktrees(root)
+                          if w.path == root / COURSE_NS / slug), None)
+        if elsewhere is not None:
+            on = f"the branch '{elsewhere.branch}'" if elsewhere.branch \
+                else "a detached HEAD"
+            note(f"{slug} is on {on}, not {branch} -- the course commit "
+                 f"guardrail does not apply there", args, warn)
+            note(f"back to the course: git -C {elsewhere.path} switch {branch}",
+                 args)
+            wt = elsewhere
+
+    if wt is None:
+        made_branch = not git_ok("rev-parse", "--verify", "--quiet", branch,
+                                 cwd=root)
+        wt = add_course_worktree(root, slug, branch, args)
+        made_worktree = not args.dry_run
+    elif not wt.path.is_dir():
+        raise Fail(f"{wt.path} is registered as a worktree but is missing. "
+                   f"Run: git -C {root} worktree prune, then try again")
+
+    # Anything from here on can fail, or be interrupted at the semester
+    # question. Leaving a half-made worktree behind would be worse than doing
+    # nothing: it is empty, it shows up in every listing, and it makes the name
+    # look like a real course. So undo exactly what this run created -- never
+    # anything that was already there, which is why both flags are recorded.
+    try:
+        course_dir = ensure_course_dir(wt, slug, args)
+        # Every time, not just at creation: a new semester means a new directory
+        # to let through, and an older worktree gets tidied when you open it.
+        apply_sparse(wt, slug, course_dir.parent.name, args)
+    except BaseException:          # including KeyboardInterrupt
+        if made_worktree:
+            git("worktree", "remove", "--force", str(wt.path), cwd=root,
+                check=False)
+            if made_branch:
+                git("branch", "-D", branch, cwd=root, check=False)
+            note(f"nothing was created for '{slug}'", args, warn)
+        raise
+
+    if args.quiet:
+        print(course_dir)
+    else:
+        print()
+        log(f"cd {course_dir}")
+        log(f'{INVOKED} --create-lecture "..."   {dim("today\'s entry")}')
+    return 0
+
+
+def add_course_worktree(root, slug, branch, args):
+    """Create the worktree for a course, reusing the branch if it exists.
+
+    Three cases, in the order that keeps your work: the branch is already on
+    GitLab (another machine made it) -> check that out; the branch exists here
+    but has no directory -> reattach it; neither -> branch from main.
+    """
+    path = root / COURSE_NS / slug
+    if path.exists():
+        raise Fail(f"{path} already exists but is not a worktree. "
+                   f"Move it aside first")
+
+    git_net("fetch", "--quiet", "origin", cwd=root, check=False, timeout=30)
+
+    if args.dry_run:
+        log(f"would create worktree {path} on {branch}")
+        return Worktree(path=path, branch=branch, head="")
+
+    remote = f"origin/{branch}"
+    # The LOCAL branch first. --close keeps the branch and removes only the
+    # directory, so reopening a closed course lands here -- and asking git to
+    # create a branch that already exists fails, which used to make a closed
+    # course impossible to reopen.
+    if git_ok("rev-parse", "--verify", "--quiet", branch, cwd=root):
+        git("worktree", "add", str(path), branch, cwd=root)
+        note(f"worktree {path} on the existing branch {branch}", args, ok)
+    elif git_ok("rev-parse", "--verify", "--quiet", remote, cwd=root):
+        git("worktree", "add", "--track", "-b", branch, str(path), remote, cwd=root)
+        note(f"worktree {path} tracking {remote}", args, ok)
+    else:
+        base = MAIN_BRANCH
+        if not git_ok("rev-parse", "--verify", "--quiet", base, cwd=root):
+            raise Fail(f"no {MAIN_BRANCH} branch yet -- run 'make notes' first")
+        git("worktree", "add", "-b", branch, str(path), base, cwd=root)
+        note(f"worktree {path} on new branch {branch} (from {base})", args, ok)
+
+    wt = worktree_for(root, branch)
+    if wt is None:
+        raise Fail(f"worktree for {branch} was not created")
+    return wt
+
+
+def apply_sparse(wt, slug, semester, args):
+    """Show only this course inside its worktree.
+
+    A worktree checks out the whole branch, so without this the directory called
+    "math" also holds a stale copy of every other course -- which is confusing
+    exactly when you are in a hurry. Sparse-checkout hides them; they are still
+    in the branch, and main/ still holds the lot.
+
+    Safe with everything else here: `git add -A` honours the sparse rules, so
+    neither a commit nor a snapshot ever records the hidden courses as deleted.
+
+    HEAD is asked which semesters exist rather than the disk, because the disk
+    is what we are about to change.
+    """
+    if args.dry_run:
+        return
+    tracked = git("ls-tree", "-d", "--name-only", "HEAD", cwd=wt.path,
+                  check=False).splitlines()
+    wanted = {f"{d}/{slug}" for d in tracked if SEMESTER_RE.match(d)}
+    if semester:
+        wanted.add(f"{semester}/{slug}")
+
+    # .githooks must be listed explicitly. Cone mode keeps every file at the top
+    # of the repository but no top-level *directory* you did not ask for -- and
+    # core.hooksPath points at .githooks, so leaving it out would quietly
+    # disable the guardrail that makes this whole layout safe.
+    patterns = sorted(wanted) + [".githooks"]
+    try:
+        git("sparse-checkout", "set", "--cone", *patterns, cwd=wt.path)
+    except Fail as exc:
+        warn(f"could not limit {wt.name} to its own course ({exc}); "
+             f"the worktree will show every course, which is untidy but safe")
+        return
+    if not (wt.path / ".githooks" / "pre-commit").is_file():
+        # Belt and braces: if this ever stops holding, say so loudly rather
+        # than committing without the guardrails for the rest of the semester.
+        warn(f"{wt.path}/.githooks/pre-commit is missing after sparse-checkout "
+             f"-- the commit guardrails are NOT active here")
+
+
+def ensure_course_dir(wt, slug, args):
+    """The <N>semester/<course>/ directory inside the worktree, made if absent.
+
+    A new course would otherwise need three commands before you can write in a
+    lecture. But which semester it belongs to is a real decision, not something
+    to guess at silently: an existing course is simply reopened where it already
+    lives, while a new one asks, defaulting to the newest semester.
+    """
+    root = wt.path
+    names = semesters_in(root)
+
+    # Already somewhere? Then there is nothing to decide -- go where it is,
+    # whichever semester that turns out to be.
+    # A course name may legitimately appear in several semesters -- the same
+    # subject taken again, or continued. Nothing forbids it: the branch, the
+    # worktree and the commit hook all key on the course name alone, so every
+    # copy lives on the one branch and is checked out together.
+    existing = [n for n in names if (root / n / slug).is_dir()]
+    if existing:
+        if args.semester:
+            want = parse_semester(args.semester)
+            if want in existing:
+                return root / want / slug
+            # Asking for a semester it is not in: say so rather than quietly
+            # opening a different one or quietly making a second copy. Moving a
+            # course between semesters is a decision, and it is yours.
+            warn(f"{slug} is in {', '.join(existing)}, not {want}. "
+                 f"Opening {existing[-1]}. To move it: "
+                 f"git mv {existing[-1]}/{slug} {want}/{slug}")
+        elif len(existing) > 1:
+            note(f"{slug} is in {', '.join(existing)}; opening {existing[-1]} "
+                 f"({INVOKED} --class {slug} --semester "
+                 f"{existing[0].removesuffix('semester')} for the other)", args)
+        return root / existing[-1] / slug
+
+    if args.semester:
+        semester = parse_semester(args.semester)
+    elif not sys.stdin.isatty() or args.dry_run:
+        # Unattended (a script, the timer): the newest semester is the only
+        # sensible guess, and the caller can always pass --semester.
+        semester = names[-1] if names else "1semester"
+    else:
+        default = names[-1] if names else "1semester"
+        if names:
+            note(f"{slug} is new. Semesters here: {', '.join(names)}", args)
+        stream = sys.stderr if getattr(args, "quiet", False) else None
+        answer = prompt(f"which semester does {slug} belong to?", default,
+                        stream=stream)
+        semester = parse_semester(answer)
+
+    course_dir = root / semester / slug
+    if args.dry_run:
+        log(f"would create {course_dir}")
+        return course_dir
+    course_dir.mkdir(parents=True)
+    note(f"created {semester}/{slug}", args, ok)
+    return course_dir
+
+
+def parse_semester(text):
+    """'1', '1semester', 'semester 1' -> '1semester'."""
+    m = re.search(r"\d+", str(text))
+    if not m:
+        raise Fail(f"'{text}' is not a semester number (try 1, or 1semester)")
+    return f"{int(m.group())}semester"
+
+
+def known_courses(root):
+    """Every course name the repository knows: worktrees plus courses in main.
+
+    Shared by tab completion and by the "did you mean" advice, so the two can
+    never disagree about what exists.
+    """
+    names = {w.name for w in worktrees(root) if w.is_course}
+    main_wt = worktree_for(root, MAIN_BRANCH)
+    if main_wt:
+        for semester in semesters_in(main_wt.path):
+            names.update(courses_in(main_wt.path / semester))
+    return sorted(n for n in names if n.lower() not in RESERVED_COURSES)
+
+
+def cmd_root(target, args):
+    """Print the top of the notes repository, or a place inside it, for cd'ing.
+
+    From inside an entry you are five levels down, and `cd ../../../../..` is
+    both tedious and easy to miscount. Works from anywhere on the filesystem:
+    inside the repository it walks up to find it, outside it falls back to
+    $GOAT_NOTES.
+    """
+    root = find_notes_root()
+    path = root
+    if target:
+        path = root / target
+        if not path.is_dir():
+            # The name is almost always right and the level wrong -- `notes
+            # danish` means the danish course, which lives one level further in
+            # and has its own command. Say that, rather than leaving the shell
+            # to report a path the user never typed.
+            if slugify(target) in known_courses(root):
+                raise Fail(f"'{target}' is a course, not a place at the top of "
+                           f"the repository.\n"
+                           f"   Open it with:  class {slugify(target)}")
+            here = sorted(p.name for p in root.iterdir()
+                          if p.is_dir() and not p.name.startswith("."))
+            raise Fail(f"there is no '{target}' in {root}.\n"
+                       f"   Here: {', '.join(here)}\n"
+                       f"   A course: class <name> ({', '.join(known_courses(root))})")
+
+    if args.quiet:
+        print(path)
+        return 0
+    print(f"{C_BLUE}::{C_RESET} {path}")
+    log(f"cd {path}")
+    return 0
+
+
+def cmd_classes(args):
+    """Every worktree and how it is doing -- the switcher's menu."""
+    root = find_notes_root()
+    found = worktrees(root)
+    if args.quiet:
+        # For completion and for fzf: bare course names, nothing else. Courses
+        # that exist in the tree but have no worktree yet are included -- those
+        # are exactly the ones you are about to open for the first time.
+        names = {wt.name for wt in found if wt.is_course}
+        main_wt = worktree_for(root, MAIN_BRANCH)
+        if main_wt:
+            for semester in semesters_in(main_wt.path):
+                names.update(courses_in(main_wt.path / semester))
+        # Never offer a reserved name, even if one somehow exists: completion
+        # suggesting `class main` is how the mistake gets made in the first place.
+        for name in sorted(n for n in names if n.lower() not in RESERVED_COURSES):
+            print(name)
+        return 0
+
+    print(f"{C_BLUE}::{C_RESET} {root}  {dim('(the notes repository)')}")
+    print(f"   {dim('one working directory per course; the coursework tree is')}")
+    print(f"   {dim('inside each of them, not here')}")
+    print()
+    state = read_state(root)
+    restores = [w for w in found if w.is_restore]
+    found = [w for w in found if not w.is_restore]
+    semesters = {str(w.path): course_semesters(w) for w in found}
+    width = max((len(w.name) for w in found), default=4)
+    swidth = max((len(s) for s in semesters.values()), default=0)
+    for wt in found:
+        st = standing(root, wt, state)
+        touched = entries_touched(st.paths)
+        bits = dirty_summary(touched)
+        if st.ahead:
+            word = "commit" if st.ahead == 1 else "commits"
+            bits.append(f"{C_YELLOW}{st.ahead} unpushed {word}{C_RESET}")
+        if st.unmerged:
+            word = "commit" if st.unmerged == 1 else "commits"
+            bits.append(f"{C_YELLOW}{st.unmerged} {word} not in "
+                        f"{MAIN_BRANCH}{C_RESET}")
+        if st.behind:
+            bits.append(f"{st.behind} behind")
+        if not bits:
+            bits.append(f"{C_GREEN}clean{C_RESET}")
+        semester = semesters[str(wt.path)]
+        # ljust before dim(): the escape codes would otherwise be counted as
+        # width and the column would come out short.
+        padded = dim(semester.ljust(swidth)) if swidth else ""
+        indent = " " * (width + swidth + 2)
+        print(f"   {wt.name.ljust(width)}  {padded}  {', '.join(bits)}")
+        # Name what is uncommitted: a count tells you there is work to do, a
+        # name tells you which lecture it is.
+        for line in touched_lines(touched):
+            print(f"   {indent}  {line}")
+        print(f"   {indent}  {dim(str(wt.path))}")
+
+    # --see-all: courses that exist in the notes but have no working directory
+    # here. They are not missing and nothing is wrong with them -- a fresh clone
+    # starts with every course in this state -- but without this there is no way
+    # to see that a course you took last year is still there waiting.
+    if args.see_all:
+        main_wt = worktree_for(root, MAIN_BRANCH)
+        # By directory, not by branch: a course whose worktree is checked out to
+        # some other branch still has a working directory here, and listing it
+        # as "no working directory" would be a lie you could act on.
+        opened = {w.name for w in found if w.is_course}
+        if (root / COURSE_NS).is_dir():
+            opened |= {p.name for p in (root / COURSE_NS).iterdir() if p.is_dir()}
+        unopened = [n for n in known_courses(root) if n not in opened]
+        if unopened:
+            print()
+            print(f"   {dim('no working directory here')} "
+                  f"{dim('-- open one with: class <name>')}")
+            uwidth = max(len(n) for n in unopened)
+            for name in unopened:
+                sems = semesters_containing(main_wt.path, name) if main_wt else []
+                print(f"   {name.ljust(uwidth)}  {dim(','.join(sems) or '-')}")
+        elif not args.quiet:
+            print()
+            print(f"   {dim('every course has a working directory here')}")
+
+    # Recovered snapshots, listed apart and named as what they are. They are
+    # scratch: read what you need out of them and delete them, or you will
+    # eventually edit the copy instead of the original.
+    if restores:
+        print()
+        print(f"   {C_YELLOW}recovered snapshots{C_RESET} "
+              f"{dim('-- copies to read from, then delete')}")
+        rwidth = max(len(w.name) for w in restores)
+        for wt in restores:
+            subject = git("log", "-1", "--format=%s", cwd=wt.path, check=False)
+            when = git("log", "-1", "--format=%cd", "--date=format:%d %b %H:%M",
+                       cwd=wt.path, check=False)
+            print(f"   {wt.name.ljust(rwidth)}  {dim(subject or 'snapshot')}")
+            print(f"   {' ' * rwidth}  {dim(when)}")
+            print(f"   {' ' * rwidth}  {dim(str(wt.path))}")
+            print(f"   {' ' * rwidth}  {dim('done with it: git -C ' + str(root)
+                                            + ' worktree remove ' + wt.name)}")
+
+    print()
+    log(f"class <name>   {dim('open a course (creates it the first time)')}")
+    log(f"{INVOKED} --pending   {dim('anything not safely on GitLab')}")
+    if not args.see_all:
+        log(f"{INVOKED} --see-all   {dim('also courses with no directory here')}")
+    return 0
+
+
+def semesters_containing(tree, name):
+    """Semester directories of `tree` that hold a course called `name`."""
+    return [n for n in semesters_in(tree) if (tree / n / name).is_dir()]
+
+
+def course_semesters(wt):
+    """Which semester this worktree's course sits in, for the listing.
+
+    Read from the directories rather than from anything remembered, so it cannot
+    drift. A course worktree only has the semesters holding its own course
+    checked out, so this is normally exactly one; main has them all, and saying
+    "all" there is more use than listing every semester you have ever had.
+    """
+    if not wt.is_course:
+        return "all" if wt.branch == MAIN_BRANCH else ""
+    found = semesters_containing(wt.path, wt.name)
+    return ",".join(found) if found else "-"
+
+
+def cmd_pending(args):
+    """The one command: everything that is not safely on GitLab yet.
+
+    Uncommitted files, unpushed commits, snapshots that failed to push, nested
+    repositories, and worktrees whose directory has been deleted. If this says
+    nothing is pending, losing the laptop costs you nothing.
+    """
+    root = find_notes_root()
+    state = read_state(root)
+    found = worktrees(root)
+    troubled = []
+
+    print(f"{C_BLUE}::{C_RESET} {root}")
+    print()
+    for wt in found:
+        st = standing(root, wt, state)
+        if st.clean and not st.snapshot_error:
+            continue
+        troubled.append(st)
+        print(f"   {C_YELLOW}{wt.name}{C_RESET}  {dim(str(wt.path))}")
+        if st.dirty:
+            snap = (f"snapshot {ago(st.snapshot_at)}" if st.snapshot_at
+                    else f"{C_RED}never snapshotted{C_RESET}")
+            touched = entries_touched(st.paths)
+            print(f"      {', '.join(dirty_summary(touched))}, {snap}")
+            for line in touched_lines(touched):
+                print(f"         {line}")
+        if st.diverged:
+            print(f"      {C_RED}diverged{C_RESET} from origin: "
+                  f"{st.ahead} here, {st.behind} there -- {INVOKED} --sync explains")
+        elif st.ahead:
+            word = "commit" if st.ahead == 1 else "commits"
+            print(f"      {st.ahead} {word} not pushed"
+                  + ("" if st.tracked else " (branch not on GitLab yet)"))
+        if st.unmerged:
+            word = "commit" if st.unmerged == 1 else "commits"
+            print(f"      {st.unmerged} {word} not merged into {MAIN_BRANCH} "
+                  f"-- {INVOKED} --wrap-up")
+        if st.snapshot_error:
+            print(f"      {C_RED}snapshot push failed{C_RESET}: {st.snapshot_error}")
+            hint = push_hint(st.snapshot_error)
+            if hint:
+                print(f"      {C_YELLOW}->{C_RESET} {hint}")
+
+    for wt in found:
+        if wt.prunable or not wt.path.is_dir():
+            troubled.append(None)
+            print(f"   {C_RED}{wt.name}{C_RESET}  directory is gone; "
+                  f"run: git -C {root} worktree prune")
+
+    for nested in nested_repos(root):
+        if not nested["path"].is_dir():
+            print(f"   {C_YELLOW}{nested['name']}{C_RESET}  nested repo not on "
+                  f"this machine -- {INVOKED} --nest restore")
+            troubled.append(None)
+            continue
+        dirty = len(git("status", "--porcelain", cwd=nested["path"],
+                        check=False).splitlines())
+        ahead = git("rev-list", "--count", "@{u}..HEAD", cwd=nested["path"],
+                    check=False) or "0"
+        if dirty or ahead != "0":
+            troubled.append(None)
+            print(f"   {C_YELLOW}{nested['name']}{C_RESET}  {dim('nested repo')} "
+                  f"{dim(str(nested['path']))}")
+            print(f"      {dirty} uncommitted file(s), {ahead} unpushed")
+
+    if not troubled:
+        ok("nothing pending -- every worktree is committed and pushed")
+        last = max((e.get("pushed_at", 0) for e in state.values()), default=0)
+        if last:
+            print(f"   {dim('last snapshot ' + ago(last))}")
+        return 0
+
+    print()
+    log(f"{INVOKED} --save      {dim('snapshot uncommitted work to GitLab now')}")
+    log(f"{INVOKED} --wrap-up   {dim('commit, push and merge the course you are in')}")
+    return 0
+
+
+def cmd_sync(args):
+    """Fetch, then fast-forward every worktree. Refuses anything else.
+
+    A fast-forward cannot produce a conflict and cannot lose a commit. If a
+    branch has genuinely diverged -- the same course edited on two machines --
+    this stops and shows you both sides rather than starting a merge you did
+    not ask for.
+    """
+    root = find_notes_root()
+    log("fetching origin")
+    git_net("fetch", "--prune", "origin", cwd=root)
+
+    moved = stuck = 0
+    for wt in worktrees(root):
+        if not wt.branch:
+            continue
+        upstream = f"origin/{wt.branch}"
+        if not git_ok("rev-parse", "--verify", "--quiet", upstream, cwd=wt.path):
+            continue
+        st = standing(root, wt)
+        if st.diverged:
+            stuck += 1
+            err(f"{wt.name} has diverged from GitLab: "
+                f"{st.ahead} commit(s) here, {st.behind} there")
+            print(f"   {dim('yours:')}  git -C {wt.path} log --oneline "
+                  f"{upstream}..HEAD")
+            print(f"   {dim('theirs:')} git -C {wt.path} log --oneline "
+                  f"HEAD..{upstream}")
+            print(f"   {dim('nothing was changed -- your work is untouched')}")
+            continue
+        if not st.behind:
+            continue
+        if st.dirty:
+            warn(f"{wt.name} is {st.behind} behind but has uncommitted changes; "
+                 f"skipped ({INVOKED} --wrap-up first)")
+            stuck += 1
+            continue
+        if args.dry_run:
+            log(f"would fast-forward {wt.name} by {st.behind}")
+            continue
+        git("merge", "--ff-only", upstream, cwd=wt.path)
+        ok(f"{wt.name} fast-forwarded {st.behind} commit(s)")
+        moved += 1
+
+    if not moved and not stuck:
+        ok("everything already up to date")
+    return 1 if stuck else 0
+
+
+def cmd_wrap_up(args):
+    """End of class: commit, push, merge into main, and catch the branch up.
+
+    The order is what keeps the "a course branch is always an ancestor of main"
+    invariant true, which is what makes every future merge a fast-forward:
+    commit here -> push here -> merge here into main -> push main -> fast-forward
+    here up to main -> push here. Any step that cannot be done cleanly stops the
+    whole thing rather than leaving a half-merge behind.
+    """
+    root = find_notes_root()
+    loc = locate()
+    wt = next((w for w in worktrees(root)
+               if loc.cwd == w.path or loc.cwd.is_relative_to(w.path)), None)
+    if wt is None:
+        raise Fail(f"{loc.cwd} is not inside a worktree of {root}")
+    if not wt.is_course:
+        raise Fail(f"--wrap-up works in a course worktree; this is {wt.name}. "
+                   f"Open one with: class <name>")
+
+    main_wt = worktree_for(root, MAIN_BRANCH)
+    if main_wt is None:
+        raise Fail(f"no {MAIN_BRANCH} worktree -- run 'make notes' first")
+    if git("status", "--porcelain", cwd=main_wt.path):
+        raise Fail(f"{main_wt.path} has uncommitted changes. {MAIN_BRANCH} is "
+                   f"only ever written by merges; clean it up first")
+
+    message = args.message or (args.wrap_up if isinstance(args.wrap_up, str) else "")
+    if not message:
+        message = f"{wt.name}: {dt.date.today().isoformat()}"
+
+    if args.dry_run:
+        log(f"would commit, push and merge {wt.branch} into {MAIN_BRANCH}")
+        return 0
+
+    # Every step below asks "is this already done?" before doing it, and no step
+    # depends on an earlier one having run in THIS invocation. That is what makes
+    # `gm --wrap-up` safe to simply run again: lose the network after the merge
+    # but before the push -- which eduroam will arrange for you sooner or later
+    # -- and the second run skips straight to the push. Nothing is remembered
+    # between runs; the repository's own state is the record.
+    try:
+        # 1. commit whatever is here. The pre-commit hook still applies: if this
+        #    worktree has touched another course, it is refused here, not at
+        #    merge time.
+        if git("status", "--porcelain", cwd=wt.path):
+            git("add", "-A", cwd=wt.path)
+            git("commit", "-m", message, cwd=wt.path)
+            ok(f"committed: {message}")
+        else:
+            log("nothing to commit")
+
+        # 2. level with GitLab before touching either branch.
+        git_net("fetch", "--prune", "origin", cwd=root)
+        st = standing(root, wt)
+        if st.diverged:
+            raise Fail(f"{wt.name} has diverged from GitLab -- run "
+                       f"{INVOKED} --sync to see both sides")
+        if st.behind:
+            git("merge", "--ff-only", f"origin/{wt.branch}", cwd=wt.path)
+            ok(f"caught up with {st.behind} commit(s) from GitLab")
+
+        main_st = standing(root, main_wt)
+        if main_st.diverged:
+            raise Fail(f"{MAIN_BRANCH} has diverged from GitLab; "
+                       f"run {INVOKED} --sync first")
+        if main_st.behind:
+            git("merge", "--ff-only", f"origin/{MAIN_BRANCH}", cwd=main_wt.path)
+
+        push_branch(wt, wt.branch, first_time=not st.tracked)
+
+        # 3. the merge. Disjoint paths mean this never asks a question -- and if
+        #    it somehow did, abort rather than leave a conflicted tree in main/.
+        if git_ok("merge-base", "--is-ancestor", "HEAD", MAIN_BRANCH, cwd=wt.path):
+            log(f"{MAIN_BRANCH} already has everything from {wt.name}")
+        else:
+            proc = subprocess.run(
+                ["git", "merge", "--no-ff", "-m", f"merge {wt.name}: {message}",
+                 wt.branch], cwd=main_wt.path, text=True, capture_output=True)
+            if proc.returncode != 0:
+                git("merge", "--abort", cwd=main_wt.path, check=False)
+                raise Fail(f"merging {wt.branch} into {MAIN_BRANCH} was not "
+                           f"clean, so it was aborted and nothing changed:\n"
+                           f"{(proc.stderr or proc.stdout).strip()}")
+            ok(f"merged {wt.name} into {MAIN_BRANCH}")
+
+        # 4. push main -- outside the merge branch above, so a run that finds the
+        #    merge already done still pushes it. This was the resume hole: the
+        #    push used to live inside the else, so an interrupted run left main
+        #    merged locally and never sent.
+        push_branch(main_wt, MAIN_BRANCH)
+
+        # 5. catch the course branch back up, so it stays an ancestor of main and
+        #    its worktree holds the whole current tree.
+        if not git_ok("merge-base", "--is-ancestor", MAIN_BRANCH, "HEAD",
+                      cwd=wt.path):
+            git("merge", "--ff-only", MAIN_BRANCH, cwd=wt.path)
+            ok(f"{wt.name} fast-forwarded up to {MAIN_BRANCH}")
+        push_branch(wt, wt.branch)
+
+    except Fail as exc:
+        # Say what is left, and that finishing it is the same command again.
+        err(str(exc))
+        print()
+        remaining = wrap_up_remaining(root, wt, main_wt)
+        if remaining:
+            warn("not finished. Still to do:")
+            for line in remaining:
+                print(f"   {line}")
+            print()
+            log(f"nothing was lost -- run {INVOKED} --wrap-up again when it can "
+                f"reach GitLab")
+        return 1
+
+    print()
+    ok("everything is on GitLab")
+    return 0
+
+
+def cmd_close(name, args, loc):
+    """Done with a course: remove its working directory, keep everything else.
+
+    Only the checkout goes. The branch stays, every commit stays in .bare/ and on
+    GitLab, and `class <name>` builds the directory again in a second. What it
+    buys is a listing that stays about this semester rather than about every
+    course you have ever taken.
+
+    It refuses while anything is outstanding, because "I am finished with this"
+    and "this is safely on GitLab" have to be the same statement -- and the
+    refusal is the only thing between you and `git worktree remove --force`.
+    """
+    root = find_notes_root()
+    if not name:
+        # In a course worktree, close the one you are standing in.
+        here = next((w for w in worktrees(root)
+                     if loc.cwd == w.path or loc.cwd.is_relative_to(w.path)), None)
+        if here is None or not here.is_course:
+            raise Fail(f"which course? {INVOKED} --close <name>, or run it "
+                       f"inside the course you mean")
+        name = here.name
+
+    slug = args.slug or slugify(name)
+    wt = next((w for w in worktrees(root)
+               if w.path == root / COURSE_NS / slug), None)
+    if wt is None:
+        raise Fail(f"{slug} has no working directory here -- nothing to close. "
+                   f"({INVOKED} --see-all lists courses without one)")
+
+    if wt.branch != course_branch(slug):
+        on = f"the branch '{wt.branch}'" if wt.branch else "a detached HEAD"
+        raise Fail(f"{slug} is checked out to {on}, not {course_branch(slug)}. "
+                   f"Closing it would drop that checkout.\n"
+                   f"   Switch back first:  git -C {wt.path} switch "
+                   f"{course_branch(slug)}")
+
+    st = standing(root, wt)
+    blocked = []
+    if st.dirty:
+        touched = entries_touched(st.paths)
+        blocked.append(f"{', '.join(dirty_summary(touched))}")
+        blocked += [f"     {line}" for line in touched_lines(touched)]
+    if st.unmerged:
+        word = "commit" if st.unmerged == 1 else "commits"
+        blocked.append(f"{st.unmerged} {word} not merged into {MAIN_BRANCH}")
+    if st.ahead:
+        word = "commit" if st.ahead == 1 else "commits"
+        blocked.append(f"{st.ahead} {word} not pushed to GitLab")
+    if blocked:
+        raise Fail(f"{slug} still has work that exists only here:\n"
+                   + "\n".join(f"   {b}" for b in blocked)
+                   + f"\n   Finish it first:  class {slug} && {INVOKED} --wrap-up")
+
+    if args.dry_run:
+        log(f"would remove the worktree {wt.path} and keep the branch "
+            f"{wt.branch}")
+        return 0
+
+    git("worktree", "remove", str(wt.path), cwd=root)
+    ok(f"closed {slug} -- removed {wt.path}")
+    print(f"   {dim('the branch ' + wt.branch + ' and every commit on it are')}")
+    print(f"   {dim('still here and still on GitLab')}")
+    print()
+    log(f"open it again any time: class {slug}")
+    return 0
+
+
+def push_branch(wt, branch, first_time=False):
+    """Push `branch`, unless GitLab already has exactly this commit.
+
+    Skipping a push that would be a no-op is what lets --wrap-up be re-run: the
+    second attempt is quiet about the parts that already succeeded.
+    """
+    head = git("rev-parse", "HEAD", cwd=wt.path, check=False)
+    remote = git("rev-parse", "--verify", "--quiet", f"origin/{branch}",
+                 cwd=wt.path, check=False)
+    if head and head == remote:
+        return False
+    args = ["push", "origin", branch]
+    if first_time:
+        args = ["push", "--set-upstream", "origin", branch]
+    git_net(*args, cwd=wt.path)
+    ok(f"pushed {branch}")
+    return True
+
+
+def wrap_up_remaining(root, wt, main_wt):
+    """What --wrap-up still has left to do, for the message when it stops."""
+    out = []
+    if git("status", "--porcelain", cwd=wt.path, check=False):
+        out.append(f"commit the changes in {wt.name}")
+    if not git_ok("merge-base", "--is-ancestor", "HEAD", MAIN_BRANCH,
+                  cwd=wt.path):
+        out.append(f"merge {wt.name} into {MAIN_BRANCH}")
+    for w, branch in ((wt, wt.branch), (main_wt, MAIN_BRANCH)):
+        head = git("rev-parse", "HEAD", cwd=w.path, check=False)
+        remote = git("rev-parse", "--verify", "--quiet", f"origin/{branch}",
+                     cwd=w.path, check=False)
+        if head and head != remote:
+            out.append(f"push {branch} to GitLab")
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Actions: snapshots
+# ---------------------------------------------------------------------------
+def snapshot(root, wt, state, args):
+    """Push a snapshot of this worktree's uncommitted work. Returns True if new.
+
+    Uses a throwaway index and commit-tree, so nothing here can touch your real
+    index, your working tree or your branches -- the very worst it can do is
+    write an object nobody references. The snapshot's parent is HEAD, so
+    `git diff <branch> wip/<host>/<branch>` is exactly "what I have not
+    committed yet".
+    """
+    if not wt.branch or not wt.path.is_dir():
+        return False
+    entry = state.setdefault(wt.branch, {})
+
+    head = git("rev-parse", "HEAD", cwd=wt.path, check=False)
+    if not head:
+        return False   # a brand new branch with no commit yet
+
+    with tempfile.NamedTemporaryFile(prefix="gm-index-", delete=True) as tmp:
+        env = {"GIT_INDEX_FILE": tmp.name}
+        # Seed from HEAD so the snapshot is a full tree, then take everything
+        # the working tree has. add -A honours .gitignore: build artefacts stay
+        # out, which is also why .gitignore means "not backed up".
+        git("read-tree", head, cwd=wt.path, env=env)
+        git("add", "-A", cwd=wt.path, env=env)
+        tree = git("write-tree", cwd=wt.path, env=env)
+
+    # "Is there anything uncommitted" is asked first, before "has anything
+    # changed since last time". Committing your work leaves the tree identical
+    # to the snapshot's -- so the cheap unchanged-check would short-circuit and
+    # the snapshot would never be retired.
+    if tree == git("rev-parse", f"{head}^{{tree}}", cwd=wt.path):
+        # Nothing uncommitted. If the branch itself is on GitLab too, the
+        # snapshot has nothing left to protect, so retire it -- otherwise
+        # --restore would one day hand you a stale copy of notes you have long
+        # since committed, which is worse than having no snapshot at all.
+        entry.update(tree=tree, error="")
+        if entry.get("snapshot") and branch_is_pushed(wt):
+            drop_snapshot(wt)
+            entry["snapshot"] = ""
+            note(f"{wt.name}: snapshot retired, the work is committed and "
+                 f"pushed", args, ok)
+        return False
+    if tree == entry.get("tree") and not entry.get("error"):
+        return False
+
+    stamp = dt.datetime.now().astimezone().isoformat(timespec="seconds")
+    commit = git("commit-tree", tree, "-p", head, "-m",
+                 f"wip {wt.branch} on {hostname()} at {stamp}", cwd=wt.path)
+    ref = f"refs/heads/{wip_branch(wt.branch)}"
+    git("update-ref", ref, commit, cwd=wt.path)
+    entry.update(tree=tree, snapshot=commit, saved_at=time.time())
+
+    # --force is safe precisely because the ref is namespaced by hostname: this
+    # machine is the only writer, and nothing ever merges from it.
+    #
+    # BatchMode=yes is the important part. Without it ssh will happily sit
+    # waiting for a passphrase nobody is there to type -- and a snapshot that
+    # hangs is worse than one that fails, because the next one cannot start
+    # either and the backups stop without a word. BatchMode turns that into an
+    # immediate error, which --pending then explains. The timeouts are the
+    # belt to that pair of braces.
+    # Always BatchMode here, terminal or not: a snapshot is a background chore,
+    # and stopping to ask for a passphrase in the middle of one -- while you are
+    # typing notes in a lecture -- would be worse than not pushing.
+    try:
+        proc = subprocess.run(
+            ["git", "push", "--force", "--quiet", "origin", f"{ref}:{ref}"],
+            cwd=wt.path, text=True, capture_output=True, timeout=120,
+            stdin=subprocess.DEVNULL,
+            env={**os.environ,
+                 "GIT_SSH_COMMAND": "ssh -o BatchMode=yes -o ConnectTimeout=10",
+                 "GIT_TERMINAL_PROMPT": "0"})
+    except subprocess.TimeoutExpired:
+        entry["error"] = "the push took over two minutes and was given up on"
+        warn(f"{wt.name}: {entry['error']}")
+        return True
+    except OSError as exc:          # the worktree was deleted mid-snapshot
+        entry["error"] = str(exc)[:200]
+        warn(f"{wt.name}: could not push the snapshot ({exc})")
+        return True
+    if proc.returncode != 0:
+        lines = [l for l in (proc.stderr or proc.stdout).strip().splitlines()
+                 if l.strip() and not l.startswith("remote:")]
+        entry["error"] = (" / ".join(lines[-2:]) if lines else "push failed")[:200]
+        # Always reported, even under --quiet: this is the failure the whole
+        # timer exists to prevent, so it has to reach the journal. Quiet means
+        # "say nothing when all is well", not "say nothing when it is not".
+        warn(f"{wt.name}: snapshot saved locally but NOT pushed to GitLab "
+             f"({entry['error']})")
+        hint = push_hint(entry["error"])
+        if hint:
+            warn(hint)
+        return True
+    entry["error"] = ""
+    entry["pushed_at"] = time.time()
+    if not args.quiet:
+        ok(f"{wt.name}: snapshot pushed to {wip_branch(wt.branch)}")
+    return True
+
+
+def push_hint(error):
+    """What to actually do about a snapshot that would not go out.
+
+    git's own wording for a rejected key is "make sure you have the correct
+    access rights and the repository exists", which is true and useless: the
+    repository exists and the rights are fine, the agent simply has no key in
+    it. Since the whole safety net rests on this push, the message has to name
+    the fix.
+    """
+    text = error.lower()
+    if any(s in text for s in ("permission denied", "publickey", "access rights",
+                               "could not read from remote", "authentication")):
+        return ("the ssh agent has no usable key -- your notes are saved here "
+                "but not on GitLab:\n"
+                "         ssh-add ~/.ssh/id_ed25519      (then: gm --save)\n"
+                "         ssh-add -l                     to check what it holds")
+    if any(s in text for s in ("could not resolve", "network is unreachable",
+                               "timed out", "connection refused", "no route")):
+        return "no network -- the next run in five minutes will send it"
+    return ""
+
+
+def branch_is_pushed(wt):
+    """True when every commit on this branch is already on GitLab."""
+    upstream = f"origin/{wt.branch}"
+    if not git_ok("rev-parse", "--verify", "--quiet", upstream, cwd=wt.path):
+        return False
+    return git_ok("merge-base", "--is-ancestor", "HEAD", upstream, cwd=wt.path)
+
+
+def drop_snapshot(wt):
+    """Retire a snapshot that has nothing left to protect, here and on GitLab."""
+    ref = f"refs/heads/{wip_branch(wt.branch)}"
+    git_net("push", "--quiet", "origin", "--delete", ref, cwd=wt.path,
+            check=False, timeout=60)
+    git("update-ref", "-d", ref, cwd=wt.path, check=False)
+
+
+def cmd_save(args):
+    """Snapshot every worktree now. What the 5-minute timer runs.
+
+    Silent when there is nothing new, so it can run unattended without turning
+    the journal into noise.
+    """
+    root = find_notes_root()
+    state = read_state(root)
+    changed = False
+    for wt in worktrees(root):
+        if not wt.path.is_dir():
+            continue
+        # A merge in progress is a half-finished state: snapshotting it would be
+        # honest but useless, and it would push a tree nobody wants back.
+        if git_ok("rev-parse", "--verify", "--quiet", "MERGE_HEAD", cwd=wt.path):
+            continue
+        try:
+            changed |= snapshot(root, wt, state, args)
+        except Fail as exc:
+            warn(f"{wt.name}: {exc}")
+    for nested in nested_repos(root):
+        if nested["path"].is_dir():
+            git("add", "-A", cwd=nested["path"], check=False)
+    write_state(root, state)
+    if not changed and not args.quiet:
+        ok("nothing new to snapshot")
+    return 0
+
+
+def cmd_restore(target, args):
+    """Recover a snapshot -- the other-computer command.
+
+    Checks the snapshot out into <notes>/restore/<branch>/ as a detached
+    worktree, so it can never be mistaken for live work and cannot be pushed
+    over anything. Copy what you need out of it and delete it.
+    """
+    root = find_notes_root()
+    git_net("fetch", "--quiet", "origin",
+            f"refs/heads/{WIP_NS}/*:refs/remotes/origin/{WIP_NS}/*", cwd=root,
+            check=False)
+
+    branch = target if "/" in target else course_branch(slugify(target))
+    candidates = [l.split()[-1] for l in
+                  git("for-each-ref", "--format=%(refname:short)",
+                      f"refs/remotes/origin/{WIP_NS}/**", cwd=root,
+                      check=False).splitlines()]
+    matches = [c for c in candidates if c.endswith(f"/{branch}")]
+    if not matches:
+        available = "\n".join(f"   {c}" for c in candidates) or "   (none)"
+        raise Fail(f"no snapshot for {branch}. Available:\n{available}")
+
+    if len(matches) > 1 and not args.quiet:
+        warn(f"{len(matches)} machines have a snapshot of {branch}:")
+        for m in matches:
+            print(f"   {m}")
+    chosen = matches[0]
+
+    # restore-danish, not course-danish: the name has to say what it is, or it
+    # reads as a course and gets treated like one.
+    label = branch[len(COURSE_NS) + 1:] if branch.startswith(f"{COURSE_NS}/") \
+        else branch.replace("/", "-")
+    path = root / f"{RESTORE_PREFIX}{label}"
+    if args.dry_run:
+        log(f"would check {chosen} out at {path}")
+        return 0
+    if path.exists():
+        raise Fail(f"{path} already exists -- delete it first "
+                   f"(git -C {root} worktree remove {path})")
+    git("worktree", "add", "--detach", str(path), chosen, cwd=root)
+    ok(f"{chosen} checked out at {path}")
+    print()
+    # HEAD^ is the branch head as it was when the snapshot was taken, so this
+    # diff is exactly "what had not been committed" -- and it works even on a
+    # machine that has never had this course's branch.
+    log(f"what was uncommitted: git -C {path} diff HEAD^ HEAD --stat")
+    log(f"when you are done:    git -C {root} worktree remove {path}")
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Actions: nested repositories, for sharing one entry with other people
+# ---------------------------------------------------------------------------
+def nested_repos(root):
+    """Registered repos-inside-the-repo, resolved to where they sit on disk.
+
+    One registry per course, at <N>semester/<course>/.gm-nested, rather than one
+    at the top. That is not tidiness: a single file at the root would be the one
+    path two course branches could both edit, and it would be the only merge
+    conflict this whole layout can produce. Per course, it cannot happen.
+    """
+    main_wt = worktree_for(root, MAIN_BRANCH)
+    base = main_wt.path if main_wt else root
+
+    out = []
+    for path in sorted(base.glob(f"*semester/*/{NESTED_FILE}")):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            warn(f"{path} is not valid JSON ({exc}); ignoring it")
+            continue
+        if not isinstance(data, list):
+            continue
+        for item in data:
+            if not isinstance(item, dict) or "path" not in item:
+                continue
+            rel = Path(item["path"])
+            # Which worktree holds it: the course branch owns the course, and
+            # the course is the second component of the path.
+            branch = (course_branch(rel.parts[1]) if len(rel.parts) > 1
+                      else MAIN_BRANCH)
+            wt = worktree_for(root, branch) or worktree_for(root, MAIN_BRANCH)
+            if wt is None:
+                continue
+            out.append({"name": rel.name,
+                        "path": wt.path / rel,
+                        "rel": str(rel),
+                        "branch": branch,
+                        "remote": item.get("remote", "")})
+    return out
+
+
+def cmd_nest(args, loc):
+    """Turn this entry into its own private GitLab project, inside the tree.
+
+    GitLab membership is all-or-nothing: a classmate added to the notes project
+    can read every note in it. So sharing one lecture means that lecture has to
+    be its own project. It stays exactly where it is on disk -- the parent just
+    ignores it, and the pre-commit hook makes sure it can never be swallowed as
+    a gitlink.
+    """
+    root = find_notes_root()
+    if args.nest == "restore":
+        return nest_restore(root, args)
+
+    if loc.level != "entry":
+        raise wrong_level(loc, "entry", "a nested project")
+    entry_dir = loc.course_dir / loc.entry
+    wt = next((w for w in worktrees(root) if loc.cwd.is_relative_to(w.path)), None)
+    if wt is None:
+        raise Fail(f"{loc.cwd} is not inside a worktree of {root}")
+    rel = entry_dir.relative_to(wt.path)
+
+    if (entry_dir / ".git").exists():
+        raise Fail(f"{entry_dir.name} is already its own repository")
+
+    tracked = git("ls-files", "--", str(rel), cwd=wt.path, check=False)
+    if tracked:
+        raise Fail(
+            f"{rel} is already tracked by the notes repository. Take it out "
+            f"first, so there is one owner of these files:\n"
+            f"   git -C {wt.path} rm -r --cached {rel}\n"
+            f"   git -C {wt.path} commit -m 'move {loc.entry} to its own project'")
+
+    project = args.project or loc.entry
+    remote = args.remote or f"git@gitlab.com:{gitlab_namespace(root)}/{project}.git"
+
+    if args.dry_run:
+        log(f"would make {entry_dir} its own repository, remote {remote}")
+        return 0
+
+    git("init", "--quiet", "--initial-branch", MAIN_BRANCH, cwd=entry_dir)
+    ignore = entry_dir / ".gitignore"
+    if not ignore.exists():
+        ignore.write_text(NESTED_GITIGNORE, encoding="utf-8")
+    git("add", "-A", cwd=entry_dir)
+    git("commit", "--quiet", "-m", f"{loc.entry}: start", cwd=entry_dir)
+    git("remote", "add", "origin", remote, cwd=entry_dir)
+    ok(f"{entry_dir.name} is now its own repository")
+
+    # The parent ignores it, in a tracked file, so every machine agrees. The
+    # file lives in the course directory, not at the top of the repository, so
+    # it stays inside what this branch is allowed to touch.
+    course_ignore = loc.course_dir / ".gitignore"
+    line = f"/{loc.entry}/"
+    text = course_ignore.read_text(encoding="utf-8") if course_ignore.exists() else ""
+    if line not in text:
+        head = text.rstrip("\n") + "\n\n" if text.strip() else ""
+        course_ignore.write_text(
+            f"{head}"
+            f"# Its own GitLab project ({remote}), shared with other people.\n"
+            f"# Owned by that repository, not this one -- see {NESTED_FILE}.\n"
+            f"{line}\n", encoding="utf-8")
+        ok(f"the notes repository now ignores {rel}")
+
+    register_nested(loc.course_dir, wt, str(rel), remote)
+
+    proc = subprocess.run(["git", "push", "--set-upstream", "origin", MAIN_BRANCH],
+                          cwd=entry_dir, text=True, capture_output=True)
+    if proc.returncode == 0:
+        ok(f"pushed to {remote}")
+    else:
+        warn("could not push yet:")
+        print(f"   {(proc.stderr or proc.stdout).strip()}")
+        print(f"   {dim('Create the project (Private) at')} "
+              f"https://gitlab.com/projects/new")
+        print(f"   {dim('then:')} git -C {entry_dir} push -u origin {MAIN_BRANCH}")
+
+    print()
+    log(f"give someone access: the project's Members page, Reporter to read, "
+        f"Developer to write")
+    log(f"commit the ignore rule: {INVOKED} --wrap-up")
+    return 0
+
+
+def register_nested(course_dir, wt, rel, remote):
+    """Record it in the course's registry, so a fresh machine can clone it back.
+
+    Without this, a nested project is invisible to a new clone: the parent
+    ignores the directory, so nothing would ever say it should be there.
+    """
+    path = course_dir / NESTED_FILE
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(data, list):
+            data = []
+    except (OSError, json.JSONDecodeError):
+        data = []
+    data = [d for d in data if d.get("path") != rel]
+    data.append({"path": rel, "remote": remote})
+    path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+
+    # It belongs to the branch you are standing on; it reaches main the usual
+    # way, through --wrap-up.
+    git("add", str(path.relative_to(wt.path)), cwd=wt.path, check=False)
+
+
+def nest_restore(root, args):
+    """Clone every registered nested project that is missing here."""
+    missing = [n for n in nested_repos(root) if not n["path"].is_dir()]
+    if not missing:
+        ok("every nested project is already on this machine")
+        return 0
+    for nested in missing:
+        if args.dry_run:
+            log(f"would clone {nested['remote']} into {nested['path']}")
+            continue
+        nested["path"].parent.mkdir(parents=True, exist_ok=True)
+        git_net("clone", "--quiet", nested["remote"], str(nested["path"]),
+                cwd=root, timeout=300)
+        ok(f"cloned {nested['name']}")
+    return 0
+
+
+def gitlab_namespace(root):
+    """The user/group part of the notes remote, so nested projects land beside it."""
+    url = git("remote", "get-url", "origin", cwd=root, check=False)
+    m = re.search(r"[:/]([^/:]+)/[^/]+?(?:\.git)?$", url)
+    if not m:
+        raise Fail("cannot work out your GitLab namespace from the notes "
+                   "remote; pass the full URL with --remote")
+    return m.group(1)
+
+
+NESTED_GITIGNORE = """\
+# LaTeX build artefacts -- the document is the source, not the PDF.
+latex_debug_files/
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+*.pdf
+!figures/*.pdf
+"""
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 ANY_LEVEL = ("root", "semester", "course", "entry", "outside")
@@ -1362,6 +2995,13 @@ VISIBLE_AT = {
     "get_version": ("document",),
     "check_upgrade": ("document",),
     "upgrade": ("document",),
+    # The git layer. --class/--pending/--save/--sync/--restore are deliberately
+    # offered everywhere: they are what you reach for when you are lost.
+    "wrap_up": ("course", "entry"),
+    "nest": ("entry",),
+    "project": ("entry",),
+    "remote": ("entry",),
+    "message": ("course", "entry"),
 }
 
 
@@ -1386,7 +3026,13 @@ def epilog_for(loc, in_document):
             "  gm main.tex --check-upgrade   is a newer goat available?\n"
             "  gm main.tex --upgrade         re-pin, then check it still compiles\n")
 
-    if loc.level == "outside":
+    if loc.level == "outside" and notes_root_above(loc.cwd):
+        here = ("here: the notes repository itself, not a coursework tree\n\n"
+                "  class math                    open a course and cd into it\n"
+                "  gm                            every worktree and its state\n\n"
+                "each worktree below holds one course's tree,\n"
+                "<N>semester/<course>/<date>-<slug>/main.tex; main/ holds them all\n")
+    elif loc.level == "outside":
         here = ("here: not inside a coursework tree\n\n"
                 "  gm --create-semester 1        make this directory a root\n\n"
                 "the tree is <root>/<N>semester/<course>/<date>-<slug>/main.tex,\n"
@@ -1414,7 +3060,30 @@ def epilog_for(loc, in_document):
                 f"nothing to create:\n\n"
                 f"  latexmk -pdf main.tex\n"
                 f"  cd ..                         back to {loc.course}\n")
-    return here + ("\n" + document_block if document_block else "")
+    return (here + ("\n" + document_block if document_block else "")
+            + "\n" + git_block(loc))
+
+
+def git_block(loc):
+    """The part of --help about the repository, which is the same everywhere.
+
+    Deliberately not level-dependent: --pending and --save are what you want
+    when you have lost track of where you are, which is exactly when a
+    level-sensitive help would hide them.
+    """
+    lines = ["the notes repository (one worktree per course):",
+             "  class math                    open a course and cd there",
+             "  gm --classes                  every worktree and its state",
+             "  gm --pending                  anything not safely on GitLab"]
+    if loc.level in ("course", "entry"):
+        lines.append("  gm --wrap-up                  commit, push, merge into main")
+    if loc.level == "entry":
+        lines.append("  gm --nest --project NAME       make this entry its own "
+                     "project, to share it")
+    lines += ["  gm --save                     snapshot uncommitted work now",
+              "  gm --restore math             recover a snapshot from another "
+              "machine"]
+    return "\n".join(lines) + "\n"
 
 
 def build_parser(loc, in_document=False):
@@ -1459,12 +3128,53 @@ def build_parser(loc, in_document=False):
                    help=shown("create_report", "new entry from the report template"))
     g.add_argument("--templates", action="store_true",
                    help=shown("templates", "list the templates --template accepts"))
+    g.add_argument("--class", dest="open_class", nargs="?", const="",
+                   metavar="COURSE",
+                   help="print the working directory for COURSE, making its "
+                        "worktree the first time (the 'class' shell function "
+                        "cds there)")
+    g.add_argument("--classes", action="store_true",
+                   help="list every worktree and how it is doing")
+    g.add_argument("--root", nargs="?", const="", metavar="PLACE",
+                   help="print the top of the notes repository, or PLACE inside "
+                        "it (the 'notes' shell function cds there)")
+    g.add_argument("--pending", action="store_true",
+                   help="everything not safely on GitLab yet")
+    g.add_argument("--sync", action="store_true",
+                   help="fetch, then fast-forward every worktree")
+    g.add_argument("--save", action="store_true",
+                   help="snapshot uncommitted work to GitLab now")
+    g.add_argument("--wrap-up", nargs="?", const=True, metavar="MESSAGE",
+                   help=shown("wrap_up",
+                              "commit, push, and merge this course into main"))
+    g.add_argument("--close", nargs="?", const="", metavar="COURSE",
+                   help="done with a course: remove its working directory, "
+                        "keeping the branch and every commit")
+    g.add_argument("--restore", metavar="COURSE",
+                   help="check a snapshot out into restore/, to recover work "
+                        "from another machine")
+    g.add_argument("--nest", nargs="?", const="", metavar="restore",
+                   help=shown("nest",
+                              "make this entry its own GitLab project so it can "
+                              "be shared; --nest restore re-clones them all"))
 
     beh = p.add_argument_group("behaviour")
     beh.add_argument("--template", metavar="NAME",
                      help=shown("template", "which goat template becomes main.tex"))
     beh.add_argument("--slug", metavar="SLUG",
                      help=shown("slug", "directory name (default: from the title)"))
+    beh.add_argument("--see-all", action="store_true",
+                     help="also list courses that have no working directory here")
+    beh.add_argument("--semester", metavar="N",
+                     help=shown("semester",
+                                "which semester --class puts a new course in "
+                                "(default: the highest one)"))
+    beh.add_argument("--project", metavar="NAME",
+                     help=shown("project", "GitLab project name for --nest"))
+    beh.add_argument("--remote", metavar="URL",
+                     help=shown("remote", "full git remote for --nest"))
+    beh.add_argument("-m", "--message", metavar="TEXT",
+                     help=shown("message", "commit message for --wrap-up"))
     beh.add_argument("-n", "--dry-run", action="store_true",
                      help="print what would happen, change nothing")
     beh.add_argument("-q", "--quiet", action="store_true",
@@ -1477,6 +3187,30 @@ def build_parser(loc, in_document=False):
 
 
 def main(argv):
+    # Everything here starts from the current directory, so a directory that has
+    # been deleted out from under the shell has to be caught before anything
+    # else -- otherwise Path.cwd() raises and the answer to "where am I" is a
+    # traceback. It happens for ordinary reasons: a worktree removed, a course
+    # hidden by sparse-checkout, a directory renamed in another terminal.
+    try:
+        os.getcwd()
+    except OSError:
+        # All of it to stderr: this runs before the arguments are parsed, so we
+        # cannot know whether stdout is being captured by the `class` function
+        # -- and half a message is worse than none.
+        stale = os.environ.get("PWD", "the directory you are in")
+        notes = Path(setting("NOTES") or NOTES_FALLBACK).expanduser()
+        err(f"{stale} no longer exists, so there is nothing to work from.")
+        for line in (
+                f"   {dim('The shell is still pointing at it. This happens when a')}",
+                f"   {dim('worktree is removed, or a course is hidden or renamed.')}",
+                "",
+                f"{C_BLUE}::{C_RESET} cd somewhere that exists, then carry on:",
+                f"   cd {notes}",
+                f"   cd -    {dim('(back to where you were before)')}"):
+            print(line, file=sys.stderr)
+        return 1
+
     # Where we are decides what --help offers, so locate first. (Cheap: it only
     # looks at the path, and lists the root's directories.)
     loc = locate()
@@ -1490,19 +3224,76 @@ def main(argv):
                ("report", args.create_report)]
     entries = [(kind, title) for kind, title in entries if title is not None]
 
+    def no_extra(flag, value):
+        """Refuse a second positional argument.
+
+        `class math danish` becomes `gm --class math danish`: argparse gives
+        "math" to --class and drops "danish" into the unused FILE positional,
+        where it was silently ignored -- so a typo opened the wrong course and
+        said nothing. Every action that takes a name has this shape, so they all
+        check.
+        """
+        if args.file:
+            raise Fail(
+                f"'{args.file}' is an extra argument: {flag} takes one name.\n"
+                f"   If it is one name with a space in it, quote it:  "
+                f'{flag} "{value} {args.file}"')
+
     try:
+        # The git layer first: it works from anywhere, including outside the
+        # tree, so it must not be shadowed by a level check.
+        if args.open_class is not None:
+            name = args.open_class
+            if not name and args.file:
+                name, args.file = args.file, None
+            no_extra("class", name)
+            return cmd_class(name, args)
+        if args.classes:
+            return cmd_classes(args)
+        if args.root is not None:
+            target = args.root
+            if not target and args.file:
+                target, args.file = args.file, None
+            no_extra("--root", target)
+            return cmd_root(target, args)
+        if args.pending:
+            return cmd_pending(args)
+        if args.sync:
+            return cmd_sync(args)
+        if args.save:
+            return cmd_save(args)
+        if args.wrap_up is not None:
+            return cmd_wrap_up(args)
+        if args.close is not None:
+            name = args.close
+            if not name and args.file:
+                name, args.file = args.file, None
+            no_extra("--close", name)
+            return cmd_close(name, args, loc)
+        if args.restore:
+            no_extra("--restore", args.restore)
+            return cmd_restore(args.restore, args)
+        if args.nest is not None:
+            if not args.nest and args.file:
+                args.nest, args.file = args.file, None
+            no_extra("--nest", args.nest)
+            return cmd_nest(args, loc)
+
         if args.create_semester is not None:
             if not args.create_semester and args.file:
                 args.create_semester, args.file = args.file, None
+            no_extra("--create-semester", args.create_semester)
             return cmd_create_semester(args, loc)
         if args.create_course is not None:
             if not args.create_course and args.file:
                 args.create_course, args.file = args.file, None
+            no_extra("--create-course", args.create_course)
             return cmd_create_course(args, loc)
         if entries:
             kind, title = entries[0]
             if not title and args.file:
                 title, args.file = args.file, None
+            no_extra(f"--create-{kind}", title)
             return cmd_create_entry(kind, title, args, loc)
         if args.get_version:
             return cmd_get_version(args)

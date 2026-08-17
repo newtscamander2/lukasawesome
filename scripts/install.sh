@@ -42,7 +42,7 @@ questionnaire() {
 GPU=$gpu
 LAPTOP=$laptop
 DISPLAY_MANAGER=$dm
-STOW_PACKAGES="$(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash rclone clang-format cava qt")"
+STOW_PACKAGES="$(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash rclone clang-format cava qt notes keepassxc")"
 THEMES="$(cfg THEMES "dr460nized arch ubuntu windows7 win11")"
 INSTALL_BASE=$base
 INSTALL_DEV=$dev
@@ -110,6 +110,8 @@ case "${1:-install}" in
     bin)       bash "$HERE/bin.sh" ;;
     apps)      bash "$HERE/apps.sh" ;;
     repos)     bash "$HERE/repos.sh" ;;
+    notes)     bash "$HERE/notes.sh" ;;
+    keepassxc) bash "$HERE/keepassxc-sync.sh" init ;;
     protondrive) bash "$HERE/protondrive.sh" ;;
     check-system) bash "$HERE/check-system.sh" ;;
     repair-display) bash "$HERE/repair-display.sh" ;;
