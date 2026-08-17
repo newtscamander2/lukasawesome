@@ -1,0 +1,17 @@
+[Unit]
+Description=Sync the KeePassXC database every fifteen minutes
+Documentation=file:%h/lukasawesome/docs/keepassxc-sync.md
+
+[Timer]
+# A password is added rarely and read constantly, so the cost of being fifteen
+# minutes behind is low. More frequent syncing means more chances for both
+# machines to have touched the file between runs, which is what produces
+# conflicts.
+OnBootSec=3min
+OnUnitActiveSec=15min
+# Catch up after a suspend rather than skipping the missed run.
+Persistent=true
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

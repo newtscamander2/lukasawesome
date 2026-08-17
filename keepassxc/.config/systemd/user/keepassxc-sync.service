@@ -1,0 +1,19 @@
+[Unit]
+Description=Two-way sync of the KeePassXC database with Proton Drive
+Documentation=file:%h/lukasawesome/docs/keepassxc-sync.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/lukasawesome/scripts/keepassxc-sync.sh sync
+# Deliberately NOT Restart=on-failure. A sync that keeps retrying against a
+# broken remote is how you turn one bad run into many; the timer will try again
+# in fifteen minutes, and --resilient lets it recover without a --resync.
+TimeoutStartSec=300
+
+# The database is the one file here that must not leak. PrivateTmp is safe for
+# this unit (unlike goat-autosave, which needs ssh and breaks under it), and
+# rclone talks to Proton over HTTPS with a token from its own config.
+PrivateTmp=yes
+NoNewPrivileges=yes
