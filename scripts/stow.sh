@@ -23,10 +23,30 @@ backup_conflicts() {
     done < <(find "$pkg" -type f -print0)
 }
 
+# Hand-made absolute symlinks into the repo (how a machine was set up before
+# stow) look foreign to stow >= 2.4, which aborts the whole package over them.
+# They point at the very content stow is about to link, so remove them and let
+# stow recreate the link its own way. Symlinks pointing anywhere else are left
+# alone. Parents come out of find before children, so once a directory link is
+# gone the paths beneath it stop being symlinks and are skipped.
+absorb_repo_symlinks() {
+    local pkg="$1" rel target
+    while IFS= read -r -d '' f; do
+        rel="${f#"$pkg"/}"
+        target="$HOME/$rel"
+        if [ -L "$target" ] &&
+           [[ "$(realpath -m "$target" 2>/dev/null)" == "$DOTFILES_DIR"/* ]]; then
+            warn "Absorbing hand-made symlink $target (stow will recreate it)"
+            run rm "$target"
+        fi
+    done < <(find "$pkg" -mindepth 1 -print0)
+}
+
 for pkg in $(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash rclone clang-format cava qt greenclip notes keepassxc flameshot"); do
     if [ -d "$pkg" ]; then
         log "Stowing '$pkg' -> \$HOME"
         backup_conflicts "$pkg"
+        absorb_repo_symlinks "$pkg"
         # -R (restow) makes re-runs idempotent.
         #
         # --ignore for systemd's *.target.wants directories: they record which
