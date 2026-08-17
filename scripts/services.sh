@@ -68,6 +68,10 @@ if enabled INSTALL_BASE; then
     run sudo ufw --force enable
     run sudo systemctl enable ufw.service
     run sudo systemctl enable reflector.timer
+    # Printing. cups.socket rather than cups.service: socket activation starts
+    # the daemon the first time something actually prints, instead of running it
+    # from boot for the sake of a printer you use twice a semester.
+    run sudo systemctl enable cups.socket
 fi
 
 # --- Laptop: power management + touchpad ---
