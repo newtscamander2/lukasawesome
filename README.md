@@ -315,6 +315,12 @@ Dracula neon — hot pink on near-black), `arch` (Catppuccin Mocha), `ubuntu`
 - **Eduroam (AU) — laptop only**: connect to Aarhus University wifi via the
   eduroam CAT installer; full walkthrough in [docs/eduroam-au.md](docs/eduroam-au.md).
   Wifi GUI is `nm-applet` in the systray (autostarted by awesome).
+- **System snapshots**: `sudo scripts/timeshift-snapshots.sh` sets up automatic
+  btrfs snapshots of `/` and `/home` via Timeshift, with a systemd timer that
+  catches up on schedules missed while the laptop was suspended. Snapshots are
+  atomic and take <1s, so closing the lid can't interrupt one. Full walkthrough
+  — including what `/boot` does *not* cover — in
+  [docs/timeshift.md](docs/timeshift.md).
 
 ## Secrets
 
