@@ -46,6 +46,13 @@ command -v git >/dev/null 2>&1 || { err "git is not installed."; exit 1; }
 # not one. Without it every push here would fail for want of a key.
 export SSH_AUTH_SOCK="${SSH_AUTH_SOCK:-${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/ssh-agent.socket}"
 
+# Enable the socket, do not just point at it. Nothing else in this repo turned
+# it on: check-system asked whether it was enabled and every fresh machine
+# answered no, so the snapshot timer had no agent to push with and failed
+# silently -- exactly the outage the timer exists to prevent. Socket activation
+# means enabling it costs nothing until something connects.
+run systemctl --user enable --now ssh-agent.socket
+
 GITLAB_REMOTE=0
 case "$REMOTE" in *gitlab.com*|*"$SSH_ALIAS"*) GITLAB_REMOTE=1 ;; esac
 
