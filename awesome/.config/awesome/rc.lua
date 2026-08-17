@@ -2747,16 +2747,33 @@ globalkeys = gears.table.join(
     -- Hardware / media keys (volume via pactl to match the wibar widget)
     awful.key({ modkey }, "Escape",
               function()
-                  -- Lock to the lightdm greeter. Self-healing: start
-                  -- light-locker if installed-but-not-running, fall back to
-                  -- dm-tool, and surface the reason on screen when neither works.
+                  -- Lock in this session with i3lock. Preferred route is
+                  -- loginctl lock-session, so the manual lock, the idle timeout
+                  -- and lid close all go through the one xss-lock path; if
+                  -- xss-lock is not up, run i3lock directly rather than doing
+                  -- nothing. Never dm-tool/light-locker: switching to the
+                  -- lightdm greeter is what black-screened this laptop with no
+                  -- way back (see the autostart comment below).
+                  --
+                  -- Verified locked before reporting success: loginctl returns
+                  -- 0 as soon as the signal is sent, so a broken xss-lock would
+                  -- otherwise look fine while the screen stayed open.
                   awful.spawn.easy_async_with_shell([[
-if command -v light-locker-command >/dev/null 2>&1; then
-    pgrep -x light-locker >/dev/null || { light-locker --lock-after-screensaver=5 --lock-on-suspend >/dev/null 2>&1 & sleep 0.5; }
-    light-locker-command -l 2>&1 && exit 0
+command -v i3lock >/dev/null 2>&1 || { echo "i3lock is not installed (run: make packages)"; exit 1; }
+pgrep -x i3lock >/dev/null && exit 0
+if pgrep -x xss-lock >/dev/null 2>&1; then
+    loginctl lock-session 2>&1
+    for _ in 1 2 3 4 5 6 7 8 9 10; do
+        pgrep -x i3lock >/dev/null && exit 0
+        sleep 0.2
+    done
 fi
-dm-tool lock 2>&1 && exit 0
-echo "No working screen locker: install light-locker (make packages) and make sure the session runs under lightdm."
+i3lock --nofork --ignore-empty-password --color 1e1e2e >/dev/null 2>&1 &
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+    pgrep -x i3lock >/dev/null && exit 0
+    sleep 0.2
+done
+echo "i3lock did not come up; screen is NOT locked."
 exit 1
 ]], function(stdout, stderr, _, exit_code)
                       if exit_code ~= 0 then
@@ -2768,7 +2785,7 @@ exit 1
                       end
                   end)
               end,
-              {description="lock screen (lightdm greeter)", group="awesome"}),
+              {description="lock screen (i3lock)", group="awesome"}),
     awful.key({}, "XF86AudioRaiseVolume", function() awful.spawn("pactl set-sink-volume @DEFAULT_SINK@ +5%") end),
     awful.key({}, "XF86AudioLowerVolume", function() awful.spawn("pactl set-sink-volume @DEFAULT_SINK@ -5%") end),
     awful.key({}, "XF86AudioMute", function() awful.spawn("pactl set-sink-mute @DEFAULT_SINK@ toggle") end),
@@ -3217,22 +3234,54 @@ awful.spawn.with_shell("pgrep -x nm-applet >/dev/null || nm-applet &")
 -- while running, so a dead daemon means an empty list forever.
 awful.spawn.with_shell(
     "command -v greenclip >/dev/null && { pgrep -x greenclip >/dev/null || greenclip daemon & }")
--- Screen lock: light-locker VT-switches to the lightdm greeter (the visible,
--- themed lock screen) after 5 min idle and on suspend/lid close. The greeter
--- path is safe again — the malformed Xorg snippet that black-screened it is
--- fixed and validated at install time (services.sh + xorg_conf_valid).
--- 'xset s noblank' is the important part: with X's own blanking enabled (the
--- default) X paints the screen BLACK at the idle timeout, and that black is
--- what you see -- not the greeter. light-locker still gets the screensaver
--- activation and locks; it just no longer sits behind a blanked X screen.
--- cycle 0 stops X re-triggering, and locking 1s after activation keeps the
--- gap between "idle" and "greeter visible" as short as possible.
--- 'xset -dpms' because amdgpu (RX 7600) sometimes never relights the display
--- after a DPMS off — lightdm/50-no-dpms.conf handles X servers lightdm
--- starts; this covers a bare startx session too.
+-- Screen lock: i3lock IN THIS X SESSION, driven by xss-lock. Deliberately NOT
+-- light-locker any more.
+--
+-- light-locker locks by VT-switching to a second X server running the lightdm
+-- greeter, and LIGHTDM REFUSES TO DO THAT. Not a misconfiguration -- do not
+-- spend another evening on /etc/lightdm. From /var/log/lightdm/lightdm.log at
+-- the moment of the lock:
+--
+--   [+0.00s]   Seat seat0 has property CanMultiSession=no
+--   [+582.08s] Unable to switch to greeter because the seat already has a
+--              session and does not support session switching
+--
+-- lightdm decides CanMultiSession=no for the seat at startup and then declines
+-- every greeter switch. There is no override: the string exists only inside the
+-- lightdm binary, and nothing in lightdm.conf or its man page can set it. Both
+-- `dm-tool lock` and `dm-tool switch-to-greeter` hit the same refusal.
+--
+-- light-locker asks anyway, gets told no, and has already blanked the screen --
+-- so you are left staring at a blank display with no greeter behind it, deaf to
+-- mouse and keyboard, recoverable only by holding the power button. The 5-minute
+-- idle timer did it unattended too.
+--
+-- Things that were NOT the cause, checked so nobody re-checks them: the
+-- display-setup-script in lightdm/50-no-dpms.conf runs fine ("Exit status of
+-- /usr/bin/xset s off -dpms: 0" on every boot); there is no amdgpu relight
+-- failure (Barcelo iGPU, no REG_WAIT/optc errors in the kernel log, DPMS
+-- already off); and the 30-touchpad.conf parse error in x-1.log is from 2026-08-02
+-- and was fixed long before this.
+--
+-- So the locker has to live inside the session it protects. i3lock draws a
+-- window on the X display that is already running: no VT switch, no greeter,
+-- nothing to hand off to, nothing to be refused. When it cannot start it simply
+-- does not lock -- annoying, but never a machine you have to power-cycle.
+--
+-- xss-lock is the bridge: it runs i3lock on the X screensaver timeout AND on
+-- logind's lock-session/suspend signals, so idle, lid close and Super+Escape
+-- all take the same path. --transfer-sleep-lock holds systemd's sleep
+-- inhibitor until i3lock is actually up, so the laptop cannot suspend and wake
+-- to an unlocked desktop.
+--
+-- 'xset s 300 0' arms the 5-minute idle trigger and cycle 0 stops X
+-- re-triggering; 'xset s noblank' matters because X's own blanking would paint
+-- black over the lock screen. 'xset -dpms' stays: amdgpu sometimes never
+-- relights the panel after a DPMS off (see lightdm/50-no-dpms.conf).
 awful.spawn.with_shell(
-    "command -v light-locker >/dev/null && { xset s 300 0; xset s noblank; xset -dpms; " ..
-    "pgrep -x light-locker >/dev/null || light-locker --lock-after-screensaver=1 --lock-on-suspend & }")
+    "xset s 300 0; xset s noblank; xset -dpms; " ..
+    "command -v xss-lock >/dev/null && { pgrep -x xss-lock >/dev/null || " ..
+    "xss-lock --transfer-sleep-lock -- i3lock --nofork --ignore-empty-password --color 1e1e2e & }")
 
 -- GTK / icon / cursor theme for non-awesome apps (Brave, GTK tools, Qt via
 -- the icon name). This runs on every start and overwrites settings.ini, so it

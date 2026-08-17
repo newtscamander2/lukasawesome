@@ -58,8 +58,21 @@ if svc_enabled lightdm.service; then
     [ -d /usr/share/xsessions ] && [ -n "$(ls -A /usr/share/xsessions 2>/dev/null)" ] \
         && pass "xsessions present ($(ls /usr/share/xsessions | tr '\n' ' '))" \
         || miss "no sessions in /usr/share/xsessions — greeter will have nothing to launch"
-    # Screen lock (Super+Escape / 5 min idle) locks to the lightdm greeter.
-    check_pkg light-locker
+    # Screen lock (Super+Escape / 5 min idle) is i3lock inside the session, NOT
+    # the lightdm greeter — see the autostart comment in rc.lua for why.
+    check_pkg i3lock
+    check_pkg xss-lock
+    # The locker is only armed while xss-lock is up: without it the idle timeout
+    # and lid close lock nothing at all, which is silent until the laptop is
+    # left on a table unlocked.
+    if pgrep -x xss-lock >/dev/null 2>&1; then
+        pass "xss-lock running (idle + suspend locking armed)"
+    else
+        miss "xss-lock not running — idle and lid-close do NOT lock (restart awesome)"
+    fi
+    if pacman -Q light-locker >/dev/null 2>&1; then
+        note "light-locker still installed but unused; safe to remove: sudo pacman -Rns light-locker"
+    fi
     [ -f /etc/lightdm/lightdm-gtk-greeter.conf ] \
         && pass "greeter config deployed" \
         || note "greeter config not deployed yet (make services)"

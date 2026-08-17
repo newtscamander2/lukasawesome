@@ -65,7 +65,14 @@ if enabled INSTALL_BASE; then
         cava                           # audio visualizer (bottom-edge wave in rc.lua)
         bluez bluez-utils blueman      # bluetooth
         playerctl                      # media-key control (play/pause/next) + rc.lua "now playing" panel
-        light-locker                   # lock to lightdm greeter (Super+Escape + 5 min idle, rc.lua)
+        i3lock xss-lock                # screen lock (Super+Escape + 5 min idle, rc.lua).
+                                       # NOT light-locker: it locks by switching to the
+                                       # lightdm greeter, and when that greeter does not
+                                       # come up you get a black screen that ignores all
+                                       # input and needs a hard reboot. i3lock draws in
+                                       # the session itself, so a failure to lock cannot
+                                       # lock you out. xss-lock drives it from the idle
+                                       # timeout and from logind suspend/lid events.
         xclip                          # X clipboard CLI: nvim unnamedplus provider + clipboard plumbing
         amd-ucode                      # AMD CPU microcode (harmless if Intel)
         ufw                            # firewall (public / uni networks)
