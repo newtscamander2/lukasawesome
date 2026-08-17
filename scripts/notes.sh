@@ -113,6 +113,10 @@ setup_deploy_key() {
             printf '    IdentityFile %s\n' "${DEPLOY_KEY/#$HOME/\~}"
             printf '    IdentitiesOnly yes\n'
             printf '    AddKeysToAgent yes\n'
+            # ssh matches config blocks by the ALIAS, so the "Host gitlab.com"
+            # block's IPv6 workaround does not apply here — repeat it.
+            printf '    AddressFamily inet\n'
+            printf '    ConnectTimeout 10\n'
             printf '\n'
             [ -f "$cfg_file" ] && cat "$cfg_file"
         } > "$tmp"
@@ -129,7 +133,13 @@ setup_deploy_key() {
 # two has to work.
 deploy_key_works() {
     [ -f "$DEPLOY_KEY" ] || return 1
-    GIT_SSH_COMMAND="ssh -i $DEPLOY_KEY -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=10" \
+    # -F /dev/null: a "Host gitlab.com" block in ~/.ssh/config contributes its
+    # IdentityFile even under IdentitiesOnly=yes, so the ACCOUNT key would be
+    # offered alongside -i and GitLab would accept it — reporting the deploy
+    # key as registered when it is not. Test with the deploy key and nothing
+    # else. AddressFamily inet matches the config workaround this drops: IPv6
+    # to gitlab.com blackholes on some networks.
+    GIT_SSH_COMMAND="ssh -F /dev/null -i $DEPLOY_KEY -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=10 -o AddressFamily=inet -o StrictHostKeyChecking=accept-new" \
         git ls-remote --heads "git@gitlab.com:${NAMESPACE}/${PROJECT}.git" >/dev/null 2>&1
 }
 
