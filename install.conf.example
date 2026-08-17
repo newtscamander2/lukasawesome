@@ -21,6 +21,7 @@ THEMES="dr460nized arch windows7 win11"
 
 # --- Package groups ---
 INSTALL_BASE=yes              # git, stow, base-devel, zathura, rofi, feh, neofetch, keepassxc, dolphin, flameshot, timeshift
+INSTALL_PENTEST=no            # metasploit (~1 GB) — yes on the laptop; the desktop's root partition is too small
 INSTALL_DEV=yes               # docker, g++, jdk, python, tmux, ansible, kubernetes (kubectl/helm/minikube/k9s)
 INSTALL_VIRT=yes              # wine, virtualbox
 INSTALL_MEDIA=yes             # obs-studio, gimp, shotcut, kazam

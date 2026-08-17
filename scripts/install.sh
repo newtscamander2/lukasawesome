@@ -19,8 +19,9 @@ questionnaire() {
     dm="$(ask_str  "Display manager (lightdm/sddm/ly/none)" "$(cfg DISPLAY_MANAGER lightdm)")"
     laptop="$(ask_yn "Is this a laptop (adds tlp, brightnessctl, touchpad config)?" "$([ "$(cfg LAPTOP no)" = yes ] && echo y || echo n)")"
 
-    local base dev virt media tex vscode browser claude lvm vpn optional
+    local base pentest dev virt media tex vscode browser claude lvm vpn optional
     base="$(ask_yn    "Install base desktop apps (zathura, rofi, keepassxc, dolphin, flameshot, timeshift)?" "$([ "$(cfg INSTALL_BASE yes)"    = no ] && echo n || echo y)")"
+    pentest="$(ask_yn "Install pentesting tools (metasploit, ~1 GB on the root partition)?"                  "$([ "$(cfg INSTALL_PENTEST no)"  = yes ] && echo y || echo n)")"
     dev="$(ask_yn     "Install dev toolchains (docker, g++, java, python, ansible, kubernetes)?"             "$([ "$(cfg INSTALL_DEV yes)"     = no ] && echo n || echo y)")"
     virt="$(ask_yn    "Install virtualization (wine, virtualbox)?"                                          "$([ "$(cfg INSTALL_VIRT yes)"    = no ] && echo n || echo y)")"
     media="$(ask_yn   "Install media apps (obs, gimp, shotcut, kazam)?"                                     "$([ "$(cfg INSTALL_MEDIA yes)"   = no ] && echo n || echo y)")"
@@ -45,6 +46,7 @@ DISPLAY_MANAGER=$dm
 STOW_PACKAGES="$(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash rclone clang-format cava qt greenclip notes keepassxc flameshot")"
 THEMES="$(cfg THEMES "dr460nized arch windows7 win11")"
 INSTALL_BASE=$base
+INSTALL_PENTEST=$pentest
 INSTALL_DEV=$dev
 INSTALL_VIRT=$virt
 INSTALL_MEDIA=$media

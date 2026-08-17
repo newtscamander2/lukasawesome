@@ -93,13 +93,22 @@ if enabled INSTALL_BASE; then
         remmina freerdp                # remote desktop (RDP)
         nmap                           # network discovery / port scanning
         easy-rsa                       # small certificate authority, for OpenVPN
-        metasploit                     # pentesting framework (large: ~1 GB)
         obsidian                       # markdown knowledge base
     )
     aur+=(neofetch)                    # dropped from official repos -> AUR
     aur+=(rofi-greenclip)              # clipboard history daemon behind Super+V (clipboard-menu.sh)
     aur+=(catppuccin-cursors-mocha)    # cursor theme for the arch (Mocha) theme
     aur+=(sweet-gtk-theme-dark)        # GTK side of the Dr460nized look
+fi
+
+# --- Pentesting framework (big) ---
+# Separate from INSTALL_BASE because metasploit alone costs ~1 GB on the root
+# partition — fine on the laptop, too much for the desktop's small root FS.
+# 'enabled' defaults to no, so machines without the flag never pull it in.
+if enabled INSTALL_PENTEST; then
+    pac+=(
+        metasploit                     # pentesting framework (large: ~1 GB)
+    )
 fi
 
 # --- Laptop-only essentials ---
