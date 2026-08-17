@@ -6,9 +6,23 @@ Wants=network-online.target
 
 [Service]
 Type=notify
+# Clear a stale mountpoint before anything else. When rclone dies without
+# unmounting -- a crash, a hard poweroff, an unclean restart -- ~/ProtonDrive is
+# left as a dangling FUSE endpoint, and then even `mkdir -p` on it fails with
+# "Transport endpoint is not connected". The service could never start again
+# without unmounting it by hand. The leading '-' means "ignore the failure",
+# because on a clean start there is nothing to unmount.
+ExecStartPre=-/usr/bin/fusermount3 -uz %h/ProtonDrive
 ExecStartPre=/usr/bin/mkdir -p %h/ProtonDrive
-ExecStart=/usr/bin/rclone mount protondrive: %h/ProtonDrive --vfs-cache-mode full --vfs-cache-max-age 24h --dir-cache-time 12h --umask 077 --log-level INFO
-ExecStop=/usr/bin/fusermount -uz %h/ProtonDrive
+# --dir-cache-time 1h, not 12h: a directory created on another machine (or by
+# the KeePassXC bisync, which talks to the API rather than through this mount)
+# was invisible here for up to half a day. An hour still keeps the API calls
+# down without the mount lying about what is on the drive.
+ExecStart=/usr/bin/rclone mount protondrive: %h/ProtonDrive --vfs-cache-mode full --vfs-cache-max-age 24h --dir-cache-time 1h --umask 077 --log-level INFO
+# fusermount3, not fusermount: fuse3 is what is installed (packages.sh installs
+# it), and it does not provide the fuse2 binary name. The old ExecStop silently
+# failed on every stop, which is what left the stale mountpoint above.
+ExecStop=/usr/bin/fusermount3 -uz %h/ProtonDrive
 # Recover from dropped network / transient auth failures.
 Restart=on-failure
 RestartSec=10

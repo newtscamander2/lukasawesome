@@ -5,7 +5,7 @@ SHELL  := /bin/bash
 INSTALL := scripts/install.sh
 
 .DEFAULT_GOAL := help
-.PHONY: help configure plan install yay packages drivers services stow apps repos protondrive check-system repair-display
+.PHONY: help configure plan install yay packages drivers services stow bin apps repos notes test keepassxc timeshift protondrive check-system repair-display
 
 help: ## Show this help
 	@echo "lukasawesome bootstrap targets:"
@@ -36,11 +36,29 @@ services: ## Enable display manager, docker, virtualbox
 stow: ## Symlink config packages into $$HOME
 	@bash $(INSTALL) stow
 
+bin: ## Link bin/ CLI tools (goat-manager, gm) into ~/.local/bin
+	@bash $(INSTALL) bin
+
 apps: ## Apply VSCode settings (no network credentials needed)
 	@bash $(INSTALL) apps
 
 repos: ## Set up SSH key for GitLab/GitHub + clone personal repos
 	@bash $(INSTALL) repos
+
+notes: ## Set up ~/aarhusuni for git worktrees + the 5-minute snapshot timer
+	@bash $(INSTALL) notes
+
+test: ## Run the goat-manager tests (throwaway repo in $$TMPDIR, never your notes)
+	@bash tests/test_goat_manager.sh
+
+keepassxc: ## Two-way sync the KeePassXC database with Proton Drive (bisync)
+	@bash scripts/keepassxc-sync.sh init
+	@systemctl --user daemon-reload
+	@systemctl --user enable --now keepassxc-sync.timer
+	@echo "Syncing every 15 minutes. Status: bash scripts/keepassxc-sync.sh status"
+
+timeshift: ## Configure automatic btrfs snapshots of / and /home (needs sudo)
+	@sudo bash scripts/timeshift-snapshots.sh
 
 protondrive: ## One-time Proton Drive login + enable the ~/ProtonDrive mount
 	@bash $(INSTALL) protondrive

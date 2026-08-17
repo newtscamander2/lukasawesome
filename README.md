@@ -59,7 +59,9 @@ make packages    # install package groups
 make drivers     # GPU drivers + multi-monitor / projector tooling
 make services    # display manager, docker, virtualbox
 make stow        # symlink config packages into $HOME (GNU Stow)
+make bin         # link bin/ CLI tools (goat-manager, gm) into ~/.local/bin
 make apps        # VSCode settings + clone cv/goat into ~/projects
+make notes       # ~/aarhusuni as a worktree repo + the 5-minute snapshot timer
 make check-system # verify packages, services, audio and symlinks
 ```
 
@@ -107,8 +109,182 @@ packages; `make stow` symlinks each into `$HOME`:
 | `nvim/`      | `~/.config/nvim`       |
 | `tmux/`      | `~/.config/tmux`       |
 | `alacritty/` | `~/.config/alacritty`  |
+| `notes/`     | `~/.config/systemd/user` (goat-autosave timer) |
+| `keepassxc/` | `~/.config/systemd/user` (keepassxc-sync timer) |
+| `flameshot/` | `~/.config/flameshot`  |
 
-`scripts/` holds the installer; `vscode/` holds settings applied by `make apps`.
+`scripts/` holds the installer; `vscode/` holds settings applied by `make apps`;
+`bin/` holds personal CLI tools and `completions/` their bash completion, both
+installed by `make bin`.
+
+## goat-manager (`gm`)
+
+`bin/goat-manager` manages [goat](https://gitlab.com/newtscamander/goat) LaTeX
+documents: which release of the library a document targets, and where coursework
+lives on disk. `make bin` links it into `~/.local/bin` as both `goat-manager`
+and `gm`, with bash completion for both names.
+
+It has **no configuration file**. The coursework tree is its only state, and
+where you are in that tree decides what you can do.
+
+```bash
+gm main.tex --get-version      # which goat release this document targets
+gm main.tex --check-upgrade    # is a newer goat available? (exit 10 if yes)
+gm main.tex --upgrade          # re-pin to the newest goat, then test-compile
+```
+
+The version a document targets is recorded as a magic comment on its first line
+(`% !goat version = 0.1.4`), so it survives being copied, mailed or opened on
+Overleaf. A LaTeX rollback pin (`\usepackage{goat}[=0.1.4]`), a bare date pin,
+and a project-level `.goat-version`/`goat.toml` are also recognised, in that
+order of precedence. `--upgrade` keeps a `.bak`, rewrites the pin, compiles the
+document in a temp directory, and restores the original if that compile fails —
+so upgrading can never silently break a hand-in.
+
+### The tree
+
+Three levels, and the root can be called anything:
+
+```
+~/aarhusuni/                                      root
+└── 1semester/                                    semester
+    └── math/                                     course
+        ├── .gm                 optional, yours: professor, Brightspace link, ...
+        └── 2026-10-05-writing-hello-world-in-python/
+            ├── main.tex        goat preamble, fields filled in, version pinned
+            ├── main.pdf
+            ├── img/            \gimage and goat-img put images here
+            ├── latex_debug_files/   .aux .log .bbl .bcf .fls .run.xml ...
+            └── .latexmkrc      pdflatex + biber + shell-escape + aux_dir
+```
+
+There are no marker or config files: a directory named `<N>semester` is the
+hinge, so everything above it is the root and everything below is a course and
+its entries. Moving or renaming the tree changes nothing.
+
+Build debris stays out of the way. The generated `.latexmkrc` sets
+`$aux_dir = 'latex_debug_files'` but leaves `$out_dir` alone, so `main.pdf` is
+still written next to `main.tex` while everything else lands in the
+subdirectory. VimTeX reads the file and follows `aux_dir`, so its quickfix list
+still finds the log and zathura still opens the PDF where it expects it.
+
+### The `.gm` course file
+
+A course may hold a `.gm` file in JSON. `gm` reads it and shows it when you run
+`gm` in that course; it never writes to it, and no flag touches it — it is
+yours to edit. Any keys are allowed and shown in the order you wrote them:
+
+```json
+{
+  "professor": "Gerth Stolting Brodal",
+  "brightspace": "https://brightspace.au.dk/d2l/home/123456",
+  "ects": 10
+}
+```
+
+You create one level at a time, from the level above, and move between them with
+`cd` — the same way you would do it by hand:
+
+```bash
+cd ~/aarhusuni      && gm --create-semester 1
+cd 1semester        && gm --create-course math
+cd math             && gm --create-lecture "Writing hello world in Python"
+                       gm --create-homework "Uge 3"
+                       gm --create-report "Sorteringsbenchmark"
+```
+
+In a course, each `--create-*` makes the dated directory and writes `main.tex`
+from one of three built-in templates. The action and the template are
+independent, so lecture notes from the report skeleton is
+`gm --create-lecture "Eksamensnoter" --template report`.
+
+```
+$ gm --templates
+:: templates for --template
+   homework  hand-in: front page, numbered question boxes to answer  (--create-homework)
+   lecture   running notes: header, sections, commented gcode/gnote/gimage  (--create-lecture)
+   report    report: front page, abstract, contents, intro..conclusion, bibliography  (--create-report)
+```
+
+Nothing is ever overwritten. Running the same command twice refuses rather than
+replacing your work, and there is no flag to force it:
+
+```
+$ gm --create-lecture "Kollision"
+  x main.tex already exists in 2026-08-14-kollision — nothing written.
+    Delete it first, or use another title
+```
+
+Inside an entry there is nothing to create — that is where you write. `gm` there
+reports the document and its pinned goat version instead.
+
+Ask for the wrong level and it says so rather than guessing, naming the level you
+are on and the `cd` that fixes it — counted from where the shell actually is, so
+it is right even from an entry's `img/`:
+
+```
+$ cd ~/aarhusuni && gm --create-course math
+  x a course belongs in a semester, but you are in the root
+    (/home/lukas/aarhusuni). cd into a semester first, e.g. cd 1semester
+
+$ cd ~/aarhusuni/1semester/math/2026-08-14-lister/img && gm --create-lecture "X"
+  x a lecture belongs in a course, but you are in an entry
+    (1semester/math/2026-08-14-lister). cd ../.. up to the course
+```
+
+### Looking around
+
+Typed on its own, `gm` reports the level you are on and what is on it — the
+semesters in a root, the courses in a semester, the entries in a course, the
+document and its pinned goat version in an entry.
+
+```
+$ cd ~/aarhusuni/1semester && gm
+:: /home/lukas/aarhusuni/1semester  (semester)
+
+   beregnelighed-og-logik    3 entries   latest 2026-08-20 turingmaskiner
+   math                      1 entry     latest 2026-08-14 lister og loekker
+
+:: cd into a course, or: gm --create-course math
+```
+
+In a course it also prints whatever the `.gm` file says:
+
+```
+$ cd math && gm
+:: /home/lukas/aarhusuni/1semester/math  (course)
+
+   professor    Gerth Stolting Brodal
+   brightspace  https://brightspace.au.dk/d2l/home/123456
+
+   2026-08-14  lister og loekker
+
+:: gm --create-lecture "..."   new entry with main.tex from a goat template
+```
+
+`gm --help` is level-aware the same way: it lists only the actions that work
+where you are — the three `--create-*` and the template table in a course, just
+`--create-course` in a semester, and the `--get-version`/`--check-upgrade`/
+`--upgrade` trio only when the current directory actually holds a document. So
+it stays short enough to read.
+
+### Filling in documents
+
+Scaffolded documents take their author and similar details from the environment,
+so there is still nothing to configure. Unset variables leave the template's own
+placeholder visible, so you notice it needs filling in.
+
+| Variable | Fills in |
+| --- | --- |
+| `GOAT_AUTHOR` | `\setgoatauthor` |
+| `GOAT_STUDENT_ID` | `\setgoatstudentid` |
+| `GOAT_DEPARTMENT` | `\setgoatdept` |
+| `GOAT_LANG` | `lang=`, and the section headings (default `english`) |
+| `GOAT_STYLE` | `style=` (default `au`) |
+
+Export them from `bash/.bashrc` if you want them permanently. `GOAT_LANG` also
+picks the language of the scaffolded section headings and placeholder sentences
+(`english` or `danish`).
 
 ## AwesomeWM themes
 
@@ -150,6 +326,12 @@ regenerate with `awesome/.config/awesome/themes/windows7/make-assets.sh`.
 - **Eduroam (AU) — laptop only**: connect to Aarhus University wifi via the
   eduroam CAT installer; full walkthrough in [docs/eduroam-au.md](docs/eduroam-au.md).
   Wifi GUI is `nm-applet` in the systray (autostarted by awesome).
+- **System snapshots**: `make timeshift` sets up automatic
+  btrfs snapshots of `/` and `/home` via Timeshift, with a systemd timer that
+  catches up on schedules missed while the laptop was suspended. Snapshots are
+  atomic and take <1s, so closing the lid can't interrupt one. Full walkthrough
+  — including what `/boot` does *not* cover — in
+  [docs/timeshift.md](docs/timeshift.md).
 
 ## Secrets
 

@@ -221,7 +221,7 @@ if enabled INSTALL_DEV; then
 fi
 
 log "Dotfiles symlinks"
-for pkg_name in $(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash rclone clang-format cava qt greenclip"); do
+for pkg_name in $(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash rclone clang-format cava qt greenclip notes keepassxc flameshot"); do
     case "$pkg_name" in
         awesome)   target="$HOME/.config/awesome" ;;
         nvim)      target="$HOME/.config/nvim" ;;
@@ -234,6 +234,9 @@ for pkg_name in $(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash
         cava)      target="$HOME/.config/cava" ;;
         qt)        target="$HOME/.local/share/color-schemes/Dr460nized.colors" ;;
         greenclip) target="$HOME/.config/greenclip.toml" ;;
+        notes)     target="$HOME/.config/systemd/user/goat-autosave.timer" ;;
+        keepassxc) target="$HOME/.config/systemd/user/keepassxc-sync.timer" ;;
+        flameshot) target="$HOME/.config/flameshot/flameshot.ini" ;;
         *)         target="" ;;
     esac
     [ -z "$target" ] && continue
@@ -245,6 +248,131 @@ for pkg_name in $(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash
         miss "$pkg_name not linked ($target)"
     fi
 done
+
+log "Personal CLI tools (~/.local/bin)"
+case ":$PATH:" in
+    *":$HOME/.local/bin:"*) pass "~/.local/bin on \$PATH" ;;
+    # Not critical: the PATH entry comes from the stowed .bashrc, so it only
+    # shows up in shells started after 'make stow'.
+    *) note "~/.local/bin not on \$PATH in this shell (open a new terminal)" ;;
+esac
+for tool in "$DOTFILES_DIR"/bin/*; do
+    [ -f "$tool" ] || continue
+    name="$(basename "$tool")"
+    if [ -L "$HOME/.local/bin/$name" ]; then
+        pass "$name linked"
+    else
+        miss "$name not linked (run 'make bin')"
+    fi
+done
+
+# --- KeePassXC: is the database syncing, and is it out of git? ----------------
+KP_LOCAL="$(cfg KEEPASS_LOCAL_DIR "$HOME/KeePassXC")"
+if [ -d "$KP_LOCAL" ]; then
+    echo
+    log "KeePassXC ($KP_LOCAL)"
+    if [ -n "$(find "$KP_LOCAL" -maxdepth 1 -name '*.kdbx' -print -quit 2>/dev/null)" ]; then
+        pass "database present"
+    else
+        miss "no .kdbx in $KP_LOCAL"
+    fi
+    if systemctl --user is-active --quiet keepassxc-sync.timer; then
+        pass "keepassxc-sync.timer active (every 15 min)"
+    else
+        miss "keepassxc-sync.timer not running (run 'make keepassxc')"
+    fi
+    # A blocked sync is silent unless something looks for it.
+    if tail -40 "${XDG_STATE_HOME:-$HOME/.local/state}/keepassxc-sync.log" 2>/dev/null \
+            | grep -q "too many deletes"; then
+        miss "the sync is BLOCKED by a refused deletion"
+        note "  bash ~/lukasawesome/scripts/keepassxc-sync.sh allow-delete"
+    else
+        pass "sync not blocked"
+    fi
+    if find "$KP_LOCAL" -maxdepth 1 -name '*conflict*' -print -quit 2>/dev/null | grep -q .; then
+        miss "conflict files present — both versions were kept, merge them"
+        note "  bash ~/lukasawesome/scripts/keepassxc-sync.sh status"
+    else
+        pass "no sync conflicts"
+    fi
+fi
+
+# The one that must never be true: a password database inside a repository.
+if find "$DOTFILES_DIR" "$HOME/aarhusuni" "$HOME/projects" -name '*.kdbx' \
+        -not -path '*/.git/*' -print -quit 2>/dev/null | grep -q .; then
+    miss "A .kdbx FILE IS INSIDE A GIT WORKING TREE — remove it before committing"
+    find "$DOTFILES_DIR" "$HOME/aarhusuni" "$HOME/projects" -name '*.kdbx' \
+        -not -path '*/.git/*' 2>/dev/null | sed 's/^/       /'
+else
+    pass "no password database inside any repository"
+fi
+
+# --- University notes: is the safety net actually running? --------------------
+# This block exists because it once was not. A stow change turned
+# ~/.config/systemd/user/sockets.target.wants into a symlink, systemd stopped
+# honouring it, ssh-agent never started at boot, and every snapshot push failed
+# for hours -- visible only to someone who ran 'gm --pending' and read it. A
+# backup you have to remember to check is not a backup.
+NOTES="$(cfg NOTES_DIR "$HOME/aarhusuni")"
+if [ -d "$NOTES/.bare" ]; then
+    echo
+    log "University notes ($NOTES)"
+
+    if systemctl --user is-enabled --quiet goat-autosave.timer 2>/dev/null; then
+        if usvc_active goat-autosave.timer; then
+            pass "goat-autosave.timer active (snapshots every 5 min)"
+        else
+            miss "goat-autosave.timer enabled but not running"
+        fi
+    else
+        miss "goat-autosave.timer not enabled (run 'make notes')"
+    fi
+
+    # The deploy key is what makes unattended pushes possible at all: no
+    # passphrase, scoped to this one project. If it works, the agent does not
+    # matter for snapshots, so check it first and only fall back to asking
+    # about the agent.
+    NS="$(cfg GITLAB_NAMESPACE newtscamander)"
+    PROJ="$(cfg NOTES_PROJECT aarhusuni)"
+    KEY="$(cfg NOTES_DEPLOY_KEY "$HOME/.ssh/id_ed25519_${PROJ}")"
+    if [ -f "$KEY" ]; then
+        pass "deploy key present ($(basename "$KEY"))"
+        if GIT_SSH_COMMAND="ssh -i $KEY -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=10" \
+                git ls-remote --heads "git@gitlab.com:${NS}/${PROJ}.git" >/dev/null 2>&1; then
+            pass "deploy key is registered — snapshots push unattended"
+        else
+            miss "deploy key is not registered on ${PROJ}"
+            note "  https://gitlab.com/${NS}/${PROJ}/-/settings/repository -> Deploy keys"
+            note "  (tick 'Grant write permissions'), then: make notes"
+            if SSH_AUTH_SOCK="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/ssh-agent.socket" \
+                    ssh-add -l >/dev/null 2>&1; then
+                note "  meanwhile the agent holds a key, so pushes work by hand"
+            else
+                note "  and the agent holds no key, so nothing can push at all"
+            fi
+        fi
+    else
+        miss "no deploy key — run 'make notes' to create one"
+    fi
+
+    # The socket, not just the agent: a socket that is disabled will not come
+    # back after a boot, which is how the backups once stopped for hours.
+    if systemctl --user is-enabled --quiet ssh-agent.socket 2>/dev/null; then
+        pass "ssh-agent.socket enabled"
+    else
+        miss "ssh-agent.socket not enabled"
+        note "  systemctl --user enable --now ssh-agent.socket"
+    fi
+
+    # The last word on whether it is working: what gm itself thinks.
+    if have gm; then
+        if gm --pending 2>/dev/null | grep -q "push failed"; then
+            miss "a snapshot push has failed — run 'gm --pending' for the reason"
+        else
+            pass "no failed snapshot pushes"
+        fi
+    fi
+fi
 
 echo
 if [ "$fails" -eq 0 ]; then

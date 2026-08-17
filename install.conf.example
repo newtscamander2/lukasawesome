@@ -13,7 +13,8 @@ LAPTOP=no                     # yes on a laptop: adds tlp, brightnessctl, touchp
 DISPLAY_MANAGER=lightdm       # lightdm | sddm | ly | none
 
 # --- Stow packages to symlink into $HOME ---
-STOW_PACKAGES="awesome nvim tmux alacritty fontconfig bash rclone clang-format cava qt greenclip"
+# 'notes' ships goat-autosave.{service,timer}, enabled by 'make notes'.
+STOW_PACKAGES="awesome nvim tmux alacritty fontconfig bash rclone clang-format cava qt greenclip notes keepassxc flameshot"
 
 # --- AwesomeWM themes to keep available (cycled with Super+Shift+T) ---
 THEMES="dr460nized arch windows7 win11"

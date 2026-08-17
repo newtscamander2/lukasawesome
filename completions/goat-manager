@@ -1,0 +1,62 @@
+# bash completion for goat-manager / gm, and for the `class` shell function.
+#
+# Only actions and flags need completing: gm takes its location from the
+# directory you are in, so there is nothing to look up. The positional argument
+# is a .tex file (or a directory holding one).
+#
+# The one exception is a course name, which gm itself is asked for -- so the
+# list can never drift from what actually exists.
+
+# Course names known to the notes repository (worktrees plus courses in main).
+# Silent and empty when there is no repository yet, so completion never errors.
+_goat_courses() {
+    gm --classes -q 2>/dev/null
+}
+
+_goat_manager() {
+    local cur prev
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    local actions="--get-version --check-upgrade --upgrade --create-semester
+                   --create-course --create-lecture --create-homework
+                   --create-report --templates --class --classes --pending
+                   --sync --save --wrap-up --restore --nest"
+    local opts="--template --slug --semester --project --remote -m --message
+                -n --dry-run -q --quiet --json -h --help --version"
+
+    case "$prev" in
+        --template)
+            # Ask gm itself, so the list cannot drift from what it accepts.
+            mapfile -t COMPREPLY < <(compgen -W "$(gm --templates -q 2>/dev/null)" -- "$cur")
+            return ;;
+        --class|--restore)
+            mapfile -t COMPREPLY < <(compgen -W "$(_goat_courses)" -- "$cur")
+            return ;;
+        --nest)
+            mapfile -t COMPREPLY < <(compgen -W "restore" -- "$cur")
+            return ;;
+        --create-course)
+            # Courses that already exist in this semester, in case you are
+            # re-running the command; otherwise a new name is free text.
+            mapfile -t COMPREPLY < <(compgen -d -- "$cur")
+            return ;;
+    esac
+
+    if [[ $cur == -* ]]; then
+        mapfile -t COMPREPLY < <(compgen -W "$actions $opts" -- "$cur")
+        return
+    fi
+
+    mapfile -t COMPREPLY < <(compgen -f -X '!*.tex' -- "$cur"; compgen -d -- "$cur")
+}
+
+# `class <tab>` -- the one you use in a lecture. Existing courses only; a new
+# course is free text, which completion cannot help with anyway.
+_goat_class() {
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+    mapfile -t COMPREPLY < <(compgen -W "$(_goat_courses)" -- "$cur")
+}
+
+complete -F _goat_manager goat-manager gm
+complete -F _goat_class class

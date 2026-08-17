@@ -73,6 +73,17 @@ if enabled INSTALL_BASE; then
     run sudo ufw --force enable
     run sudo systemctl enable ufw.service
     run sudo systemctl enable reflector.timer
+    # Printing. cups.socket rather than cups.service: socket activation starts
+    # the daemon the first time something actually prints, instead of running it
+    # from boot for the sake of a printer you use twice a semester.
+    run sudo systemctl enable cups.socket
+    # Compressed swap in RAM. The zram-generator package creates no device
+    # without this config file, so installing it alone (as this repo did) left
+    # the machine with no zram at all. A generator, not a unit: it is read at
+    # boot, so there is nothing to enable.
+    log "Installing zram-generator config"
+    run sudo install -Dm644 "$DOTFILES_DIR/zram/zram-generator.conf" \
+        /etc/systemd/zram-generator.conf
 fi
 
 # --- Laptop: power management + touchpad ---

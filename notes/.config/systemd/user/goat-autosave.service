@@ -1,0 +1,33 @@
+[Unit]
+Description=Snapshot uncommitted university notes to GitLab
+Documentation=file:%h/lukasawesome/docs/worktrees.md
+# Best-effort: if there is no network the snapshot is still written locally and
+# the next run pushes it, so a failure here is never worth a restart storm.
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# --quiet keeps the journal readable: it says nothing when nothing changed.
+ExecStart=%h/.local/bin/goat-manager --save --quiet
+# gm finds the repository by walking up from here, and falls back to
+# $GOAT_NOTES then ~/aarhusuni. Set GOAT_NOTES if the notes ever move.
+WorkingDirectory=%h
+Environment=GOAT_NOTES=%h/aarhusuni
+# The push needs the key the login session already unlocked. Same socket the
+# shell uses (see bash/.bashrc); without this, systemd's environment has no
+# agent and every push would fail.
+Environment=SSH_AUTH_SOCK=%t/ssh-agent.socket
+# NO PrivateTmp. It looks harmless — this service only writes into the
+# repository — but it puts ssh in a mount namespace where the symlinked
+# /etc/ssh/ssh_config.d/20-systemd-ssh-proxy.conf fails its ownership check:
+#
+#     Bad owner or permissions on /etc/ssh/ssh_config.d/20-systemd-ssh-proxy.conf
+#
+# ssh then refuses to run, every push fails, and the snapshots quietly stop
+# leaving the machine — which is the one failure this timer exists to prevent.
+NoNewPrivileges=yes
+# A run that wedges would block every later one, and the backups would stop
+# without saying so. gm already refuses to let ssh wait for input; this is the
+# outer limit in case something else does.
+TimeoutStartSec=180

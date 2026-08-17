@@ -1,0 +1,17 @@
+[Unit]
+Description=Snapshot university notes every five minutes
+Documentation=file:%h/lukasawesome/docs/worktrees.md
+
+[Timer]
+# Five minutes is the worst case for how much work a dead battery can cost.
+OnBootSec=2min
+OnUnitActiveSec=5min
+# Catch up after a suspend or a shutdown rather than silently skipping: coming
+# back from a closed lid is exactly when the last snapshot matters most.
+Persistent=true
+# Nothing else is waiting on this; let it drift a little to stay off the
+# critical path when several timers wake together.
+AccuracySec=30s
+
+[Install]
+WantedBy=timers.target
