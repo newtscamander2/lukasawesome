@@ -94,7 +94,38 @@ setup_deploy_key() {
     # State first, DRY_RUN second: checking the flag first made a dry run report
     # "would add" even when the block was already there.
     if grep -q "^Host ${SSH_ALIAS}\$" "$cfg_file" 2>/dev/null; then
-        ok "$SSH_ALIAS is already in $cfg_file."
+        # "Present" is not the same as "correct". A stanza written before the
+        # IPv6 workaround existed has no AddressFamily, and this branch used to
+        # accept it and move on -- so the very next git operation sat in
+        # SYN-SENT to gitlab.com's IPv6 address forever, with no ConnectTimeout
+        # to end it. `make notes` printed "already in ~/.ssh/config" and then
+        # hung, which reads as a broken repository rather than a stale config.
+        #
+        # It hid behind deploy_key_works(), which passes -F /dev/null and
+        # -o AddressFamily=inet explicitly: the CHECK went out over IPv4 while
+        # the real operation went through this stanza over IPv6.
+        #
+        # Upgrade in place instead. Only the missing directives are inserted, so
+        # anything else the user added to the block is left alone.
+        local missing=()
+        local block; block="$(awk -v a="Host $SSH_ALIAS" '$0==a{f=1;next} /^Host /{f=0} f' "$cfg_file")"
+        grep -qi '^[[:space:]]*AddressFamily'  <<<"$block" || missing+=("AddressFamily inet")
+        grep -qi '^[[:space:]]*ConnectTimeout' <<<"$block" || missing+=("ConnectTimeout 10")
+        if [ "${#missing[@]}" -eq 0 ]; then
+            ok "$SSH_ALIAS is already in $cfg_file."
+        elif [ "$DRY_RUN" = "1" ]; then
+            log "would add to the '$SSH_ALIAS' block: ${missing[*]}"
+        else
+            warn "Upgrading the '$SSH_ALIAS' block: ${missing[*]}"
+            local tmp; tmp="$(mktemp)"
+            awk -v a="Host $SSH_ALIAS" -v add="$(printf '    %s\\n' "${missing[@]}")" '
+                {print}
+                $0==a && !done {printf "%s", add; done=1}
+            ' "$cfg_file" > "$tmp"
+            mv "$tmp" "$cfg_file"
+            chmod 600 "$cfg_file"
+            ok "$SSH_ALIAS now forces IPv4 with a connect timeout."
+        fi
     elif [ "$DRY_RUN" = "1" ]; then
         log "would add the '$SSH_ALIAS' block to $cfg_file"
     else
