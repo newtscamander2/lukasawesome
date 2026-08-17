@@ -23,12 +23,23 @@ backup_conflicts() {
     done < <(find "$pkg" -type f -print0)
 }
 
-for pkg in $(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash rclone clang-format cava qt"); do
+for pkg in $(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash rclone clang-format cava qt notes keepassxc"); do
     if [ -d "$pkg" ]; then
         log "Stowing '$pkg' -> \$HOME"
         backup_conflicts "$pkg"
         # -R (restow) makes re-runs idempotent.
-        run stow -v -R -t "$HOME" "$pkg"
+        #
+        # --ignore for systemd's *.target.wants directories: they record which
+        # units are enabled, and systemd only honours them as REAL directories.
+        # With one stow package owning ~/.config/systemd/user, stow folds the
+        # whole directory into a single symlink and the .wants dirs inside it
+        # stay real, so it works by accident. Add a second package and stow has
+        # to unfold, turning each .wants into a symlink -- at which point
+        # systemd silently stops seeing them and the units never start at boot.
+        # That is how the ssh-agent socket died, and with it every background
+        # push of the notes snapshots. Let `systemctl --user enable` own them
+        # instead, which is what .gitignore has always said.
+        run stow -v -R --ignore='.*\.target\.wants' -t "$HOME" "$pkg"
     else
         warn "stow package '$pkg' not found, skipping."
     fi
