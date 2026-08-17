@@ -261,6 +261,10 @@ fi
 # another machine would never become visible here. (This is the step the dev.to
 # article calls out, and the one people forget.)
 run git -C "$BARE" config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
+# ...and the refspec alone creates nothing: without one fetch there are still
+# no refs/remotes/origin/* on a fresh clone, so gm compares every branch
+# against nothing and reports all history as unpushed.
+run git -C "$BARE" fetch --quiet origin
 
 # ---------------------------------------------------------------------------
 # 3. Guardrail configuration
