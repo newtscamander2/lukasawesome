@@ -76,7 +76,11 @@ check_pkg cava
 # process tracking has drifted from reality. This reached 131 processes once,
 # dragging awesome to 15GB RSS, because cava ignores SIGTERM and the old code
 # assumed the kill had worked.
-cava_n=$(pgrep -xc cava 2>/dev/null || echo 0)
+# pgrep -c prints "0" AND exits 1 when nothing matches, so '|| echo 0' fired on
+# top of the 0 it had already printed and cava_n became the two-line string
+# $'0\n0' -- which [ -gt ] rejects with "integer expected". Take the count and
+# only substitute on a non-zero exit.
+cava_n=$(pgrep -xc cava 2>/dev/null) || cava_n=0
 if [ "$cava_n" -gt 1 ]; then
     miss "$cava_n cava processes running (expected 0 or 1) — run: pkill -9 -x cava"
 elif [ "$cava_n" -eq 1 ]; then
@@ -240,10 +244,22 @@ for pkg_name in $(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash
         *)         target="" ;;
     esac
     [ -z "$target" ] && continue
-    if [ -L "$target" ] && readlink -f "$target" | grep -q "$DOTFILES_DIR"; then
+    # Test where the path LANDS, not whether its last component is a symlink.
+    # stow folds a package into a single directory link whenever it is the only
+    # owner of that directory, so ~/.config/flameshot is the symlink and the
+    # flameshot.ini inside it is an ordinary file -- correctly linked, but
+    # [ -L ] on the file says no. fontconfig, qt and flameshot all reported
+    # "exists but is not a symlink into the repo" while being perfectly stowed,
+    # which is worse than no check: it teaches you to ignore the output.
+    #
+    # realpath -m resolves symlinks anywhere along the path and does not require
+    # the file to exist, so one comparison covers both folded and unfolded
+    # packages. The old readlink|grep also matched DOTFILES_DIR anywhere in the
+    # resolved path rather than at the front.
+    if [ -e "$target" ] && [[ "$(realpath -m "$target" 2>/dev/null)" == "$DOTFILES_DIR"/* ]]; then
         pass "$pkg_name -> repo"
     elif [ -e "$target" ]; then
-        note "$pkg_name exists but is not a symlink into the repo"
+        note "$pkg_name exists but does not resolve into the repo"
     else
         miss "$pkg_name not linked ($target)"
     fi
