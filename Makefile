@@ -5,7 +5,7 @@ SHELL  := /bin/bash
 INSTALL := scripts/install.sh
 
 .DEFAULT_GOAL := help
-.PHONY: help configure plan install yay packages drivers services stow bin apps repos notes test keepassxc protondrive check-system repair-display
+.PHONY: help configure plan install yay packages drivers services stow bin apps repos notes test keepassxc timeshift protondrive check-system repair-display
 
 help: ## Show this help
 	@echo "lukasawesome bootstrap targets:"
@@ -56,6 +56,9 @@ keepassxc: ## Two-way sync the KeePassXC database with Proton Drive (bisync)
 	@systemctl --user daemon-reload
 	@systemctl --user enable --now keepassxc-sync.timer
 	@echo "Syncing every 15 minutes. Status: bash scripts/keepassxc-sync.sh status"
+
+timeshift: ## Configure automatic btrfs snapshots of / and /home (needs sudo)
+	@sudo bash scripts/timeshift-snapshots.sh
 
 protondrive: ## One-time Proton Drive login + enable the ~/ProtonDrive mount
 	@bash $(INSTALL) protondrive
