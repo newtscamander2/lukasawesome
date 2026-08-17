@@ -63,6 +63,11 @@ if svc_enabled lightdm.service; then
     [ -f /etc/lightdm/lightdm-gtk-greeter.conf ] \
         && pass "greeter config deployed" \
         || note "greeter config not deployed yet (make services)"
+    # Without this the greeter's X server DPMS-offs the monitor after 10 min
+    # locked, and amdgpu (RX 7600) may never relight it — reboot-only black.
+    [ -f /etc/lightdm/lightdm.conf.d/50-no-dpms.conf ] \
+        && pass "lightdm no-DPMS conf deployed" \
+        || miss "50-no-dpms.conf not deployed — locked screen can black-hole on amdgpu (make services)"
 fi
 
 log "Desktop extras"

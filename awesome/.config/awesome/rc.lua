@@ -3227,8 +3227,11 @@ awful.spawn.with_shell(
 -- activation and locks; it just no longer sits behind a blanked X screen.
 -- cycle 0 stops X re-triggering, and locking 1s after activation keeps the
 -- gap between "idle" and "greeter visible" as short as possible.
+-- 'xset -dpms' because amdgpu (RX 7600) sometimes never relights the display
+-- after a DPMS off — lightdm/50-no-dpms.conf handles X servers lightdm
+-- starts; this covers a bare startx session too.
 awful.spawn.with_shell(
-    "command -v light-locker >/dev/null && { xset s 300 0; xset s noblank; " ..
+    "command -v light-locker >/dev/null && { xset s 300 0; xset s noblank; xset -dpms; " ..
     "pgrep -x light-locker >/dev/null || light-locker --lock-after-screensaver=1 --lock-on-suspend & }")
 
 -- GTK / icon / cursor theme for non-awesome apps (Brave, GTK tools, Qt via

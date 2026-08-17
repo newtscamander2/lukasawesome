@@ -23,6 +23,11 @@ case "$(cfg DISPLAY_MANAGER lightdm)" in
         # pattern as the Brave policy in apps.sh.
         run sudo install -Dm644 "$DOTFILES_DIR/lightdm/lightdm-gtk-greeter.conf" \
             /etc/lightdm/lightdm-gtk-greeter.conf
+        # No blanking/DPMS on any LightDM X server: the greeter's own server
+        # otherwise DPMS-offs the monitor after 10 min locked, and amdgpu
+        # (RX 7600) sometimes never relights it — reboot-only black screen.
+        run sudo install -Dm644 "$DOTFILES_DIR/lightdm/50-no-dpms.conf" \
+            /etc/lightdm/lightdm.conf.d/50-no-dpms.conf
         ;;
     sddm)
         log "Setting up SDDM"

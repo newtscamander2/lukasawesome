@@ -948,9 +948,10 @@ awful.spawn.with_shell("pgrep -x greenclip >/dev/null || greenclip daemon &")
 awful.spawn.with_shell("pkill -9 -x cava >/dev/null 2>&1 || true")
 
 -- Idle lock, matching rc.lua: blanking OFF so the greeter is visible rather
--- than a black screen painted by X itself.
+-- than a black screen painted by X itself, DPMS off because amdgpu sometimes
+-- never relights the display after a DPMS off (see rc.lua).
 awful.spawn.with_shell(
-    "command -v light-locker >/dev/null && { xset s 300 0; xset s noblank; " ..
+    "command -v light-locker >/dev/null && { xset s 300 0; xset s noblank; xset -dpms; " ..
     "pgrep -x light-locker >/dev/null || light-locker --lock-after-screensaver=1 --lock-on-suspend & }")
 
 -- Aero's window content is LIGHT (Explorer is white), so GTK and Qt apps get a
