@@ -3274,12 +3274,25 @@ awful.spawn.with_shell(
 -- inhibitor until i3lock is actually up, so the laptop cannot suspend and wake
 -- to an unlocked desktop.
 --
--- 'xset s 300 0' arms the 5-minute idle trigger and cycle 0 stops X
--- re-triggering; 'xset s noblank' matters because X's own blanking would paint
--- black over the lock screen. 'xset -dpms' stays: amdgpu sometimes never
--- relights the panel after a DPMS off (see lightdm/50-no-dpms.conf).
+-- IDLE BLANKING IS DELIBERATELY OFF ('xset s off', not 'xset s 300 0').
+--
+-- This laptop hard-hung repeatedly on 2026-08-23 -- black screen, no input,
+-- power button the only way out -- and boots died after 2 to 6 minutes. Nothing
+-- was ever logged: no panic, no oops, no MCE, no thermal event, empty pstore.
+-- The hangs stopped the moment the idle blank/DPMS path was disarmed and have
+-- not recurred since, so it stays disarmed until the cause is actually known.
+-- That is a correlation, not a proof: the machine was mostly idle afterwards,
+-- which would not have triggered it anyway.
+--
+-- What this costs: nothing locks the screen on its own any more. Super+Escape
+-- still locks, and xss-lock is still started below so logind's lock-session and
+-- suspend/lid-close still lock -- an unattended laptop just stays unlocked.
+--
+-- 'xset s noblank' and 'xset -dpms' stay regardless: X's own blanking would
+-- paint black over the lock screen, and amdgpu sometimes never relights the
+-- panel after a DPMS off (see lightdm/50-no-dpms.conf).
 awful.spawn.with_shell(
-    "xset s 300 0; xset s noblank; xset -dpms; " ..
+    "xset s off; xset s noblank; xset -dpms; " ..
     "command -v xss-lock >/dev/null && { pgrep -x xss-lock >/dev/null || " ..
     "xss-lock --transfer-sleep-lock -- i3lock --nofork --ignore-empty-password --color 1e1e2e & }")
 

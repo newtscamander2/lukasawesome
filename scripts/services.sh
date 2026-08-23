@@ -56,10 +56,27 @@ fi
 
 # --- VirtualBox ---
 if enabled INSTALL_VIRT; then
-    log "Configuring VirtualBox (group + kernel modules)"
+    log "Configuring VirtualBox (group only; modules stay unloaded)"
     run sudo usermod -aG vboxusers "$USER_NAME"
-    run sudo modprobe vboxdrv || warn "vboxdrv not loaded yet — reboot after install."
-    warn "VirtualBox/DKMS modules require a reboot to load fully."
+    # Deliberately NOT modprobed here, and not loaded at boot either. The
+    # package ships /usr/lib/modules-load.d/virtualbox-host-dkms.conf, which
+    # loads vboxdrv, vboxnetadp and vboxnetflt on every boot whether or not you
+    # ever open VirtualBox; the file below overrides it (systemd prefers /etc
+    # for the same filename, and an empty file loads nothing).
+    run sudo install -Dm644 "$DOTFILES_DIR/modules-load.d/virtualbox-host-dkms.conf" \
+        /etc/modules-load.d/virtualbox-host-dkms.conf
+    log "VirtualBox modules will NOT load at boot. To use it:"
+    log "  sudo modprobe vboxdrv vboxnetadp vboxnetflt"
+fi
+
+# --- Wifi: rtw89 power-save off ---
+# This machine's wifi firmware faulted and needed a driver-level reset
+# ("SER catches error: 0x1001"), and the same class of fault is a known cause of
+# hard freezes. Turn off firmware power-save and PCIe ASPM for it.
+if [ -f "$DOTFILES_DIR/modprobe.d/rtw89.conf" ]; then
+    log "Installing rtw89 wifi module options"
+    run sudo install -Dm644 "$DOTFILES_DIR/modprobe.d/rtw89.conf" \
+        /etc/modprobe.d/rtw89.conf
 fi
 
 # --- Networking (NetworkManager handles wifi / eduroam) ---

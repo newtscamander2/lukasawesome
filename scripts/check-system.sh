@@ -191,6 +191,40 @@ else
     note "wallpaper prep cache not created yet (populated on first wallpaper rotation)"
 fi
 
+# --- Stability mitigations (2026-08-23 hard hangs) --------------------------
+# These exist because the laptop hard-hung with nothing in any log. If one of
+# them silently stops being deployed, the hangs would come back looking like a
+# brand-new mystery.
+log "Stability mitigations"
+if [ -f /etc/modprobe.d/rtw89.conf ]; then
+    pass "rtw89 power-save disabled (/etc/modprobe.d/rtw89.conf)"
+    # The file only takes effect when the module loads, so a stale in-memory
+    # setting is worth catching.
+    if [ "$(cat /sys/module/rtw89_core/parameters/ps_mode 2>/dev/null)" = "0" ]; then
+        pass "rtw89_core ps_mode=0 active"
+    else
+        note "rtw89 conf deployed but module loaded without it (reboot to apply)"
+    fi
+else
+    miss "rtw89 wifi options not deployed (run 'make services')"
+fi
+if [ -f /etc/modules-load.d/virtualbox-host-dkms.conf ]; then
+    pass "VirtualBox modules not auto-loaded at boot"
+else
+    note "vbox module autoload not overridden (run 'make services')"
+fi
+if [ "$(lsmod | grep -cE '^vbox')" -gt 0 ]; then
+    note "vbox modules loaded in THIS session (harmless; gone after a reboot)"
+fi
+# Idle blanking must stay off until the hangs are explained.
+if [ -n "${DISPLAY:-}" ] && have xset; then
+    if xset q 2>/dev/null | grep -qE "timeout: +0"; then
+        pass "idle screen blanking disabled"
+    else
+        miss "idle blanking is ARMED — the suspected cause of the hard hangs"
+    fi
+fi
+
 log "Xorg config snippets"
 # One truncated snippet aborts the whole X server, so validate every file, not
 # just the ones this repo writes.
