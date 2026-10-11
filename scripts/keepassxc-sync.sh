@@ -102,27 +102,49 @@ cmd_init() {
     write_filters
     ensure_layout
 
-    local dbs; dbs=$(find "$LOCAL_DIR" -maxdepth 1 -name '*.kdbx' | wc -l)
-    if [ "$dbs" -eq 0 ]; then
-        err "No .kdbx in $LOCAL_DIR — move your database there first."
+    # Which side holds the database decides which way the baseline is seeded.
+    # On a machine that already has it, local is the truth. On a FRESH machine
+    # the only copy is on Proton Drive, and the old behaviour -- demand a local
+    # file, then seed path1 -- was backwards: it asked you to fetch by hand the
+    # very file this script exists to move.
+    local dbs remote_dbs source mode
+    dbs=$(find "$LOCAL_DIR" -maxdepth 1 -name '*.kdbx' | wc -l)
+    remote_dbs=$(rclone lsf "$REMOTE_DIR" --include '*.kdbx' 2>/dev/null | wc -l)
+
+    if [ "$dbs" -gt 0 ]; then
+        source="the LOCAL copy"; mode=path1
+        if [ "$remote_dbs" -gt 0 ]; then
+            warn "Both sides have a database. The local one seeds the baseline;"
+            warn "anything differing on the remote is copied to $BACKUP_REMOTE,"
+            warn "never deleted."
+        fi
+    elif [ "$remote_dbs" -gt 0 ]; then
+        source="PROTON DRIVE"; mode=path2
+        log "No local database yet. Found on Proton Drive:"
+        rclone lsf "$REMOTE_DIR" --include '*.kdbx' | sed 's/^/   /'
+        log "It will be downloaded to $LOCAL_DIR."
+    else
+        err "No .kdbx in $LOCAL_DIR, and none in $REMOTE_DIR either."
+        err "Put the database on one of the two sides and run this again."
         exit 1
     fi
 
     log "Dry run first (nothing is changed):"
     if ! rclone bisync "$LOCAL_DIR" "$REMOTE_DIR" "${bisync_flags[@]}" \
-            --resync --resync-mode path1 --dry-run; then
+            --resync --resync-mode "$mode" --dry-run; then
         err "The dry run failed — not touching anything. See $LOG"
         exit 1
     fi
 
-    if [ "$(ask_yn 'Seed from the LOCAL copy and overwrite the remote?' y)" != "yes" ]; then
+    if [ "$(ask_yn "Seed the baseline from $source?" y)" != "yes" ]; then
         warn "Stopped. Nothing was changed."
         exit 0
     fi
-    # --resync-mode path1: the local copy is the truth for the baseline. Anything
-    # the remote had that differs is not deleted -- it goes to --backup-dir2.
+    # --resync-mode decides only which side wins where the two differ. Nothing
+    # is deleted either way: --max-delete 0 still applies, and a replaced file
+    # goes to --backup-dir1 / --backup-dir2 first.
     run rclone bisync "$LOCAL_DIR" "$REMOTE_DIR" "${bisync_flags[@]}" \
-        --resync --resync-mode path1
+        --resync --resync-mode "$mode"
     ok "Baseline established. Later runs sync both ways."
 }
 
