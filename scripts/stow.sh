@@ -59,7 +59,24 @@ for pkg in $(cfg STOW_PACKAGES "awesome nvim tmux alacritty fontconfig bash rclo
         # That is how the ssh-agent socket died, and with it every background
         # push of the notes snapshots. Let `systemctl --user enable` own them
         # instead, which is what .gitignore has always said.
-        run stow -v -R --ignore='.*\.target\.wants' -t "$HOME" "$pkg"
+        #
+        # --no-folding is load-bearing, not a style choice. Without it stow
+        # "folds": when a directory exists in only one package and not yet in
+        # $HOME, it links the whole DIRECTORY instead of the files inside it,
+        # e.g. ~/.config/systemd -> <repo>/rclone/.config/systemd. The next
+        # package that owns the same directory then hits absorb_repo_symlinks
+        # above, which sees a symlink pointing into the repo and removes it --
+        # taking the previous package's files with it. Nothing re-stows them,
+        # because that package already had its turn in this loop.
+        #
+        # On a machine where ~/.config is already a real directory the damage
+        # is limited to deeper shared paths (which is how protondrive.service
+        # went missing while the keepassxc units survived: keepassxc is stowed
+        # later). On a genuinely fresh $HOME it folds at ~/.config itself and
+        # only the LAST package in the list survives -- no awesome config, no
+        # nvim config. --no-folding makes stow create real directories and
+        # symlink individual files, so packages sharing a directory coexist.
+        run stow -v -R --no-folding --ignore='.*\.target\.wants' -t "$HOME" "$pkg"
     else
         warn "stow package '$pkg' not found, skipping."
     fi
